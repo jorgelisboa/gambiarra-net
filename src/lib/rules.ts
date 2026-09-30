@@ -70,10 +70,11 @@ export interface Vitals {
   netMax: number;
   ref: number;
   color: string;
+  seed: string;
   linked: boolean;
 }
 
-const PALETTE = ["#fcee0a", "#05d9e8", "#ff2a6d", "#b967ff", "#3ddc97", "#ff8a3d"];
+const PALETTE = ["#ff3b30", "#3df0d8", "#ffb000", "#7dff6b", "#b388ff", "#e8e8e0"];
 
 export const colorFor = (seed: string) => {
   let h = 0;
@@ -91,6 +92,7 @@ export function vitalsOf(c: Combatant, characters: Character[]): Vitals {
       netMax: isNetrunner(ch.role) ? netActionsFor(ch.interfaceRank) : 0,
       ref: ch.stats.REF,
       color: colorFor(ch.id),
+      seed: ch.id,
       linked: true,
     };
   }
@@ -101,14 +103,8 @@ export function vitalsOf(c: Combatant, characters: Character[]): Vitals {
     netMax: c.netMax,
     ref: c.ref,
     color: colorFor(c.id),
+    seed: c.id,
     linked: false,
   };
 }
 
-export const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0]!.toUpperCase())
-    .join("") || "?";

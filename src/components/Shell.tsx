@@ -7,9 +7,9 @@ import { Combat } from "./Combat";
 import { NetTab } from "./NetTab";
 
 const TABS = [
-  { id: "net", label: "Netrunner" },
-  { id: "combat", label: "Combate" },
-  { id: "chars", label: "Personagens" },
+  { id: "net", label: "netrunner" },
+  { id: "combat", label: "combate" },
+  { id: "chars", label: "personagens" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -19,31 +19,32 @@ export function Shell({ user }: { user: string }) {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="flex flex-wrap items-center gap-4 border-b border-line bg-ink-900 px-5 py-3">
-        <span className="text-xl font-black tracking-tight text-neon">
-          Gambiarra<span className="text-ice">.net</span>
+      <header className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b-2 border-line px-5 py-3">
+        <span className="font-pixel cursor text-xl">
+          gambiarra<span className="text-net">.net</span>
         </span>
-        <nav className="flex gap-1">
+        <nav className="flex gap-1" aria-label="seções">
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`px-4 py-2 text-sm uppercase tracking-wider ${
+              aria-current={tab === t.id ? "page" : undefined}
+              className={`px-3 py-1 ${
                 tab === t.id
-                  ? "border-b-2 border-neon text-neon"
-                  : "border-b-2 border-transparent text-muted hover:text-white"
+                  ? "bg-red text-black"
+                  : "text-dim hover:text-fg"
               }`}
             >
               {t.label}
             </button>
           ))}
         </nav>
-        <div className="ml-auto flex items-center gap-3 text-sm text-muted">
+        <div className="ml-auto flex items-center gap-3 text-dim">
           <span>
-            @<span className="text-white">{user}</span>
+            @<span className="text-fg">{user}</span>
           </span>
           <button className="btn btn-danger" onClick={logout}>
-            Sair
+            sair
           </button>
         </div>
       </header>

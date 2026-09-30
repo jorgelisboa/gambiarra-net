@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { endCombat, nextTurn, useApp } from "@/lib/store";
 import { vitalsOf } from "@/lib/rules";
-import { Avatar } from "./Characters";
+import { Bar, Icon, Sprite } from "./Pixel";
 import { TurnActions } from "./TurnActions";
 
 export function InitiativeStage({ onClose }: { onClose: () => void }) {
@@ -38,21 +38,14 @@ export function InitiativeStage({ onClose }: { onClose: () => void }) {
   const av = active ? vitalsOf(active, characters) : null;
 
   return (
-    <div
-      ref={root}
-      className="fixed inset-0 z-50 flex flex-col bg-ink-950 p-8"
-      style={{
-        backgroundImage:
-          "radial-gradient(circle at 50% 0%, #1a1030 0%, transparent 60%)",
-      }}
-    >
-      <div className="flex items-center justify-between">
-        <span className="text-3xl font-black text-neon">
-          Round <span className="text-white">{combat.round}</span>
+    <div ref={root} className="fixed inset-0 z-50 flex flex-col bg-bg p-8">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <span className="font-pixel text-3xl">
+          round <span className="font-mono font-bold text-red">{String(combat.round).padStart(2, "0")}</span>
         </span>
         <div className="flex gap-2">
           <button className="btn btn-primary" onClick={nextTurn}>
-            Próximo turno →
+            próximo turno
           </button>
           <button
             className="btn btn-danger"
@@ -61,15 +54,15 @@ export function InitiativeStage({ onClose }: { onClose: () => void }) {
               onClose();
             }}
           >
-            Encerrar
+            encerrar
           </button>
           <button className="btn" onClick={onClose}>
-            Sair (Esc)
+            sair (esc)
           </button>
         </div>
       </div>
 
-      <div className="flex flex-1 flex-wrap items-center justify-center gap-x-10 gap-y-14 py-10">
+      <div className="flex flex-1 flex-wrap items-end justify-center gap-x-12 gap-y-16 pb-10 pt-20">
         {combat.combatants.map((c) => {
           const v = vitalsOf(c, characters);
           const isActive = c.id === combat.activeId;
@@ -77,31 +70,32 @@ export function InitiativeStage({ onClose }: { onClose: () => void }) {
           return (
             <div
               key={c.id}
-              className={`flex flex-col items-center gap-3 transition-all duration-300 ${
-                isActive ? "scale-125" : "opacity-50"
-              } ${dead ? "grayscale" : ""}`}
+              className="flex w-40 flex-col items-center gap-3"
+              style={{ opacity: isActive ? 1 : 0.55 }}
             >
+              <span style={{ color: v.color, visibility: isActive ? "visible" : "hidden" }}>
+                <Icon name="down" size={24} />
+              </span>
               <div className={isActive ? "animate-jump" : ""}>
-                <Avatar name={v.name} color={v.color} size={isActive ? 120 : 84} />
+                <Sprite
+                  seed={v.seed}
+                  color={v.color}
+                  size={isActive ? 144 : 96}
+                  dim={dead}
+                />
               </div>
-              <div className="text-center">
+              <div className="w-full text-center">
                 <div
-                  className="text-lg font-bold"
+                  className="font-pixel truncate text-xl"
                   style={{ color: isActive ? v.color : undefined }}
                 >
                   {v.name}
                 </div>
-                <div className="font-mono text-xs text-muted">
-                  INIT {c.initiative}
+                <div className="text-xs text-dim">
+                  init {c.initiative} · hp {v.hp}/{v.maxHp}
                 </div>
-                <div className="mt-1 h-1.5 w-28 bg-ink-800">
-                  <div
-                    className="h-full bg-hot"
-                    style={{ width: `${(v.hp / v.maxHp) * 100}%` }}
-                  />
-                </div>
-                <div className="font-mono text-xs">
-                  {v.hp}/{v.maxHp}
+                <div className="mt-2">
+                  <Bar value={v.hp} max={v.maxHp} color="var(--red)" cells={12} height={8} />
                 </div>
               </div>
             </div>
@@ -110,14 +104,12 @@ export function InitiativeStage({ onClose }: { onClose: () => void }) {
       </div>
 
       {active && av && (
-        <div className="flex flex-col items-center gap-3 border-t border-line pt-6">
-          <span className="text-sm uppercase tracking-widest text-muted">
-            Turno de <span style={{ color: av.color }}>{av.name}</span>
+        <div className="flex flex-col items-center gap-3 border-t-2 border-line pt-6">
+          <span className="text-dim">
+            turno de <span style={{ color: av.color }}>{av.name}</span>
           </span>
-          <TurnActions c={active} netMax={av.netMax} size={44} />
-          <span className="text-xs text-muted">
-            Espaço / → passa o turno
-          </span>
+          <TurnActions c={active} netMax={av.netMax} size={40} />
+          <span className="text-xs text-dim">espaço / → passa o turno</span>
         </div>
       )}
     </div>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { login } from "@/lib/store";
+import { Sprite } from "./Pixel";
 
 export function Login() {
   const [name, setName] = useState("");
@@ -13,30 +14,35 @@ export function Login() {
           e.preventDefault();
           login(name);
         }}
-        className="w-full max-w-sm border border-line bg-ink-900 p-8"
+        className="box w-full max-w-md p-8"
       >
-        <h1 className="glitch text-4xl font-black tracking-tight text-neon">
-          Gambiarra<span className="text-ice">.net</span>
-        </h1>
-        <p className="mt-1 text-sm text-muted">
-          Ferramenta de fã pra Cyberpunk RED. Tudo salvo neste navegador.
+        <div className="flex items-center gap-4">
+          <Sprite seed="gambiarra" color="var(--red)" size={48} />
+          <h1 className="font-pixel text-3xl leading-none">
+            gambiarra<span className="text-net">.net</span>
+          </h1>
+        </div>
+        <p className="mt-4 text-dim">
+          vtt não oficial pra cyberpunk red. tudo fica salvo neste navegador.
         </p>
-        <label className="mt-8 block text-xs uppercase tracking-widest text-muted">
-          Username
+        <label className="label mt-8 block" htmlFor="user">
+          login
         </label>
         <input
+          id="user"
           autoFocus
+          autoComplete="off"
           className="field mt-2"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="ex: rache_b"
+          placeholder="username"
           maxLength={24}
         />
         <button
-          className="btn btn-primary mt-4 w-full"
+          className="btn btn-primary mt-5 w-full"
           disabled={name.trim().length < 2}
         >
-          Conectar
+          conectar
         </button>
       </form>
     </main>

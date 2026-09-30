@@ -13,8 +13,8 @@ import {
 } from "@/lib/store";
 import { d10, uid, vitalsOf } from "@/lib/rules";
 import type { Combatant } from "@/lib/types";
-import { Avatar } from "./Characters";
 import { InitiativeStage } from "./InitiativeStage";
+import { Bar, Sprite } from "./Pixel";
 import { TurnActions } from "./TurnActions";
 
 const blank = (p: Partial<Combatant>): Combatant => ({
@@ -74,20 +74,20 @@ export function Combat() {
     <div className="mx-auto max-w-5xl space-y-5">
       {stage && <InitiativeStage onClose={() => setStage(false)} />}
 
-      <div className="flex flex-wrap items-center gap-2 border border-line bg-ink-900 p-4">
+      <div className="box flex flex-wrap items-center gap-3 p-4">
         {combat.active ? (
           <>
-            <span className="mr-2 text-xl font-black text-neon">
-              Round {combat.round}
+            <span className="font-pixel mr-2 text-xl">
+              round <span className="font-mono font-bold text-red">{String(combat.round).padStart(2, "0")}</span>
             </span>
             <button className="btn btn-primary" onClick={nextTurn}>
-              Próximo turno →
+              próximo turno
             </button>
             <button className="btn" onClick={() => setStage(true)}>
-              ⛶ Tela cheia
+              tela cheia
             </button>
             <button className="btn btn-danger" onClick={endCombat}>
-              Encerrar
+              encerrar
             </button>
           </>
         ) : (
@@ -100,35 +100,33 @@ export function Combat() {
                 setStage(true);
               }}
             >
-              Iniciar combate
+              iniciar combate
             </button>
             <button
               className="btn"
               disabled={combat.combatants.length === 0}
               onClick={rerollAll}
             >
-              🎲 Rolar iniciativa (1d10 + REF)
+              rolar iniciativa (1d10 + ref)
             </button>
           </>
         )}
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2">
-        <div className="border border-line bg-ink-900 p-4">
-          <h3 className="mb-2 text-xs uppercase tracking-widest text-muted">
-            Adicionar personagem
-          </h3>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="box p-4">
+          <h3 className="label mb-3">adicionar personagem</h3>
           {available.length === 0 ? (
-            <p className="text-sm text-muted">
+            <p className="text-dim">
               {characters.length === 0
-                ? "Crie personagens na aba Personagens."
-                : "Todos já estão no combate."}
+                ? "crie personagens na aba personagens."
+                : "todos já estão no combate."}
             </p>
           ) : (
             <div className="flex flex-wrap gap-2">
               {available.map((c) => (
                 <button key={c.id} className="btn" onClick={() => addChar(c.id)}>
-                  {c.id === sessionCharacterId && "★ "}
+                  {c.id === sessionCharacterId && "* "}
                   {c.name}
                 </button>
               ))}
@@ -137,35 +135,32 @@ export function Combat() {
         </div>
 
         <form
-          className="border border-line bg-ink-900 p-4"
+          className="box p-4"
           onSubmit={(e) => {
             e.preventDefault();
             addNpc();
           }}
         >
-          <h3 className="mb-2 text-xs uppercase tracking-widest text-muted">
-            Adicionar PNJ
-          </h3>
+          <h3 className="label mb-3">adicionar pnj</h3>
           <div className="flex flex-wrap items-end gap-2">
             <input
               className="field min-w-32 flex-1"
-              placeholder="Nome"
+              placeholder="nome"
+              aria-label="nome do pnj"
               value={npc.name}
               onChange={(e) => setNpc({ ...npc, name: e.target.value })}
             />
-            <Mini label="HP" value={npc.hp} onChange={(v) => setNpc({ ...npc, hp: v })} />
-            <Mini label="REF" value={npc.ref} onChange={(v) => setNpc({ ...npc, ref: v })} />
-            <Mini label="Net" value={npc.net} onChange={(v) => setNpc({ ...npc, net: v })} />
-            <button className="btn">Adicionar</button>
+            <Mini label="hp" value={npc.hp} onChange={(v) => setNpc({ ...npc, hp: v })} />
+            <Mini label="ref" value={npc.ref} onChange={(v) => setNpc({ ...npc, ref: v })} />
+            <Mini label="net" value={npc.net} onChange={(v) => setNpc({ ...npc, net: v })} />
+            <button className="btn">adicionar</button>
           </div>
         </form>
       </div>
 
-      <ul className="space-y-2">
+      <ul className="space-y-3">
         {combat.combatants.length === 0 && (
-          <li className="border border-dashed border-line p-8 text-center text-muted">
-            Ninguém no combate ainda.
-          </li>
+          <li className="box p-8 text-center text-dim">ninguém no combate ainda.</li>
         )}
         {combat.combatants.map((c) => (
           <CombatRow key={c.id} c={c} />
@@ -183,43 +178,41 @@ function CombatRow({ c }: { c: Combatant }) {
 
   return (
     <li
-      className={`flex flex-wrap items-center gap-4 border p-3 ${
-        isActive ? "border-neon bg-ink-800" : "border-line bg-ink-900"
-      }`}
+      className={`box flex flex-wrap items-center gap-4 p-3 ${isActive ? "box-active" : ""}`}
     >
       <input
         type="number"
-        title="Iniciativa"
-        className="field !w-16 text-center font-mono text-lg font-black text-neon"
+        title="iniciativa"
+        aria-label={`iniciativa de ${v.name}`}
+        className="field !w-16 text-center text-xl font-bold text-red"
         value={c.initiative}
         onChange={(e) =>
           patchCombatant(c.id, { initiative: Number(e.target.value) || 0 })
         }
       />
-      <Avatar name={v.name} color={v.color} size={44} />
-      <div className="min-w-32 flex-1">
-        <div className="font-semibold">
+      <Sprite seed={v.seed} color={v.color} size={44} dim={v.hp <= 0} />
+      <div className="min-w-40 flex-1">
+        <div className="font-pixel text-lg leading-tight">
           {v.name}
-          {!v.linked && <span className="ml-2 text-xs text-muted">PNJ</span>}
+          {!v.linked && <span className="ml-2 text-xs text-dim">pnj</span>}
         </div>
-        <div className="mt-1 h-2 bg-ink-950">
-          <div
-            className="h-full bg-hot transition-all"
-            style={{ width: `${(v.hp / v.maxHp) * 100}%` }}
-          />
+        <div className="mt-2">
+          <Bar value={v.hp} max={v.maxHp} color="var(--red)" />
         </div>
-        <div className="mt-1 flex items-center gap-1 font-mono text-xs">
+        <div className="mt-2 flex items-center gap-2 text-xs">
           <button
-            className="btn !px-2 !py-0"
+            className="btn btn-bare !px-2 !py-0"
+            aria-label="causar dano"
             onClick={() => setCombatantHp(c.id, v.hp - delta)}
           >
-            −
+            -
           </button>
-          <span className="w-16 text-center">
+          <span className="w-14 text-center">
             {v.hp}/{v.maxHp}
           </span>
           <button
-            className="btn !px-2 !py-0"
+            className="btn btn-bare !px-2 !py-0"
+            aria-label="curar"
             onClick={() => setCombatantHp(c.id, v.hp + delta)}
           >
             +
@@ -227,7 +220,8 @@ function CombatRow({ c }: { c: Combatant }) {
           <input
             type="number"
             min={1}
-            className="field ml-2 !w-14 !py-0 text-center"
+            aria-label="valor de dano ou cura"
+            className="field !w-14 !py-0 text-center"
             value={delta}
             onChange={(e) => setDelta(Math.max(1, Number(e.target.value) || 1))}
           />
@@ -235,11 +229,12 @@ function CombatRow({ c }: { c: Combatant }) {
       </div>
       <TurnActions c={c} netMax={v.netMax} size={20} />
       <button
-        className="btn btn-danger"
-        title="Remover do combate"
+        className="btn btn-danger btn-bare"
+        title="remover do combate"
+        aria-label="remover do combate"
         onClick={() => removeCombatant(c.id)}
       >
-        ✕
+        x
       </button>
     </li>
   );
@@ -255,7 +250,7 @@ function Mini({
   onChange: (v: number) => void;
 }) {
   return (
-    <label className="text-xs text-muted">
+    <label className="text-xs text-dim">
       {label}
       <input
         type="number"

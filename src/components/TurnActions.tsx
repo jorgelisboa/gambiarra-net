@@ -2,6 +2,7 @@
 
 import { patchCombatant } from "@/lib/store";
 import type { Combatant } from "@/lib/types";
+import { Icon, type IconName } from "./Pixel";
 
 interface Props {
   c: Combatant;
@@ -11,21 +12,21 @@ interface Props {
   disabled?: boolean;
 }
 
-/** Ícones de ação. Ao mudar de estado o ícone "salta" (key força a animação). */
-export function TurnActions({ c, netMax, size = 28, disabled }: Props) {
+/** Ícones de ação. Ao mudar de estado o ícone "salta" (key reinicia a animação). */
+export function TurnActions({ c, netMax, size = 24, disabled }: Props) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <ActionIcon
-        label="Ação"
-        glyph="⚔️"
+        label="ação"
+        icon="action"
         used={c.actionUsed}
         size={size}
         disabled={disabled}
         onClick={() => patchCombatant(c.id, { actionUsed: !c.actionUsed })}
       />
       <ActionIcon
-        label="Movimento"
-        glyph="👟"
+        label="movimento"
+        icon="move"
         used={c.moveUsed}
         size={size}
         disabled={disabled}
@@ -34,12 +35,12 @@ export function TurnActions({ c, netMax, size = 28, disabled }: Props) {
       {Array.from({ length: netMax }, (_, i) => (
         <ActionIcon
           key={i}
-          label={`Ação de Net ${i + 1}`}
-          glyph="🌐"
+          label={`ação de net ${i + 1}`}
+          icon="net"
           used={i < c.netUsed}
           size={size}
           disabled={disabled}
-          tint="#05d9e8"
+          tint="var(--net)"
           onClick={() =>
             patchCombatant(c.id, { netUsed: i < c.netUsed ? i : i + 1 })
           }
@@ -51,15 +52,15 @@ export function TurnActions({ c, netMax, size = 28, disabled }: Props) {
 
 function ActionIcon({
   label,
-  glyph,
+  icon,
   used,
   size,
   disabled,
-  tint = "#fcee0a",
+  tint = "var(--red)",
   onClick,
 }: {
   label: string;
-  glyph: string;
+  icon: IconName;
   used: boolean;
   size: number;
   disabled?: boolean;
@@ -69,26 +70,21 @@ function ActionIcon({
   return (
     <button
       title={`${label}${used ? " (usada)" : ""}`}
+      aria-pressed={used}
+      aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="flex items-center justify-center border transition-colors disabled:cursor-not-allowed"
+      className="flex items-center justify-center border-2 disabled:cursor-not-allowed"
       style={{
-        width: size * 1.8,
-        height: size * 1.8,
-        borderColor: used ? "#2c2c40" : tint,
-        background: used ? "#0d0d14" : `${tint}1a`,
+        width: size * 1.7,
+        height: size * 1.7,
+        borderColor: used ? "var(--line)" : tint,
+        color: used ? "var(--line)" : tint,
+        background: used ? "transparent" : "var(--color-raise)",
       }}
     >
-      <span
-        key={String(used)}
-        className={used ? "animate-hop" : ""}
-        style={{
-          fontSize: size,
-          filter: used ? "grayscale(1) opacity(0.35)" : "none",
-          display: "inline-block",
-        }}
-      >
-        {glyph}
+      <span key={String(used)} className={used ? "animate-hop" : ""}>
+        <Icon name={icon} size={size} />
       </span>
     </button>
   );
