@@ -1,36 +1,32 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Gambiarra.net
 
-## Getting Started
+VTT **não oficial** pra Cyberpunk RED: fichas, iniciativa em tela cheia e (em breve) simulador de netrunning.
 
-First, run the development server:
+> Projeto de fã, gratuito e sem fins lucrativos. Não é afiliado nem endossado pela R. Talsorian Games.
+> Cyberpunk e Cyberpunk RED são marcas da R. Talsorian Games. Este repositório não contém texto ou arte do livro.
+
+## Abas
+
+- **Personagens** — fichas (stats, HP, Humanidade, Interface) + anotações (idade, objetivo, história...). Um personagem pode ser marcado como "na sessão".
+- **Combate** — iniciativa (1d10 + REF), HP ligado à ficha, ações de Carne (Ação/Movimento) e ações de Net para Netrunners. Modo **tela cheia** com avatares saltando no turno ativo (Espaço/→ passa o turno).
+- **Netrunner** — placeholder.
+
+## Dados
+
+Tudo fica no `localStorage` do navegador, separado por username (login sem senha por enquanto).
+A camada de persistência está isolada em [`src/lib/store.ts`](src/lib/store.ts) pra facilitar a troca por Supabase.
+
+## Rodando
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Deploy: importar o repo na Vercel (Next.js, sem configuração extra).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Regras usadas
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- HP = 10 + 5 × ⌈(BODY + WILL) / 2⌉
+- Humanidade = EMP × 10
+- Ações de Net por Interface: 1–3 → 2, 4–6 → 3, 7–9 → 4, 10 → 5 (conferir com o livro)
