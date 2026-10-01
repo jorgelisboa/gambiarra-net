@@ -22,7 +22,7 @@ import {
   type TierTable,
   type UseDef,
 } from "@/lib/rpg";
-import { uid } from "@/lib/rules";
+import { uid } from "@/lib/id";
 import type { AbilityItem, AbilityState, Character } from "@/lib/types";
 import { Bar } from "./Pixel";
 

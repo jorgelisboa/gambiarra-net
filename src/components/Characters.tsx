@@ -8,7 +8,7 @@ import {
   useApp,
 } from "@/lib/store";
 import { fitToRank, roleDef } from "@/lib/rpg";
-import { STAT_LABELS, colorFor, maxHp, maxHumanity, newCharacter } from "@/lib/rules";
+import { STAT_LABELS, colorFor, maxHp, maxHumanity } from "@/lib/rules";
 import {
   ROLES,
   STAT_KEYS,
@@ -16,9 +16,10 @@ import {
   type CharacterNotes,
   type Role,
 } from "@/lib/types";
+import { CreationWizard } from "./CreationWizard";
+import { LifepathEditor } from "./LifepathEditor";
 import { Bar, Sprite } from "./Pixel";
 import { RoleAbility } from "./RoleAbility";
-import { RolePicker } from "./RolePicker";
 
 const NOTE_FIELDS: { key: keyof CharacterNotes; label: string; area?: boolean }[] = [
   { key: "alias", label: "apelido / handle" },
@@ -36,20 +37,19 @@ export function Characters() {
   const [selectedId, setSelectedId] = useState<string | null>(
     sessionCharacterId ?? characters[0]?.id ?? null,
   );
-  const [picking, setPicking] = useState(false);
+  const [creating, setCreating] = useState(false);
   const selected = characters.find((c) => c.id === selectedId) ?? null;
 
-  function create(role: Role) {
-    const ch = newCharacter(role);
+  function create(ch: Character) {
     upsertCharacter(ch);
     setSelectedId(ch.id);
-    setPicking(false);
+    setCreating(false);
   }
 
   return (
-    <div className="mx-auto grid max-w-6xl gap-5 md:grid-cols-[260px_1fr]">
+    <div className="mx-auto grid max-w-6xl grid-cols-1 gap-5 md:grid-cols-[260px_minmax(0,1fr)]">
       <aside className="space-y-2">
-        <button className="btn btn-primary w-full" onClick={() => setPicking(true)}>
+        <button className="btn btn-primary w-full" onClick={() => setCreating(true)}>
           novo personagem
         </button>
         {characters.length === 0 && (
@@ -60,7 +60,7 @@ export function Characters() {
             key={c.id}
             onClick={() => {
               setSelectedId(c.id);
-              setPicking(false);
+              setCreating(false);
             }}
             className={`box flex w-full items-center gap-3 p-3 text-left ${
               c.id === selectedId ? "box-active" : "hover:border-dim"
@@ -80,8 +80,8 @@ export function Characters() {
         ))}
       </aside>
 
-      {picking ? (
-        <RolePicker onPick={create} onCancel={() => setPicking(false)} />
+      {creating ? (
+        <CreationWizard onDone={create} onCancel={() => setCreating(false)} />
       ) : selected ? (
         <Editor
           key={selected.id}
@@ -190,6 +190,8 @@ function Editor({
 
       <RoleAbility ch={ch} save={save} />
 
+      <Lore ch={ch} save={save} />
+
       <div className="grid gap-3 sm:grid-cols-2">
         {NOTE_FIELDS.map((f) => (
           <label
@@ -286,5 +288,28 @@ function Meter({
         ))}
       </div>
     </div>
+  );
+}
+
+/** Lifepath na ficha: fechado mostra um resumo, aberto edita as tabelas. */
+function Lore({ ch, save }: { ch: Character; save: (patch: Partial<Character>) => void }) {
+  const [open, setOpen] = useState(false);
+  const p = ch.lifepath.picks;
+  const glimpse = [p.region, p.language, p.personality, p.goal].filter(Boolean).join(" · ");
+  return (
+    <section className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="label">lore</h3>
+          <p className="line-clamp-2 text-dim">{glimpse || "sem lifepath ainda."}</p>
+        </div>
+        <button className="btn shrink-0" aria-expanded={open} onClick={() => setOpen(!open)}>
+          {open ? "fechar" : "abrir lifepath"}
+        </button>
+      </div>
+      {open && (
+        <LifepathEditor value={ch.lifepath} onChange={(lifepath) => save({ lifepath })} />
+      )}
+    </section>
   );
 }

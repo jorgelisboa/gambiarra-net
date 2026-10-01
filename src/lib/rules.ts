@@ -1,4 +1,11 @@
-import { STARTING_RANK, emptyAbility, initiativeBonus, netActionsOf } from "./rpg";
+import { uid } from "./id";
+import {
+  STARTING_RANK,
+  emptyAbility,
+  emptyLifepath,
+  initiativeBonus,
+  netActionsOf,
+} from "./rpg";
 import type { Character, Combatant, Role, Stats } from "./types";
 
 export const STAT_LABELS: Record<keyof Stats, string> = {
@@ -30,9 +37,6 @@ export const emptyStats = (): Stats => ({
 export const maxHp = (s: Stats) => 10 + 5 * Math.ceil((s.BODY + s.WILL) / 2);
 export const maxHumanity = (s: Stats) => s.EMP * 10;
 
-export const uid = () =>
-  globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
-
 export function newCharacter(role: Role): Character {
   const stats = emptyStats();
   return {
@@ -44,6 +48,7 @@ export function newCharacter(role: Role): Character {
     humanity: maxHumanity(stats),
     roleRank: STARTING_RANK,
     ability: emptyAbility(),
+    lifepath: emptyLifepath(),
     notes: {
       alias: "",
       age: "",
@@ -57,7 +62,7 @@ export function newCharacter(role: Role): Character {
   };
 }
 
-/** Completa fichas salvas antes do rank de role existir (o rank era só a Interface do Netrunner). */
+/** Completa fichas salvas antes do rank de role e do lifepath existirem (o rank era só a Interface do Netrunner). */
 export function normalizeCharacter(saved: Character & { interfaceRank?: number }): Character {
   const { interfaceRank, ...ch } = saved;
   const legacyRank = ch.role === "Netrunner" ? interfaceRank : undefined;
@@ -65,6 +70,7 @@ export function normalizeCharacter(saved: Character & { interfaceRank?: number }
     ...ch,
     roleRank: ch.roleRank ?? legacyRank ?? STARTING_RANK,
     ability: { ...emptyAbility(), ...ch.ability },
+    lifepath: { ...emptyLifepath(), ...ch.lifepath },
   };
 }
 

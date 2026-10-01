@@ -53,6 +53,21 @@ export interface AbilityState {
   lists: Record<string, AbilityItem[]>;
 }
 
+export interface LifepathEntry {
+  id: string;
+  picks: Record<string, string>;
+  /** Nome ou detalhe livre (quem é o amigo, o inimigo...). */
+  note: string;
+}
+
+/** Lore do personagem (lifepath do livro). As chaves vêm de `src/lib/rpg/lifepath`. */
+export interface Lifepath {
+  /** Escolha de cada tabela, pelo id da tabela. Texto livre vale. */
+  picks: Record<string, string>;
+  /** Amigos, inimigos, amores trágicos. */
+  lists: Record<string, LifepathEntry[]>;
+}
+
 export interface Character {
   id: string;
   name: string;
@@ -63,6 +78,7 @@ export interface Character {
   /** Rank da habilidade de role, 1–10 (Interface do Netrunner, Moto do Nomad...). */
   roleRank: number;
   ability: AbilityState;
+  lifepath: Lifepath;
   notes: CharacterNotes;
   createdAt: number;
 }

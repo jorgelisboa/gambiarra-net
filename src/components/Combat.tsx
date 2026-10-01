@@ -12,7 +12,8 @@ import {
   useApp,
 } from "@/lib/store";
 import { d10, initiativeBonus } from "@/lib/rpg";
-import { uid, vitalsOf } from "@/lib/rules";
+import { uid } from "@/lib/id";
+import { vitalsOf } from "@/lib/rules";
 import type { Combatant } from "@/lib/types";
 import { InitiativeStage } from "./InitiativeStage";
 import { Bar, Sprite } from "./Pixel";
