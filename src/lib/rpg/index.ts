@@ -5,8 +5,10 @@
 export * from "./ability";
 export * from "./character";
 export * from "./creation";
+export * from "./derived";
 export * from "./dice";
 export * from "./lifepath";
 export * from "./roles";
+export * from "./stats";
 export * from "./tables";
 export type * from "./types";

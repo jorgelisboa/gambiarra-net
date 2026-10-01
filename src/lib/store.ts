@@ -2,7 +2,8 @@
 
 import { useSyncExternalStore } from "react";
 import type { AppData, Character, Combatant } from "./types";
-import { maxHp, normalizeCharacter, vitalsOf } from "./rules";
+import { maxHp } from "./rpg";
+import { normalizeCharacter, vitalsOf } from "./rules";
 
 /**
  * Persistência local (localStorage), separada por username.

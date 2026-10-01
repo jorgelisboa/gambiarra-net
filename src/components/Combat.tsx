@@ -11,7 +11,7 @@ import {
   startCombat,
   useApp,
 } from "@/lib/store";
-import { d10, initiativeBonus } from "@/lib/rpg";
+import { d10, initiativeBonus, woundOf } from "@/lib/rpg";
 import { uid } from "@/lib/id";
 import { vitalsOf } from "@/lib/rules";
 import type { Combatant } from "@/lib/types";
@@ -180,6 +180,7 @@ export function Combat() {
 function CombatRow({ c }: { c: Combatant }) {
   const { data } = useApp();
   const v = vitalsOf(c, data.characters);
+  const wound = woundOf(v.hp, v.maxHp);
   const isActive = data.combat.active && data.combat.activeId === c.id;
   const [delta, setDelta] = useState(1);
 
@@ -232,6 +233,14 @@ function CombatRow({ c }: { c: Combatant }) {
             value={delta}
             onChange={(e) => setDelta(Math.max(1, Number(e.target.value) || 1))}
           />
+          {wound.short && (
+            <span
+              className={wound.id === "light" ? "text-dim" : "text-red"}
+              title={wound.effect}
+            >
+              {wound.short}
+            </span>
+          )}
         </div>
       </div>
       <TurnActions c={c} netMax={v.netMax} size={20} />

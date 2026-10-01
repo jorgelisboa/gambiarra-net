@@ -5,6 +5,7 @@ import {
   CREATION_METHODS,
   CREATION_STEPS,
   emptyLifepath,
+  templateRow,
   type CreationMethod,
   type CreationStepId,
 } from "@/lib/rpg";
@@ -12,6 +13,7 @@ import { newCharacter } from "@/lib/rules";
 import type { Character, Lifepath, Role } from "@/lib/types";
 import { LifepathEditor } from "./LifepathEditor";
 import { RolePicker } from "./RolePicker";
+import { StatTemplatePicker } from "./StatTemplatePicker";
 
 type Step = "method" | CreationStepId;
 
@@ -20,6 +22,8 @@ interface Draft {
   handle: string;
   role: Role | null;
   lifepath: Lifepath;
+  /** Linha da tabela de stats do role (1–10). */
+  statsRow: number | null;
 }
 
 const METHOD_STEP = { label: "método", title: "como criar", hint: "escolha o método de criação." };
@@ -39,6 +43,7 @@ export function CreationWizard({
     handle: "",
     role: null,
     lifepath: emptyLifepath(),
+    statsRow: null,
   });
 
   const steps: Step[] = ["method", ...(method ?? CREATION_METHODS[0]).steps];
@@ -46,7 +51,13 @@ export function CreationWizard({
   const info = step === "method" ? METHOD_STEP : CREATION_STEPS[step];
   const isLast = step !== "method" && at === steps.length - 1;
   const ready =
-    step === "name" ? draft.name.trim() !== "" : step === "role" ? draft.role !== null : true;
+    step === "name"
+      ? draft.name.trim() !== ""
+      : step === "role"
+        ? draft.role !== null
+        : step === "stats"
+          ? draft.statsRow !== null
+          : true;
 
   function next() {
     if (!ready) return;
@@ -56,7 +67,8 @@ export function CreationWizard({
 
   function finish() {
     if (!draft.role) return setStep("role");
-    const base = newCharacter(draft.role);
+    const stats = draft.statsRow ? templateRow(draft.role, draft.statsRow) : undefined;
+    const base = newCharacter(draft.role, stats);
     onDone({
       ...base,
       name: draft.name.trim() || base.name,
@@ -100,19 +112,23 @@ export function CreationWizard({
           {CREATION_METHODS.map((m) => (
             <button
               key={m.id}
-              className={`box group flex flex-col gap-2 p-4 text-left ${method?.id === m.id ? "box-active" : "hover:border-dim"}`}
+              disabled={m.soon}
+              className={`box group flex flex-col gap-2 p-4 text-left disabled:cursor-not-allowed disabled:opacity-50 ${method?.id === m.id ? "box-active" : "enabled:hover:border-dim"}`}
               onClick={() => {
                 setMethod(m);
                 setStep(m.steps[0]);
               }}
             >
-              <span className="font-pixel text-xl group-hover:text-red">{m.name}</span>
+              <span className="flex items-baseline justify-between gap-2">
+                <span className="font-pixel text-xl group-enabled:group-hover:text-red">{m.name}</span>
+                {m.soon && <span className="text-xs text-dim">em breve</span>}
+              </span>
               <span className="text-xs text-dim">{m.summary}</span>
               <span className="text-xs">
                 {m.steps.map((s) => CREATION_STEPS[s].label).join(" → ")}
               </span>
               {m.upcoming.length > 0 && (
-                <span className="text-xs text-dim">em breve: {m.upcoming.join(", ")}</span>
+                <span className="text-xs text-dim">depois: {m.upcoming.join(", ")}</span>
               )}
             </button>
           ))}
@@ -150,13 +166,27 @@ export function CreationWizard({
       )}
 
       {step === "role" && (
-        <RolePicker selected={draft.role} onPick={(role) => setDraft({ ...draft, role })} />
+        <RolePicker
+          selected={draft.role}
+          onPick={(role) =>
+            // a linha de stats é da tabela do role: trocou de role, escolhe de novo
+            setDraft({ ...draft, role, statsRow: role === draft.role ? draft.statsRow : null })
+          }
+        />
       )}
 
       {step === "lifepath" && (
         <LifepathEditor
           value={draft.lifepath}
           onChange={(lifepath) => setDraft({ ...draft, lifepath })}
+        />
+      )}
+
+      {step === "stats" && draft.role && (
+        <StatTemplatePicker
+          role={draft.role}
+          face={draft.statsRow}
+          onPick={(statsRow) => setDraft({ ...draft, statsRow })}
         />
       )}
 

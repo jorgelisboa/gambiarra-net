@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { endCombat, nextTurn, useApp } from "@/lib/store";
+import { woundOf } from "@/lib/rpg";
 import { vitalsOf } from "@/lib/rules";
 import { Bar, Icon, Sprite } from "./Pixel";
 import { TurnActions } from "./TurnActions";
@@ -67,6 +68,7 @@ export function InitiativeStage({ onClose }: { onClose: () => void }) {
           const v = vitalsOf(c, characters);
           const isActive = c.id === combat.activeId;
           const dead = v.hp <= 0;
+          const wound = woundOf(v.hp, v.maxHp);
           return (
             <div
               key={c.id}
@@ -93,6 +95,9 @@ export function InitiativeStage({ onClose }: { onClose: () => void }) {
                 </div>
                 <div className="text-xs text-dim">
                   init {c.initiative} · hp {v.hp}/{v.maxHp}
+                  {wound.id !== "unhurt" && wound.id !== "light" && (
+                    <span className="text-red"> · {wound.short}</span>
+                  )}
                 </div>
                 <div className="mt-2">
                   <Bar value={v.hp} max={v.maxHp} color="var(--red)" cells={12} height={8} />

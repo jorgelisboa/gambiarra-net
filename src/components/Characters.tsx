@@ -7,8 +7,18 @@ import {
   upsertCharacter,
   useApp,
 } from "@/lib/store";
-import { fitToRank, roleDef } from "@/lib/rpg";
-import { STAT_LABELS, colorFor, maxHp, maxHumanity } from "@/lib/rules";
+import {
+  currentEmp,
+  deathSave,
+  fitToRank,
+  isCyberpsycho,
+  maxHp,
+  maxHumanity,
+  roleDef,
+  seriousThreshold,
+  woundOf,
+} from "@/lib/rpg";
+import { STAT_LABELS, colorFor } from "@/lib/rules";
 import {
   ROLES,
   STAT_KEYS,
@@ -20,6 +30,15 @@ import { CreationWizard } from "./CreationWizard";
 import { LifepathEditor } from "./LifepathEditor";
 import { Bar, Sprite } from "./Pixel";
 import { RoleAbility } from "./RoleAbility";
+
+const SHEET_TABS = [
+  { id: "stats", label: "stats" },
+  { id: "ability", label: "habilidade" },
+  { id: "lore", label: "lore" },
+  { id: "notes", label: "notas" },
+] as const;
+
+type SheetTab = (typeof SHEET_TABS)[number]["id"];
 
 const NOTE_FIELDS: { key: keyof CharacterNotes; label: string; area?: boolean }[] = [
   { key: "alias", label: "apelido / handle" },
@@ -38,12 +57,15 @@ export function Characters() {
     sessionCharacterId ?? characters[0]?.id ?? null,
   );
   const [creating, setCreating] = useState(false);
+  // fica aqui (e não no Editor) pra aba não voltar pro início ao trocar de personagem
+  const [tab, setTab] = useState<SheetTab>("stats");
   const selected = characters.find((c) => c.id === selectedId) ?? null;
 
   function create(ch: Character) {
     upsertCharacter(ch);
     setSelectedId(ch.id);
     setCreating(false);
+    setTab("stats");
   }
 
   return (
@@ -87,6 +109,8 @@ export function Characters() {
           key={selected.id}
           ch={selected}
           inSession={selected.id === sessionCharacterId}
+          tab={tab}
+          onTab={setTab}
           onDelete={() => {
             deleteCharacter(selected.id);
             setSelectedId(null);
@@ -104,10 +128,14 @@ export function Characters() {
 function Editor({
   ch,
   inSession,
+  tab,
+  onTab,
   onDelete,
 }: {
   ch: Character;
   inSession: boolean;
+  tab: SheetTab;
+  onTab: (t: SheetTab) => void;
   onDelete: () => void;
 }) {
   const save = (patch: Partial<Character>) => upsertCharacter({ ...ch, ...patch });
@@ -115,12 +143,15 @@ function Editor({
     save({ role, ability: fitToRank(roleDef(role).ability, ch.ability, ch.roleRank) });
   const hpMax = maxHp(ch.stats);
   const humMax = maxHumanity(ch.stats);
+  const wound = woundOf(ch.hp, hpMax);
+  const emp = currentEmp(ch.stats, ch.humanity);
 
   return (
-    <section className="box space-y-6 p-5">
+    <section className="box space-y-5 p-5">
       <div className="flex flex-wrap items-center gap-3">
         <input
           className="field font-pixel max-w-sm text-2xl"
+          aria-label="nome"
           value={ch.name}
           onChange={(e) => save({ name: e.target.value })}
         />
@@ -151,75 +182,147 @@ function Editor({
         <p className="w-full text-dim">{roleDef(ch.role).summary}</p>
       </div>
 
-      <div>
-        <h3 className="label mb-2">stats</h3>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-          {STAT_KEYS.map((k) => (
-            <label key={k} className="box bg-raise p-2 text-center">
-              <span className="block text-xs text-dim" title={STAT_LABELS[k]}>
-                {k.toLowerCase()}
-              </span>
-              <NumberInput
-                className="w-full bg-transparent text-center text-3xl font-bold text-red outline-none"
-                value={ch.stats[k]}
-                min={1}
-                max={10}
-                onChange={(v) => save({ stats: { ...ch.stats, [k]: v } })}
-              />
-            </label>
-          ))}
-        </div>
-      </div>
+      <SheetTabs tab={tab} onTab={onTab} />
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Meter
-          label="hp"
-          color="var(--red)"
-          value={ch.hp}
-          max={hpMax}
-          onChange={(v) => save({ hp: v })}
-        />
-        <Meter
-          label="humanidade"
-          color="var(--net)"
-          value={Math.min(ch.humanity, humMax)}
-          max={humMax}
-          onChange={(v) => save({ humanity: v })}
-        />
-      </div>
+      <div
+        role="tabpanel"
+        id={`ficha-${tab}`}
+        aria-labelledby={`ficha-tab-${tab}`}
+        className="space-y-5"
+      >
+        {tab === "stats" && (
+          <>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+              {STAT_KEYS.map((k) => (
+                <label key={k} className="box bg-raise p-2 text-center">
+                  <span className="block text-xs text-dim" title={STAT_LABELS[k]}>
+                    {k.toLowerCase()}
+                  </span>
+                  <NumberInput
+                    className="w-full bg-transparent text-center text-3xl font-bold text-red outline-none"
+                    value={ch.stats[k]}
+                    min={1}
+                    max={10}
+                    onChange={(v) => save({ stats: { ...ch.stats, [k]: v } })}
+                  />
+                  {k === "EMP" && emp < ch.stats.EMP && (
+                    <span className="block text-xs text-net" title="EMP caiu com a humanidade">
+                      em uso {emp}
+                    </span>
+                  )}
+                </label>
+              ))}
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Meter
+                label="hp"
+                color="var(--red)"
+                value={ch.hp}
+                max={hpMax}
+                onChange={(v) => save({ hp: v })}
+              >
+                <p>
+                  <span className={wound.id === "serious" || wound.id === "mortal" ? "text-red" : ""}>
+                    {wound.label}
+                  </span>
+                  {wound.effect && <span className="text-dim"> · {wound.effect}</span>}
+                </p>
+                <p className="text-dim">
+                  grave abaixo de {seriousThreshold(hpMax)} · death save {deathSave(ch.stats)}
+                </p>
+              </Meter>
+              <Meter
+                label="humanidade"
+                color="var(--net)"
+                value={Math.min(ch.humanity, humMax)}
+                min={-humMax}
+                max={humMax}
+                onChange={(v) => save({ humanity: v })}
+              >
+                <p>
+                  {isCyberpsycho(ch.humanity) ? (
+                    <span className="text-red">ciberpsicose</span>
+                  ) : (
+                    <>
+                      emp em uso <span className="font-bold">{emp}</span>
+                      <span className="text-dim">/{ch.stats.EMP}</span>
+                    </>
+                  )}
+                </p>
+                <p className="text-dim">o EMP cai 1 a cada dezena de humanidade perdida.</p>
+              </Meter>
+            </div>
+          </>
+        )}
 
-      <RoleAbility ch={ch} save={save} />
+        {tab === "ability" && <RoleAbility ch={ch} save={save} />}
 
-      <Lore ch={ch} save={save} />
+        {tab === "lore" && (
+          <LifepathEditor value={ch.lifepath} onChange={(lifepath) => save({ lifepath })} />
+        )}
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        {NOTE_FIELDS.map((f) => (
-          <label
-            key={f.key}
-            className={f.area ? "sm:col-span-2" : ""}
-          >
-            <span className="label">{f.label}</span>
-            {f.area ? (
-              <textarea
-                className="field mt-1 min-h-20 resize-y"
-                value={ch.notes[f.key]}
-                onChange={(e) =>
-                  save({ notes: { ...ch.notes, [f.key]: e.target.value } })
-                }
-              />
-            ) : (
-              <input
-                className="field mt-1"
-                value={ch.notes[f.key]}
-                onChange={(e) =>
-                  save({ notes: { ...ch.notes, [f.key]: e.target.value } })
-                }
-              />
-            )}
-          </label>
-        ))}
+        {tab === "notes" && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {NOTE_FIELDS.map((f) => (
+              <label key={f.key} className={f.area ? "sm:col-span-2" : ""}>
+                <span className="label">{f.label}</span>
+                {f.area ? (
+                  <textarea
+                    className="field mt-1 min-h-20 resize-y"
+                    value={ch.notes[f.key]}
+                    onChange={(e) => save({ notes: { ...ch.notes, [f.key]: e.target.value } })}
+                  />
+                ) : (
+                  <input
+                    className="field mt-1"
+                    value={ch.notes[f.key]}
+                    onChange={(e) => save({ notes: { ...ch.notes, [f.key]: e.target.value } })}
+                  />
+                )}
+              </label>
+            ))}
+          </div>
+        )}
       </div>
     </section>
+  );
+}
+
+/** Abas da ficha. Setas ←/→ trocam de aba (padrão de tablist). */
+function SheetTabs({ tab, onTab }: { tab: SheetTab; onTab: (t: SheetTab) => void }) {
+  function go(i: number) {
+    const t = SHEET_TABS[(i + SHEET_TABS.length) % SHEET_TABS.length];
+    onTab(t.id);
+    document.getElementById(`ficha-tab-${t.id}`)?.focus();
+  }
+  return (
+    <div role="tablist" aria-label="ficha" className="flex flex-wrap gap-x-1 border-b-2 border-line">
+      {SHEET_TABS.map((t, i) => {
+        const on = t.id === tab;
+        return (
+          <button
+            key={t.id}
+            role="tab"
+            id={`ficha-tab-${t.id}`}
+            aria-selected={on}
+            aria-controls={`ficha-${t.id}`}
+            tabIndex={on ? 0 : -1}
+            onClick={() => onTab(t.id)}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowRight") go(i + 1);
+              else if (e.key === "ArrowLeft") go(i - 1);
+              else return;
+              e.preventDefault();
+            }}
+            className={`-mb-[2px] shrink-0 border-b-2 px-2 py-1.5 sm:px-3 ${
+              on ? "border-red text-red" : "border-transparent text-dim hover:text-fg"
+            }`}
+          >
+            {t.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -255,16 +358,21 @@ function Meter({
   label,
   color,
   value,
+  min = 0,
   max,
   onChange,
+  children,
 }: {
   label: string;
   color: string;
   value: number;
+  /** Humanidade pode ficar negativa (ciberpsicose). */
+  min?: number;
   max: number;
   onChange: (v: number) => void;
+  children?: React.ReactNode;
 }) {
-  const set = (v: number) => onChange(Math.max(0, Math.min(max, v)));
+  const set = (v: number) => onChange(Math.max(min, Math.min(max, v)));
   return (
     <div className="box bg-raise p-3">
       <div className="flex items-center justify-between">
@@ -287,29 +395,7 @@ function Meter({
           </button>
         ))}
       </div>
+      {children && <div className="mt-2 space-y-0.5 text-xs">{children}</div>}
     </div>
-  );
-}
-
-/** Lifepath na ficha: fechado mostra um resumo, aberto edita as tabelas. */
-function Lore({ ch, save }: { ch: Character; save: (patch: Partial<Character>) => void }) {
-  const [open, setOpen] = useState(false);
-  const p = ch.lifepath.picks;
-  const glimpse = [p.region, p.language, p.personality, p.goal].filter(Boolean).join(" · ");
-  return (
-    <section className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="label">lore</h3>
-          <p className="line-clamp-2 text-dim">{glimpse || "sem lifepath ainda."}</p>
-        </div>
-        <button className="btn shrink-0" aria-expanded={open} onClick={() => setOpen(!open)}>
-          {open ? "fechar" : "abrir lifepath"}
-        </button>
-      </div>
-      {open && (
-        <LifepathEditor value={ch.lifepath} onChange={(lifepath) => save({ lifepath })} />
-      )}
-    </section>
   );
 }

@@ -1,7 +1,7 @@
 import { STARTING_RANK } from "./ability";
 
 /** Passos de criação que já existem no app. */
-export type CreationStepId = "name" | "role" | "lifepath";
+export type CreationStepId = "name" | "role" | "lifepath" | "stats";
 
 export const CREATION_STEPS: Record<CreationStepId, { label: string; title: string; hint: string }> = {
   name: { label: "nome", title: "quem é você?", hint: "o nome e, se tiver, o handle que a rua te deu." },
@@ -10,6 +10,11 @@ export const CREATION_STEPS: Record<CreationStepId, { label: string; title: stri
     label: "lore",
     title: "lifepath",
     hint: "de onde você veio e o que quer da vida. dá pra mudar tudo depois, na ficha.",
+  },
+  stats: {
+    label: "stats",
+    title: "stats",
+    hint: "role 1d10 na tabela do teu role e leve a linha inteira. ou escolha uma linha.",
   },
 };
 
@@ -20,15 +25,25 @@ export interface CreationMethod {
   steps: CreationStepId[];
   /** Passos do livro que ainda não existem no app. */
   upcoming: string[];
+  /** Aparece na lista, mas ainda não dá pra escolher. */
+  soon?: boolean;
 }
 
 /** Métodos de criação. O livro tem Streetrat, Edgerunner e Complete Package. */
 export const CREATION_METHODS: CreationMethod[] = [
   {
     id: "streetrat",
-    name: "streetrat / edgerunner",
-    summary: "o caminho do livro, passo a passo.",
-    steps: ["name", "role", "lifepath"],
-    upcoming: ["stats", "stats derivados", "perícias", "armas e armadura", "equipamento", "cyberware"],
+    name: "streetrat",
+    summary: "o caminho rápido do livro: os stats saem de uma linha inteira da tabela do role.",
+    steps: ["name", "role", "lifepath", "stats"],
+    upcoming: ["perícias", "armas e armadura", "equipamento", "cyberware"],
+  },
+  {
+    id: "edgerunner",
+    name: "edgerunner",
+    summary: "1d10 pra cada stat na tabela do role, e perícias compradas com pontos.",
+    steps: ["name", "role", "lifepath", "stats"],
+    upcoming: ["perícias por pontos", "armas e armadura", "equipamento", "cyberware"],
+    soon: true,
   },
 ];

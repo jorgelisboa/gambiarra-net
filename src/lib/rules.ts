@@ -4,6 +4,8 @@ import {
   emptyAbility,
   emptyLifepath,
   initiativeBonus,
+  maxHp,
+  maxHumanity,
   netActionsOf,
 } from "./rpg";
 import type { Character, Combatant, Role, Stats } from "./types";
@@ -34,11 +36,7 @@ export const emptyStats = (): Stats => ({
   EMP: 5,
 });
 
-export const maxHp = (s: Stats) => 10 + 5 * Math.ceil((s.BODY + s.WILL) / 2);
-export const maxHumanity = (s: Stats) => s.EMP * 10;
-
-export function newCharacter(role: Role): Character {
-  const stats = emptyStats();
+export function newCharacter(role: Role, stats: Stats = emptyStats()): Character {
   return {
     id: uid(),
     name: "Novo Edgerunner",

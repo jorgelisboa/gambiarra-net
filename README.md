@@ -7,7 +7,7 @@ VTT **não oficial** pra Cyberpunk RED: fichas, iniciativa em tela cheia e (em b
 
 ## Abas
 
-- **Personagens** — criação em passos: método → nome → role → lore (lifepath com cada tabela rolável, escolhível ou escrita à mão). A ficha tem stats, HP, Humanidade, a **habilidade de role** (rank, limites, botões de rolar e tabela do rank), o lore editável e anotações (idade, objetivo, história...). Um personagem pode ser marcado como "na sessão".
+- **Personagens** — criação em passos (método Streetrat): nome → role → lore (lifepath com cada tabela rolável, escolhível ou escrita à mão) → stats (1d10 na tabela do role). A ficha é dividida em abas: **stats** (stats, HP, Humanidade), **habilidade** (rank, limites, botões de rolar e tabela do rank), **lore** e **notas**. Um personagem pode ser marcado como "na sessão".
 - **Combate** — iniciativa (1d10 + REF), HP ligado à ficha, ações de Carne (Ação/Movimento) e ações de Net para Netrunners. Modo **tela cheia** com avatares saltando no turno ativo (Espaço/→ passa o turno).
 - **Netrunner** — placeholder.
 
@@ -27,10 +27,12 @@ A camada de persistência está isolada em [`src/lib/store.ts`](src/lib/store.ts
 - `roles/` — um arquivo por role: resumo em pt-BR e a habilidade (pontos a distribuir, listas com limite, usos que rolam, tabelas por rank).
 - `ability.ts` — limites: orçamento de pontos, tetos, corte quando o rank cai, listas.
 - `dice.ts` — d6/d10, teste com crítico, comparação com DV.
+- `derived.ts` — stats derivados: HP, limiar de ferimento grave, death save, humanidade, EMP em uso, estado de ferimento.
 - `character.ts` — o que a habilidade muda fora da ficha (bônus de iniciativa, ações de net).
 - `tables.ts` — tabela de rolagem genérica (1d10 por padrão; linhas podem ocupar várias faces).
 - `lifepath/` — as tabelas do lifepath em arrays (`origins`, `personal`, `motivations`, `family`, `relations`, `goals`) e a ordem delas em `sections.ts`.
-- `creation.ts` — métodos de criação e seus passos.
+- `creation.ts` — métodos de criação e seus passos (Edgerunner aparece como "em breve").
+- `stats.ts` — templates de stats por role: uma matriz 10×10 por role (linha = face do 1d10, colunas na ordem de `STAT_KEYS`), com a rolagem Streetrat (linha inteira) e Edgerunner (1d10 por stat).
 
 Pra ajustar uma regra, mexa só no arquivo do role. Pra uma tabela nova de lifepath, crie o array e adicione um campo em `lifepath/sections.ts`; o id do campo é a chave salva na ficha, então não renomeie depois.
 
@@ -45,8 +47,9 @@ Deploy: importar o repo na Vercel (Next.js, sem configuração extra).
 
 ## Regras usadas
 
-- HP = 10 + 5 × ⌈(BODY + WILL) / 2⌉
-- Humanidade = EMP × 10
+- HP = 10 + 5 × ⌈(BODY + WILL) / 2⌉ (bate com a tabela do livro). Gravemente ferido abaixo de ⌈HP / 2⌉; Death Save = BODY.
+- Ferimentos: levemente (sem penalidade), gravemente (−2 em todas as ações), mortalmente abaixo de 1 HP (−4 nas ações, −6 MOVE, death save todo turno). Penalidades da pág. 186: conferir com o livro.
+- Humanidade = EMP × 10. O EMP em uso cai junto com a dezena da humanidade (44 → 4, 39 → 3) e nunca passa do EMP da ficha; abaixo de 0 é ciberpsicose.
 - Testes: base + 1d10; 10 natural rola de novo e soma, 1 natural rola de novo e subtrai. Precisa **passar** da DV (empate falha).
 - Habilidade de role começa no rank 4.
 - Ações de Net por Interface: 1–3 → 2, 4–6 → 3, 7–9 → 4, 10 → 5
@@ -59,6 +62,7 @@ Deploy: importar o repo na Vercel (Next.js, sem configuração extra).
 - Media: chance de acreditarem 2–7 em 10 conforme o rank; rumores DV 7/9/11/13.
 - Rockerboy: DV 8 (1 fã), 10 (grupo até 6), 12 (multidão, só do rank 3 em diante).
 
+- Stats (Streetrat): 1d10 escolhe uma linha inteira da tabela do role (ou escolha a linha). Edgerunner, quando entrar: 1d10 por stat, lido na coluna dele.
 - Lifepath: 1d10 por tabela (ou escolha); amigos, inimigos e amores trágicos: 1d10 − 7 (mínimo 0) e uma rolagem por item. Idioma: 4 pontos na perícia.
 
 Tabelas conferidas no compêndio do Roll20 e em wikis de fãs. Na dúvida, vale o livro.
