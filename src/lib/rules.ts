@@ -1,3 +1,4 @@
+import { STARTING_RANK, emptyAbility, initiativeBonus, netActionsOf } from "./rpg";
 import type { Character, Combatant, Role, Stats } from "./types";
 
 export const STAT_LABELS: Record<keyof Stats, string> = {
@@ -29,27 +30,20 @@ export const emptyStats = (): Stats => ({
 export const maxHp = (s: Stats) => 10 + 5 * Math.ceil((s.BODY + s.WILL) / 2);
 export const maxHumanity = (s: Stats) => s.EMP * 10;
 
-/** Ações de Net por nível de Interface. Conferir com o livro. */
-export const netActionsFor = (rank: number) =>
-  rank >= 10 ? 5 : rank >= 7 ? 4 : rank >= 4 ? 3 : 2;
-
-export const isNetrunner = (role: Role) => role === "Netrunner";
-
-export const d10 = () => Math.floor(Math.random() * 10) + 1;
-
 export const uid = () =>
   globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
 
-export function newCharacter(): Character {
+export function newCharacter(role: Role): Character {
   const stats = emptyStats();
   return {
     id: uid(),
     name: "Novo Edgerunner",
-    role: "Solo",
+    role,
     stats,
     hp: maxHp(stats),
     humanity: maxHumanity(stats),
-    interfaceRank: 1,
+    roleRank: STARTING_RANK,
+    ability: emptyAbility(),
     notes: {
       alias: "",
       age: "",
@@ -63,12 +57,25 @@ export function newCharacter(): Character {
   };
 }
 
+/** Completa fichas salvas antes do rank de role existir (o rank era só a Interface do Netrunner). */
+export function normalizeCharacter(saved: Character & { interfaceRank?: number }): Character {
+  const { interfaceRank, ...ch } = saved;
+  const legacyRank = ch.role === "Netrunner" ? interfaceRank : undefined;
+  return {
+    ...ch,
+    roleRank: ch.roleRank ?? legacyRank ?? STARTING_RANK,
+    ability: { ...emptyAbility(), ...ch.ability },
+  };
+}
+
 export interface Vitals {
   name: string;
   hp: number;
   maxHp: number;
   netMax: number;
   ref: number;
+  /** Somado à iniciativa (habilidade de role). */
+  initBonus: number;
   color: string;
   seed: string;
   linked: boolean;
@@ -89,8 +96,9 @@ export function vitalsOf(c: Combatant, characters: Character[]): Vitals {
       name: ch.name,
       hp: ch.hp,
       maxHp: maxHp(ch.stats),
-      netMax: isNetrunner(ch.role) ? netActionsFor(ch.interfaceRank) : 0,
+      netMax: netActionsOf(ch),
       ref: ch.stats.REF,
+      initBonus: initiativeBonus(ch),
       color: colorFor(ch.id),
       seed: ch.id,
       linked: true,
@@ -102,6 +110,7 @@ export function vitalsOf(c: Combatant, characters: Character[]): Vitals {
     maxHp: c.maxHp,
     netMax: c.netMax,
     ref: c.ref,
+    initBonus: 0,
     color: colorFor(c.id),
     seed: c.id,
     linked: false,

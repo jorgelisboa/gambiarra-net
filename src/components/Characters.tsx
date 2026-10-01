@@ -7,17 +7,18 @@ import {
   upsertCharacter,
   useApp,
 } from "@/lib/store";
+import { fitToRank, roleDef } from "@/lib/rpg";
+import { STAT_LABELS, colorFor, maxHp, maxHumanity, newCharacter } from "@/lib/rules";
 import {
-  STAT_LABELS,
-  colorFor,
-  isNetrunner,
-  maxHp,
-  maxHumanity,
-  netActionsFor,
-  newCharacter,
-} from "@/lib/rules";
-import { ROLES, STAT_KEYS, type Character, type CharacterNotes } from "@/lib/types";
+  ROLES,
+  STAT_KEYS,
+  type Character,
+  type CharacterNotes,
+  type Role,
+} from "@/lib/types";
 import { Bar, Sprite } from "./Pixel";
+import { RoleAbility } from "./RoleAbility";
+import { RolePicker } from "./RolePicker";
 
 const NOTE_FIELDS: { key: keyof CharacterNotes; label: string; area?: boolean }[] = [
   { key: "alias", label: "apelido / handle" },
@@ -35,18 +36,20 @@ export function Characters() {
   const [selectedId, setSelectedId] = useState<string | null>(
     sessionCharacterId ?? characters[0]?.id ?? null,
   );
+  const [picking, setPicking] = useState(false);
   const selected = characters.find((c) => c.id === selectedId) ?? null;
 
-  function create() {
-    const ch = newCharacter();
+  function create(role: Role) {
+    const ch = newCharacter(role);
     upsertCharacter(ch);
     setSelectedId(ch.id);
+    setPicking(false);
   }
 
   return (
     <div className="mx-auto grid max-w-6xl gap-5 md:grid-cols-[260px_1fr]">
       <aside className="space-y-2">
-        <button className="btn btn-primary w-full" onClick={create}>
+        <button className="btn btn-primary w-full" onClick={() => setPicking(true)}>
           novo personagem
         </button>
         {characters.length === 0 && (
@@ -55,7 +58,10 @@ export function Characters() {
         {characters.map((c) => (
           <button
             key={c.id}
-            onClick={() => setSelectedId(c.id)}
+            onClick={() => {
+              setSelectedId(c.id);
+              setPicking(false);
+            }}
             className={`box flex w-full items-center gap-3 p-3 text-left ${
               c.id === selectedId ? "box-active" : "hover:border-dim"
             }`}
@@ -63,7 +69,9 @@ export function Characters() {
             <Sprite seed={c.id} color={colorFor(c.id)} size={36} />
             <span className="min-w-0 flex-1">
               <span className="font-pixel block truncate text-base">{c.name}</span>
-              <span className="block text-xs text-dim">{c.role.toLowerCase()}</span>
+              <span className="block text-xs text-dim">
+                {c.role.toLowerCase()} · rank {c.roleRank}
+              </span>
             </span>
             {c.id === sessionCharacterId && (
               <span className="text-xs text-red">sessão</span>
@@ -72,7 +80,9 @@ export function Characters() {
         ))}
       </aside>
 
-      {selected ? (
+      {picking ? (
+        <RolePicker onPick={create} onCancel={() => setPicking(false)} />
+      ) : selected ? (
         <Editor
           key={selected.id}
           ch={selected}
@@ -101,6 +111,8 @@ function Editor({
   onDelete: () => void;
 }) {
   const save = (patch: Partial<Character>) => upsertCharacter({ ...ch, ...patch });
+  const changeRole = (role: Role) =>
+    save({ role, ability: fitToRank(roleDef(role).ability, ch.ability, ch.roleRank) });
   const hpMax = maxHp(ch.stats);
   const humMax = maxHumanity(ch.stats);
 
@@ -115,7 +127,8 @@ function Editor({
         <select
           className="field !w-auto"
           value={ch.role}
-          onChange={(e) => save({ role: e.target.value as Character["role"] })}
+          aria-label="role"
+          onChange={(e) => changeRole(e.target.value as Role)}
         >
           {ROLES.map((r) => (
             <option key={r} value={r}>{r.toLowerCase()}</option>
@@ -135,6 +148,7 @@ function Editor({
             apagar
           </button>
         </div>
+        <p className="w-full text-dim">{roleDef(ch.role).summary}</p>
       </div>
 
       <div>
@@ -157,7 +171,7 @@ function Editor({
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2">
         <Meter
           label="hp"
           color="var(--red)"
@@ -172,24 +186,9 @@ function Editor({
           max={humMax}
           onChange={(v) => save({ humanity: v })}
         />
-        {isNetrunner(ch.role) && (
-          <div className="box bg-raise p-3">
-            <span className="label">interface</span>
-            <div className="mt-1 flex items-baseline gap-2">
-              <NumberInput
-                className="w-14 bg-transparent text-3xl font-bold text-net outline-none"
-                value={ch.interfaceRank}
-                min={1}
-                max={10}
-                onChange={(v) => save({ interfaceRank: v })}
-              />
-              <span className="text-dim">
-                {netActionsFor(ch.interfaceRank)} ações de net
-              </span>
-            </div>
-          </div>
-        )}
       </div>
+
+      <RoleAbility ch={ch} save={save} />
 
       <div className="grid gap-3 sm:grid-cols-2">
         {NOTE_FIELDS.map((f) => (

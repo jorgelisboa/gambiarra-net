@@ -11,7 +11,8 @@ import {
   startCombat,
   useApp,
 } from "@/lib/store";
-import { d10, uid, vitalsOf } from "@/lib/rules";
+import { d10, initiativeBonus } from "@/lib/rpg";
+import { uid, vitalsOf } from "@/lib/rules";
 import type { Combatant } from "@/lib/types";
 import { InitiativeStage } from "./InitiativeStage";
 import { Bar, Sprite } from "./Pixel";
@@ -45,7 +46,11 @@ export function Combat() {
     const ch = characters.find((c) => c.id === id);
     if (!ch) return;
     addCombatant(
-      blank({ characterId: ch.id, name: ch.name, initiative: d10() + ch.stats.REF }),
+      blank({
+        characterId: ch.id,
+        name: ch.name,
+        initiative: d10() + ch.stats.REF + initiativeBonus(ch),
+      }),
     );
   }
 
@@ -66,7 +71,8 @@ export function Combat() {
 
   function rerollAll() {
     for (const c of combat.combatants) {
-      patchCombatant(c.id, { initiative: d10() + vitalsOf(c, characters).ref });
+      const v = vitalsOf(c, characters);
+      patchCombatant(c.id, { initiative: d10() + v.ref + v.initBonus });
     }
   }
 

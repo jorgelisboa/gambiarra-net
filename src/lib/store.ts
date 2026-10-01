@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import type { AppData, Character, Combatant } from "./types";
-import { maxHp, vitalsOf } from "./rules";
+import { maxHp, normalizeCharacter, vitalsOf } from "./rules";
 
 /**
  * Persistência local (localStorage), separada por username.
@@ -32,7 +32,10 @@ const listeners = new Set<() => void>();
 function readData(user: string): AppData {
   try {
     const raw = localStorage.getItem(dataKey(user));
-    if (raw) return { ...emptyData(), ...JSON.parse(raw) };
+    if (raw) {
+      const data: AppData = { ...emptyData(), ...JSON.parse(raw) };
+      return { ...data, characters: data.characters.map(normalizeCharacter) };
+    }
   } catch {}
   return emptyData();
 }

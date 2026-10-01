@@ -39,6 +39,20 @@ export interface CharacterNotes {
   extra: string;
 }
 
+export interface AbilityItem {
+  id: string;
+  text: string;
+  tag?: string;
+}
+
+/** O que o jogador escolheu dentro da habilidade de role. Regras em `src/lib/rpg`. */
+export interface AbilityState {
+  /** Pontos distribuídos por opção (Solo, Tech, Medtech). Ids são únicos entre roles. */
+  alloc: Record<string, number>;
+  /** Listas com limite por rank (motorpool do Nomad, equipe do Exec). */
+  lists: Record<string, AbilityItem[]>;
+}
+
 export interface Character {
   id: string;
   name: string;
@@ -46,8 +60,9 @@ export interface Character {
   stats: Stats;
   hp: number;
   humanity: number;
-  /** Nível de Interface (só usado por Netrunner). */
-  interfaceRank: number;
+  /** Rank da habilidade de role, 1–10 (Interface do Netrunner, Moto do Nomad...). */
+  roleRank: number;
+  ability: AbilityState;
   notes: CharacterNotes;
   createdAt: number;
 }
