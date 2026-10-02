@@ -114,6 +114,8 @@ export interface Character {
   gear: GearItem[];
   /** Eurobucks. */
   money: number;
+  /** +1 a cada dano de ataque levado já mortalmente ferido. */
+  deathSavePenalty: number;
   lifepath: Lifepath;
   notes: CharacterNotes;
   createdAt: number;
@@ -129,6 +131,10 @@ export interface Combatant {
   /** Só PNJ. */
   hp: number;
   maxHp: number;
+  /** Só PNJ: SP atual por local. */
+  armor?: Record<ArmorSlot, number>;
+  /** Só PNJ: +1 a cada dano de ataque levado já mortalmente ferido. */
+  deathSavePenalty?: number;
   netMax: number;
   actionUsed: boolean;
   moveUsed: boolean;

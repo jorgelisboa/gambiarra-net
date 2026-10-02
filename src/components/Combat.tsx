@@ -6,15 +6,27 @@ import {
   endCombat,
   nextTurn,
   patchCombatant,
+  applyHit,
   removeCombatant,
+  resetDeathSavePenalty,
   setCombatantHp,
   startCombat,
   useApp,
 } from "@/lib/store";
-import { d10, effectiveStats, initiativeBonus, woundOf } from "@/lib/rpg";
+import {
+  SLOT_LABELS,
+  d10,
+  describeHit,
+  effectiveStats,
+  initiativeBonus,
+  resolveHit,
+  rollDamage,
+  woundOf,
+  type Hit,
+} from "@/lib/rpg";
 import { uid } from "@/lib/id";
-import { vitalsOf } from "@/lib/rules";
-import type { Combatant } from "@/lib/types";
+import { vitalsOf, type Vitals } from "@/lib/rules";
+import type { ArmorSlot, Combatant } from "@/lib/types";
 import { InitiativeStage } from "./InitiativeStage";
 import { Bar, Sprite } from "./Pixel";
 import { TurnActions } from "./TurnActions";
@@ -38,7 +50,7 @@ export function Combat() {
   const { data } = useApp();
   const { combat, characters, sessionCharacterId } = data;
   const [stage, setStage] = useState(false);
-  const [npc, setNpc] = useState({ name: "", hp: 20, ref: 5, net: 0 });
+  const [npc, setNpc] = useState({ name: "", hp: 20, ref: 5, sp: 0, net: 0 });
 
   const inFight = new Set(combat.combatants.map((c) => c.characterId));
   const available = characters.filter((c) => !inFight.has(c.id));
@@ -64,6 +76,7 @@ export function Combat() {
         maxHp: npc.hp,
         ref: npc.ref,
         netMax: npc.net,
+        armor: { head: npc.sp, body: npc.sp },
         initiative: d10() + npc.ref,
       }),
     );
@@ -159,6 +172,7 @@ export function Combat() {
             />
             <Mini label="hp" value={npc.hp} onChange={(v) => setNpc({ ...npc, hp: v })} />
             <Mini label="ref" value={npc.ref} onChange={(v) => setNpc({ ...npc, ref: v })} />
+            <Mini label="sp" value={npc.sp} onChange={(v) => setNpc({ ...npc, sp: v })} />
             <Mini label="net" value={npc.net} onChange={(v) => setNpc({ ...npc, net: v })} />
             <button className="btn">adicionar</button>
           </div>
@@ -183,6 +197,8 @@ function CombatRow({ c }: { c: Combatant }) {
   const wound = woundOf(v.hp, v.maxHp);
   const isActive = data.combat.active && data.combat.activeId === c.id;
   const [delta, setDelta] = useState(1);
+  const [hitting, setHitting] = useState(false);
+  const [last, setLast] = useState<string | null>(null);
 
   return (
     <li
@@ -209,8 +225,16 @@ function CombatRow({ c }: { c: Combatant }) {
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
           <button
+            className={`btn !px-2 !py-0 ${hitting ? "btn-primary" : ""}`}
+            aria-expanded={hitting}
+            onClick={() => setHitting(!hitting)}
+          >
+            dano
+          </button>
+          <button
             className="btn btn-bare !px-2 !py-0"
-            aria-label="causar dano"
+            aria-label="tirar HP direto, sem armadura"
+            title="tirar HP direto, sem armadura"
             onClick={() => setCombatantHp(c.id, v.hp - delta)}
           >
             -
@@ -221,6 +245,7 @@ function CombatRow({ c }: { c: Combatant }) {
           <button
             className="btn btn-bare !px-2 !py-0"
             aria-label="curar"
+            title="curar"
             onClick={() => setCombatantHp(c.id, v.hp + delta)}
           >
             +
@@ -228,7 +253,7 @@ function CombatRow({ c }: { c: Combatant }) {
           <input
             type="number"
             min={1}
-            aria-label="valor de dano ou cura"
+            aria-label="valor de ajuste ou cura"
             className="field !w-14 !py-0 text-center"
             value={delta}
             onChange={(e) => setDelta(Math.max(1, Number(e.target.value) || 1))}
@@ -236,9 +261,26 @@ function CombatRow({ c }: { c: Combatant }) {
           {wound.short && (
             <span
               className={wound.id === "light" ? "text-dim" : "text-red"}
-              title={wound.effect}
+              title={`${wound.effect} · estabilizar ${wound.stabilize}`}
             >
               {wound.short}
+            </span>
+          )}
+        </div>
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 text-xs text-dim">
+          <span>
+            SP cabeça <span className="text-fg">{v.sp.head}</span> · corpo{" "}
+            <span className="text-fg">{v.sp.body}</span>
+          </span>
+          {v.deathSavePenalty > 0 && (
+            <span className="text-red">
+              death save +{v.deathSavePenalty}{" "}
+              <button
+                className="btn btn-bare !p-0 text-dim underline"
+                onClick={() => resetDeathSavePenalty(c.id)}
+              >
+                zerar
+              </button>
             </span>
           )}
         </div>
@@ -252,7 +294,163 @@ function CombatRow({ c }: { c: Combatant }) {
       >
         x
       </button>
+      {hitting && <HitPanel c={c} v={v} onApplied={setLast} />}
+      {last && (
+        <p className="basis-full text-xs" aria-live="polite">
+          {last}
+        </p>
+      )}
     </li>
+  );
+}
+
+const DAMAGE_DICE = ["1d6", "2d6", "3d6", "4d6", "5d6", "6d6", "8d6"];
+
+/** Golpe que acertou: dano, local e o que passa da armadura (regra em src/lib/rpg/damage.ts). */
+function HitPanel({ c, v, onApplied }: { c: Combatant; v: Vitals; onApplied: (msg: string) => void }) {
+  const [damage, setDamage] = useState(0);
+  const [location, setLocation] = useState<ArmorSlot>("body");
+  const [bypassArmor, setBypassArmor] = useState(false);
+  const [critical, setCritical] = useState(false);
+  const [attack, setAttack] = useState(true);
+  const [dice, setDice] = useState("3d6");
+  const [rolled, setRolled] = useState<number[] | null>(null);
+
+  const hit: Hit = { damage, location, bypassArmor, critical, attack };
+  const r = resolveHit(hit, v);
+  const mortal = v.hp < 1;
+
+  function roll() {
+    const res = rollDamage(dice);
+    setDamage(res.total);
+    setCritical(res.critical);
+    setRolled(res.dice);
+  }
+
+  function apply() {
+    if (r.hpLoss <= 0 && damage <= 0) return;
+    applyHit(c.id, hit);
+    const after = woundOf(Math.max(0, v.hp - r.hpLoss), v.maxHp);
+    const notes = [
+      describeHit(hit, r),
+      r.ablate && `SP ${SLOT_LABELS[location]} ${r.sp}→${r.sp - 1}`,
+      r.critical && "role na tabela de ferimento crítico",
+      r.mortalHit && "+1 na penalidade de death save",
+      after.label,
+    ].filter(Boolean);
+    onApplied(`${v.name}: ${notes.join(" · ")}`);
+    setDamage(0);
+    setCritical(false);
+    setRolled(null);
+  }
+
+  const toggle = (on: boolean) =>
+    `border-2 px-2 py-0.5 ${on ? "border-red text-red" : "border-line text-dim hover:text-fg"}`;
+
+  return (
+    <form
+      className="basis-full space-y-2 border-t-2 border-line pt-3 text-xs"
+      onSubmit={(e) => {
+        e.preventDefault();
+        apply();
+      }}
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="flex items-center gap-1">
+          <span className="text-dim">dano</span>
+          <input
+            type="number"
+            min={0}
+            autoFocus
+            className="field !w-16 !py-0 text-center text-base font-bold"
+            value={damage}
+            onChange={(e) => {
+              setDamage(Math.max(0, Number(e.target.value) || 0));
+              setRolled(null);
+            }}
+          />
+        </label>
+        <span className="text-dim">ou</span>
+        <select
+          className="field !w-auto !py-0"
+          aria-label="dados de dano"
+          value={dice}
+          onChange={(e) => setDice(e.target.value)}
+        >
+          {DAMAGE_DICE.map((d) => (
+            <option key={d}>{d}</option>
+          ))}
+        </select>
+        <button type="button" className="btn !px-2 !py-0" onClick={roll}>
+          rolar
+        </button>
+        {rolled && (
+          <span className="flex gap-1" aria-label="dados rolados">
+            {rolled.map((d, i) => (
+              <span key={i} className={`animate-hop border-2 px-1 font-bold ${d === 6 ? "border-red text-red" : "border-line"}`}>
+                {d}
+              </span>
+            ))}
+          </span>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-1">
+        {(["body", "head"] as const).map((loc) => (
+          <button
+            key={loc}
+            type="button"
+            aria-pressed={location === loc}
+            className={toggle(location === loc)}
+            title={loc === "head" ? "só com tiro mirado na cabeça: o que passa da armadura dobra" : undefined}
+            onClick={() => setLocation(loc)}
+          >
+            {SLOT_LABELS[loc]} SP{v.sp[loc]}
+            {loc === "head" && " · mirado ×2"}
+          </button>
+        ))}
+        <button
+          type="button"
+          aria-pressed={bypassArmor}
+          className={toggle(bypassArmor)}
+          title="veneno, fogo e afins passam direto"
+          onClick={() => setBypassArmor(!bypassArmor)}
+        >
+          ignora armadura
+        </button>
+        <button
+          type="button"
+          aria-pressed={critical}
+          className={toggle(critical)}
+          title="dois ou mais 6 no dano: ferimento crítico, +5 direto no HP"
+          onClick={() => setCritical(!critical)}
+        >
+          crítico +5
+        </button>
+        {mortal && (
+          <button
+            type="button"
+            aria-pressed={attack}
+            className={toggle(attack)}
+            title="mortalmente ferido levando dano de ataque: ferimento crítico e +1 na penalidade de death save"
+            onClick={() => setAttack(!attack)}
+          >
+            foi ataque
+          </button>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <span>
+          {describeHit(hit, r)}
+          {r.ablate && <span className="text-dim"> · a armadura {location === "head" ? "da cabeça" : "do corpo"} perde 1 SP</span>}
+          {r.mortalHit && <span className="text-red"> · mortal: crítico e +1 death save</span>}
+        </span>
+        <button className="btn btn-primary !py-0" disabled={damage <= 0 && !critical}>
+          aplicar
+        </button>
+      </div>
+    </form>
   );
 }
 

@@ -4,6 +4,7 @@
  */
 export * from "./ability";
 export * from "./character";
+export * from "./damage";
 export * from "./creation";
 export * from "./derived";
 export * from "./dice";

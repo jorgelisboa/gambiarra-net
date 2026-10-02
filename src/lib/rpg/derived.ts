@@ -8,6 +8,9 @@ export const seriousThreshold = (hpMax: number) => Math.ceil(hpMax / 2);
 
 export const deathSave = (s: Stats) => s.BODY;
 
+/** Mortalmente ferido: −6 de MOVE, mínimo 1. */
+export const MORTAL_MOVE_PENALTY = -6;
+
 /** Humanidade máxima: 10 por ponto de EMP. */
 export const maxHumanity = (s: Stats) => s.EMP * 10;
 
@@ -29,28 +32,43 @@ export interface Wound {
   effect: string;
   /** Soma em todo teste (ações, perícias). */
   penalty: number;
+  /** DV pra estabilizar (First Aid ou Paramedic). */
+  stabilize: string;
 }
 
 const WOUNDS: Record<Wound["id"], Wound> = {
-  unhurt: { id: "unhurt", label: "ileso", short: "", effect: "", penalty: 0 },
-  light: { id: "light", label: "levemente ferido", short: "ferido", effect: "sem penalidade", penalty: 0 },
+  unhurt: { id: "unhurt", label: "ileso", short: "", effect: "", penalty: 0, stabilize: "" },
+  light: {
+    id: "light",
+    label: "levemente ferido",
+    short: "ferido",
+    effect: "sem penalidade",
+    penalty: 0,
+    stabilize: "DV10",
+  },
   serious: {
     id: "serious",
     label: "gravemente ferido",
     short: "grave",
     effect: "−2 em todas as ações",
     penalty: -2,
+    stabilize: "DV13",
   },
   mortal: {
     id: "mortal",
     label: "mortalmente ferido",
     short: "mortal",
-    effect: "−4 em todas as ações, −6 de MOVE (mín. 1), death save todo turno",
+    effect:
+      "−4 em todas as ações, −6 de MOVE (mín. 1), death save no início de cada turno. dano de ataque causa ferimento crítico e +1 na penalidade de death save",
     penalty: -4,
+    stabilize: "DV15: volta a 1 HP e fica inconsciente por 1 minuto",
   },
 };
 
-/** Estado de ferimento pelo HP (vale pra PNJ também). Abaixo do limiar = grave; abaixo de 1 = mortal. */
+/**
+ * Estado de ferimento pelo HP (vale pra PNJ também). Cada estado substitui o anterior.
+ * Abaixo do limiar = grave; abaixo de 1 = mortal. Morto: falhou um death save.
+ */
 export function woundOf(hp: number, hpMax: number): Wound {
   if (hp < 1) return WOUNDS.mortal;
   if (hp < seriousThreshold(hpMax)) return WOUNDS.serious;

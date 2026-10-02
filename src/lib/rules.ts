@@ -1,6 +1,7 @@
 import { uid } from "./id";
 import {
   STARTING_RANK,
+  armorAt,
   emptyAbility,
   effectiveStats,
   emptyLifepath,
@@ -9,7 +10,7 @@ import {
   maxHumanity,
   netActionsOf,
 } from "./rpg";
-import type { Character, Combatant, Role, Stats } from "./types";
+import type { ArmorSlot, Character, Combatant, Role, Stats } from "./types";
 
 export const STAT_LABELS: Record<keyof Stats, string> = {
   INT: "Inteligência",
@@ -50,6 +51,7 @@ export function newCharacter(role: Role, stats: Stats = emptyStats()): Character
     skills: [],
     gear: [],
     money: 0,
+    deathSavePenalty: 0,
     lifepath: emptyLifepath(),
     notes: {
       alias: "",
@@ -75,6 +77,7 @@ export function normalizeCharacter(saved: Character & { interfaceRank?: number }
     skills: ch.skills ?? [],
     gear: ch.gear ?? [],
     money: ch.money ?? 0,
+    deathSavePenalty: ch.deathSavePenalty ?? 0,
     lifepath: { ...emptyLifepath(), ...ch.lifepath },
   };
 }
@@ -87,6 +90,9 @@ export interface Vitals {
   ref: number;
   /** Somado à iniciativa (habilidade de role). */
   initBonus: number;
+  /** SP atual por local (armadura vestida na ficha, ou a do PNJ). */
+  sp: Record<ArmorSlot, number>;
+  deathSavePenalty: number;
   color: string;
   seed: string;
   linked: boolean;
@@ -110,6 +116,8 @@ export function vitalsOf(c: Combatant, characters: Character[]): Vitals {
       netMax: netActionsOf(ch),
       ref: effectiveStats(ch).REF,
       initBonus: initiativeBonus(ch),
+      sp: { head: armorAt(ch.gear, "head")?.sp ?? 0, body: armorAt(ch.gear, "body")?.sp ?? 0 },
+      deathSavePenalty: ch.deathSavePenalty,
       color: colorFor(ch.id),
       seed: ch.id,
       linked: true,
@@ -122,6 +130,8 @@ export function vitalsOf(c: Combatant, characters: Character[]): Vitals {
     netMax: c.netMax,
     ref: c.ref,
     initBonus: 0,
+    sp: { head: c.armor?.head ?? 0, body: c.armor?.body ?? 0 },
+    deathSavePenalty: c.deathSavePenalty ?? 0,
     color: colorFor(c.id),
     seed: c.id,
     linked: false,

@@ -240,7 +240,19 @@ function Editor({
                 </p>
                 <p className="text-dim">
                   grave abaixo de {seriousThreshold(hpMax)} · death save {deathSave(ch.stats)}
+                  {wound.stabilize && <> · estabilizar {wound.stabilize}</>}
                 </p>
+                {ch.deathSavePenalty > 0 && (
+                  <p className="text-red">
+                    penalidade de death save +{ch.deathSavePenalty}{" "}
+                    <button
+                      className="btn btn-bare !p-0 text-dim underline"
+                      onClick={() => save({ deathSavePenalty: 0 })}
+                    >
+                      zerar
+                    </button>
+                  </p>
+                )}
               </Meter>
               <Meter
                 label="humanidade"

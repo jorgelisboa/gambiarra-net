@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import type { AppData, Character, Combatant, UserRole } from "./types";
-import { maxHp } from "./rpg";
+import { ablateArmor, maxHp, resolveHit, type Hit } from "./rpg";
 import { normalizeCharacter, vitalsOf } from "./rules";
 import { supabase } from "./supabase";
 
@@ -474,6 +474,70 @@ export const setCombatantHp = (id: string, hp: number) =>
         combatants: d.combat.combatants.map((x) =>
           x.id === id ? { ...x, hp: next } : x,
         ),
+      },
+    };
+  });
+
+/**
+ * Golpe que acertou: tira o SP do local, desconta o resto do HP e faz a ablação da armadura.
+ * Na ficha (personagem ligado) ou no PNJ.
+ */
+export const applyHit = (id: string, hit: Hit) =>
+  mutate((d) => {
+    const c = d.combat.combatants.find((x) => x.id === id);
+    if (!c) return d;
+    const v = vitalsOf(c, d.characters);
+    const r = resolveHit(hit, v);
+    const penalty = r.mortalHit ? 1 : 0;
+    if (c.characterId) {
+      return {
+        ...d,
+        characters: d.characters.map((ch) =>
+          ch.id === c.characterId
+            ? {
+                ...ch,
+                hp: Math.max(0, ch.hp - r.hpLoss),
+                gear: r.ablate ? ablateArmor(ch.gear, hit.location) : ch.gear,
+                deathSavePenalty: ch.deathSavePenalty + penalty,
+              }
+            : ch,
+        ),
+      };
+    }
+    return {
+      ...d,
+      combat: {
+        ...d.combat,
+        combatants: d.combat.combatants.map((x) =>
+          x.id === id
+            ? {
+                ...x,
+                hp: Math.max(0, x.hp - r.hpLoss),
+                armor: r.ablate ? { ...v.sp, [hit.location]: Math.max(0, v.sp[hit.location] - 1) } : x.armor,
+                deathSavePenalty: (x.deathSavePenalty ?? 0) + penalty,
+              }
+            : x,
+        ),
+      },
+    };
+  });
+
+/** Zera a penalidade de death save (ficha ou PNJ). */
+export const resetDeathSavePenalty = (id: string) =>
+  mutate((d) => {
+    const c = d.combat.combatants.find((x) => x.id === id);
+    if (!c) return d;
+    if (c.characterId) {
+      return {
+        ...d,
+        characters: d.characters.map((ch) => (ch.id === c.characterId ? { ...ch, deathSavePenalty: 0 } : ch)),
+      };
+    }
+    return {
+      ...d,
+      combat: {
+        ...d.combat,
+        combatants: d.combat.combatants.map((x) => (x.id === id ? { ...x, deathSavePenalty: 0 } : x)),
       },
     };
   });
