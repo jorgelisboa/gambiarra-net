@@ -78,6 +78,17 @@ input[type="number"]::-webkit-outer-spin-button { appearance: none; margin: 0; }
   animation: blink 1s steps(1, end) infinite;
 }
 
+/* foto do personagem: quadrada, borda de 2px na cor dele; foto não é pixel art, então reduz suave */
+.portrait {
+  display: block;
+  flex-shrink: 0;
+  border: 2px solid var(--line);
+  background: var(--bg);
+  object-fit: cover;
+  image-rendering: auto;
+}
+.portrait-dim { opacity: 0.4; filter: grayscale(1); }
+
 .box { border: 2px solid var(--line); background: var(--color-panel); }
 .box-active { border-color: var(--red); }
 
@@ -147,6 +158,6 @@ button:disabled { cursor: not-allowed; }
 
 /* sprites do palco encolhem no celular sem perder a grade */
 @media (max-width: 639px) {
-  .stage-sprite svg { width: 64px; height: 64px; }
-  .animate-jump svg { width: 96px; height: 96px; }
+  .stage-sprite :is(svg, img) { width: 64px; height: 64px; }
+  .animate-jump :is(svg, img) { width: 96px; height: 96px; }
 }

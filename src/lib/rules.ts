@@ -100,6 +100,8 @@ export interface Vitals {
   move: number | null;
   color: string;
   seed: string;
+  /** Foto da ficha; PNJ não tem. */
+  photo: string | null;
   linked: boolean;
 }
 
@@ -128,6 +130,7 @@ export function vitalsOf(c: Combatant, characters: Character[], round?: number):
       move: effectiveStats(ch).MOVE,
       color: colorFor(ch.id),
       seed: ch.id,
+      photo: ch.photo ?? null,
       linked: true,
     };
   }
@@ -144,6 +147,7 @@ export function vitalsOf(c: Combatant, characters: Character[], round?: number):
     move: null,
     color: colorFor(c.id),
     seed: c.id,
+    photo: null,
     linked: false,
   };
 }

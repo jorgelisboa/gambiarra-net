@@ -125,6 +125,8 @@ export interface Character {
   id: string;
   name: string;
   role: Role;
+  /** URL da foto (Storage na nuvem, data URL no modo local). Sem foto, o avatar é o sprite. Ver `src/lib/photo.ts`. */
+  photo?: string;
   stats: Stats;
   hp: number;
   humanity: number;

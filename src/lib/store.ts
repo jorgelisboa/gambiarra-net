@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react";
 import type { AppData, Character, Combatant, UserRole } from "./types";
 import { ablateArmor, maxHp, resolveHit, type Hit } from "./rpg";
+import { removePhoto, storePhoto } from "./photo";
 import { normalizeCharacter, vitalsOf } from "./rules";
 import { supabase } from "./supabase";
 
@@ -409,7 +410,8 @@ export const upsertCharacter = (ch: Character) =>
     };
   });
 
-export const deleteCharacter = (id: string) =>
+export function deleteCharacter(id: string) {
+  removePhoto(getSnapshot().data.characters.find((c) => c.id === id)?.photo);
   mutate((d) => ({
     ...d,
     characters: d.characters.filter((c) => c.id !== id),
@@ -419,6 +421,25 @@ export const deleteCharacter = (id: string) =>
       combatants: d.combat.combatants.filter((c) => c.characterId !== id),
     },
   }));
+}
+
+/**
+ * Troca a foto da ficha (`file` null tira) e apaga a anterior do Storage.
+ * Rejeita com a mensagem pra mostrar se a imagem não der pra ler ou não subir.
+ */
+export async function setCharacterPhoto(id: string, file: File | null) {
+  const before = getSnapshot();
+  const photo = file
+    ? await storePhoto(before.mode === "cloud" ? before.userId : null, id, file)
+    : undefined;
+  // durante o envio a ficha pode ter sido apagada, ou a conta trocada
+  const cur = getSnapshot();
+  const same = cur.userId === before.userId && cur.user === before.user;
+  const ch = same ? cur.data.characters.find((c) => c.id === id) : undefined;
+  if (!ch) return removePhoto(photo);
+  upsertCharacter({ ...ch, photo });
+  if (ch.photo !== photo) removePhoto(ch.photo);
+}
 
 export const setSessionCharacter = (id: string | null) =>
   mutate((d) => ({ ...d, sessionCharacterId: id }));

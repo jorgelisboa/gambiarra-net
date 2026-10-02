@@ -31,7 +31,8 @@ import {
 } from "@/lib/types";
 import { CreationWizard } from "./CreationWizard";
 import { LifepathEditor } from "./LifepathEditor";
-import { Bar, Sprite } from "./Pixel";
+import { Bar } from "./Pixel";
+import { PhotoPicker, Portrait } from "./Portrait";
 import { RoleAbility } from "./RoleAbility";
 import { GearSheet } from "./GearSheet";
 import { SkillSheet } from "./SkillSheet";
@@ -95,7 +96,7 @@ export function Characters() {
               c.id === selectedId ? "box-active" : "hover:border-dim"
             }`}
           >
-            <Sprite seed={c.id} color={colorFor(c.id)} size={36} />
+            <Portrait photo={c.photo} seed={c.id} color={colorFor(c.id)} size={36} />
             <span className="min-w-0 flex-1">
               <span className="font-pixel block truncate text-base">{c.name}</span>
               <span className="block text-xs text-dim">
@@ -153,41 +154,50 @@ function Editor({
   const wound = woundOf(ch.hp, hpMax);
   const emp = currentEmp(ch.stats, ch.humanity);
   const eff = effectiveStats(ch);
+  const [photoError, setPhotoError] = useState<string | null>(null);
 
   return (
     <section className="box min-w-0 space-y-5 p-3 sm:p-5">
-      <div className="flex flex-wrap items-center gap-3">
-        <input
-          className="field font-pixel min-w-0 flex-1 basis-48 text-xl sm:max-w-sm sm:text-2xl"
-          aria-label="nome"
-          value={ch.name}
-          onChange={(e) => save({ name: e.target.value })}
-        />
-        <select
-          className="field !w-auto"
-          value={ch.role}
-          aria-label="role"
-          onChange={(e) => changeRole(e.target.value as Role)}
-        >
-          {ROLES.map((r) => (
-            <option key={r} value={r}>{r.toLowerCase()}</option>
-          ))}
-        </select>
-        <div className="ml-auto flex flex-wrap gap-2">
-          <button
-            className={`btn ${inSession ? "btn-primary" : ""}`}
-            onClick={() => setSessionCharacter(inSession ? null : ch.id)}
+      <div className="flex items-start gap-3 sm:gap-4">
+        <PhotoPicker ch={ch} size={72} onFail={setPhotoError} />
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
+          <input
+            className="field font-pixel min-w-0 flex-1 basis-48 text-xl sm:max-w-sm sm:text-2xl"
+            aria-label="nome"
+            value={ch.name}
+            onChange={(e) => save({ name: e.target.value })}
+          />
+          <select
+            className="field !w-auto"
+            value={ch.role}
+            aria-label="role"
+            onChange={(e) => changeRole(e.target.value as Role)}
           >
-            {inSession ? "na sessão" : "usar na sessão"}
-          </button>
-          <button
-            className="btn btn-danger"
-            onClick={() => confirm(`Apagar ${ch.name}?`) && onDelete()}
-          >
-            apagar
-          </button>
+            {ROLES.map((r) => (
+              <option key={r} value={r}>{r.toLowerCase()}</option>
+            ))}
+          </select>
+          <div className="ml-auto flex flex-wrap gap-2">
+            <button
+              className={`btn ${inSession ? "btn-primary" : ""}`}
+              onClick={() => setSessionCharacter(inSession ? null : ch.id)}
+            >
+              {inSession ? "na sessão" : "usar na sessão"}
+            </button>
+            <button
+              className="btn btn-danger"
+              onClick={() => confirm(`Apagar ${ch.name}?`) && onDelete()}
+            >
+              apagar
+            </button>
+          </div>
+          <p className="w-full text-dim">{roleDef(ch.role).summary}</p>
+          {photoError && (
+            <p role="alert" className="w-full text-red">
+              {photoError}
+            </p>
+          )}
         </div>
-        <p className="w-full text-dim">{roleDef(ch.role).summary}</p>
       </div>
 
       <SheetTabs tab={tab} onTab={onTab} />

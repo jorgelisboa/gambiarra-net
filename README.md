@@ -9,7 +9,7 @@ Feito pra mesa presencial: o mestre no PC ligado na TV, os jogadores com a ficha
 
 ## Abas
 
-- **Personagens** — criação em passos (método Streetrat): nome → role → lore (lifepath com cada tabela rolável, escolhível ou escrita à mão) → stats (1d10 na tabela do role) → perícias (o template Streetrat do role, mais 4 níveis no idioma da origem cultural) → equipamento (o kit do role com as escolhas "isto ou aquilo" e 500eb pra gastar na loja ou guardar). A ficha é dividida em abas: **stats** (stats, HP, Humanidade), **perícias** (as 66 do livro pelas 9 categorias, cada uma ligada à sua stat: base = stat + nível, com rolagem de 1d10 e penalidade de ferimento), **equipamento** (eurobucks e loja; armas com ataque = perícia + stat, tiro mirado (−8), pente contado e recarga (um tipo de munição só), autofire pela tabela de DV (2d6 × o quanto passou, até ×3/×4) e rolagem de dano; armadura com SP por local, ablação e a penalidade em REF/DEX/MOVE, que vale nas perícias e na iniciativa), **habilidade** (rank, limites, botões de rolar e tabela do rank), **lore** e **notas**. Um personagem pode ser marcado como "na sessão".
+- **Personagens** — criação em passos (método Streetrat): nome → role → lore (lifepath com cada tabela rolável, escolhível ou escrita à mão) → stats (1d10 na tabela do role) → perícias (o template Streetrat do role, mais 4 níveis no idioma da origem cultural) → equipamento (o kit do role com as escolhas "isto ou aquilo" e 500eb pra gastar na loja ou guardar). A ficha é dividida em abas: **stats** (stats, HP, Humanidade), **perícias** (as 66 do livro pelas 9 categorias, cada uma ligada à sua stat: base = stat + nível, com rolagem de 1d10 e penalidade de ferimento), **equipamento** (eurobucks e loja; armas com ataque = perícia + stat, tiro mirado (−8), pente contado e recarga (um tipo de munição só), autofire pela tabela de DV (2d6 × o quanto passou, até ×3/×4) e rolagem de dano; armadura com SP por local, ablação e a penalidade em REF/DEX/MOVE, que vale nas perícias e na iniciativa), **habilidade** (rank, limites, botões de rolar e tabela do rank), **lore** e **notas**. Cada ficha pode ter uma **foto** (clique ou solte a imagem no avatar; ela é recortada no centro e reduzida pra 384px antes de salvar); sem foto, o avatar é o sprite. Um personagem pode ser marcado como "na sessão".
 - **Combate** — iniciativa (1d10 + REF), HP ligado à ficha, dano pela regra do livro (o SP do local sai do dano, o resto vai pro HP e a armadura perde 1 de SP; cabeça só com tiro mirado e dobra o que passa; veneno e fogo ignoram armadura; ferimento crítico +5; mortalmente ferido levando dano de ataque soma +1 na penalidade de death save), PNJ com SP, tiro mirado (cabeça, mão, perna), referência das ações e regras do turno, desempate de iniciativa e quanto cada um anda (MOVE × 2), ações de Carne (Ação/Movimento) e ações de Net para Netrunners. Modo **tela cheia** com avatares saltando no turno ativo (Espaço/→ passa o turno).
 - **Netrunner** — placeholder.
 
@@ -19,7 +19,7 @@ Terminal minimalista em pixel art. Detalhes em [DESIGN.md](DESIGN.md).
 
 ## Dados
 
-Com Supabase configurado, o login é por email e senha e as fichas ficam salvas no perfil (tabela `characters`, uma linha por personagem, protegida por RLS). Combate e personagem da sessão ficam no navegador por enquanto. Sem as variáveis de ambiente, o app roda no modo local: login por username e tudo no `localStorage`.
+Com Supabase configurado, o login é por email e senha e as fichas ficam salvas no perfil (tabela `characters`, uma linha por personagem, protegida por RLS). As fotos vão pro Storage, no bucket público `portraits` (cada conta só envia e apaga na própria pasta; a ficha guarda a URL). Combate e personagem da sessão ficam no navegador por enquanto. Sem as variáveis de ambiente, o app roda no modo local: login por username e tudo no `localStorage` (a foto vai junto, como data URL).
 A camada de persistência está em [`src/lib/store.ts`](src/lib/store.ts); o schema, em [`supabase/migrations/`](supabase/migrations/).
 
 No login a pessoa escolhe **mestre** (combate, net e fichas) ou **jogador** (só criar e ver os próprios personagens).
@@ -27,7 +27,7 @@ No login a pessoa escolhe **mestre** (combate, net e fichas) ou **jogador** (só
 ### Configurando o Supabase
 
 1. Copie `.env.example` pra `.env.local` e preencha `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
-2. Aplique a migration de `supabase/migrations/`.
+2. Aplique as migrations de `supabase/migrations/` (a `portraits` cria o bucket das fotos).
 3. Em Authentication → Sign In / Providers → Email, desligue **Confirm email**. Sem SMTP próprio, o Supabase só envia email pros membros da org, então quem não é da equipe não conseguiria confirmar a conta.
 4. Em Authentication → URL Configuration, coloque a URL do app (e `http://localhost:3000`) em Site URL / Redirect URLs.
 

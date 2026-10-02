@@ -4,7 +4,8 @@ import { useEffect, useRef } from "react";
 import { endCombat, nextTurn, useApp } from "@/lib/store";
 import { woundOf } from "@/lib/rpg";
 import { vitalsOf } from "@/lib/rules";
-import { Bar, Icon, Sprite } from "./Pixel";
+import { Bar, Icon } from "./Pixel";
+import { Portrait } from "./Portrait";
 import { TurnActions } from "./TurnActions";
 
 export function InitiativeStage({ onClose }: { onClose: () => void }) {
@@ -79,7 +80,8 @@ export function InitiativeStage({ onClose }: { onClose: () => void }) {
                 <Icon name="down" size={24} />
               </span>
               <div className={`stage-sprite ${isActive ? "animate-jump" : ""}`}>
-                <Sprite
+                <Portrait
+                  photo={v.photo}
                   seed={v.seed}
                   color={v.color}
                   size={isActive ? 144 : 96}

@@ -31,7 +31,8 @@ import { vitalsOf, type Vitals } from "@/lib/rules";
 import type { ArmorSlot, Combatant } from "@/lib/types";
 import { InitiativeStage } from "./InitiativeStage";
 import { RefBlock } from "./RoleAbility";
-import { Bar, Sprite } from "./Pixel";
+import { Bar } from "./Pixel";
+import { Portrait } from "./Portrait";
 import { TurnActions } from "./TurnActions";
 
 const blank = (p: Partial<Combatant>): Combatant => ({
@@ -228,7 +229,7 @@ function CombatRow({ c }: { c: Combatant }) {
           patchCombatant(c.id, { initiative: Number(e.target.value) || 0 })
         }
       />
-      <Sprite seed={v.seed} color={v.color} size={44} dim={v.hp <= 0} />
+      <Portrait photo={v.photo} seed={v.seed} color={v.color} size={44} dim={v.hp <= 0} />
       <div className="min-w-0 flex-1 basis-40">
         <div className="font-pixel text-lg leading-tight">
           {v.name}
