@@ -7,6 +7,7 @@ export * from "./character";
 export * from "./creation";
 export * from "./derived";
 export * from "./dice";
+export * from "./gear";
 export * from "./lifepath";
 export * from "./roles";
 export * from "./skills";

@@ -39,3 +39,17 @@ export function vsDvs(total: number, dvs: Dv[]) {
 /** Select de perícia 0–10 para usos que somam uma perícia que a ficha ainda não tem. */
 export const skillMods = (skill: string) =>
   Array.from({ length: 11 }, (_, n) => ({ label: `${skill} ${n}`, value: n }));
+
+/** Bônus direto no HP quando o dano tem dois ou mais 6 (ferimento crítico). */
+export const CRITICAL_INJURY_BONUS = 5;
+
+/** Dano "Nd6": soma dos dados. Dois ou mais 6 = ferimento crítico. */
+export function rollDamage(expr: string) {
+  const n = Number(/^(\d+)d6$/.exec(expr)?.[1] ?? 0);
+  const dice = Array.from({ length: n }, d6);
+  return {
+    dice,
+    total: dice.reduce((a, b) => a + b, 0),
+    critical: dice.filter((d) => d === 6).length >= 2,
+  };
+}

@@ -4,7 +4,11 @@ import { useState } from "react";
 import {
   CREATION_METHODS,
   CREATION_STEPS,
+  STARTING_MONEY,
+  STREETRAT_KITS,
+  addGear,
   emptyLifepath,
+  gearFromKit,
   streetratSkills,
   templateRow,
   type CreationMethod,
@@ -15,6 +19,7 @@ import type { Character, Lifepath, Role, SkillEntry } from "@/lib/types";
 import { LifepathEditor } from "./LifepathEditor";
 import { RolePicker } from "./RolePicker";
 import { SkillSheet } from "./SkillSheet";
+import { StarterKit, spentOn, type Purchase } from "./StarterKit";
 import { StatTemplatePicker } from "./StatTemplatePicker";
 
 type Step = "method" | CreationStepId;
@@ -28,6 +33,10 @@ interface Draft {
   statsRow: number | null;
   /** Null = ainda é o template do role (refeito se o role ou o idioma da origem mudar). */
   skills: SkillEntry[] | null;
+  /** Opção escolhida em cada linha "isto ou aquilo" do kit (w0, o3...). */
+  kitPicks: Record<string, number>;
+  /** Compras com os 500eb iniciais. */
+  bought: Purchase[];
 }
 
 const METHOD_STEP = { label: "método", title: "como criar", hint: "escolha o método de criação." };
@@ -49,6 +58,8 @@ export function CreationWizard({
     lifepath: emptyLifepath(),
     statsRow: null,
     skills: null,
+    kitPicks: {},
+    bought: [],
   });
 
   const steps: Step[] = ["method", ...(method ?? CREATION_METHODS[0]).steps];
@@ -82,6 +93,13 @@ export function CreationWizard({
       notes: { ...base.notes, alias: draft.handle.trim() },
       lifepath: draft.lifepath,
       skills: method?.steps.includes("skills") ? skills : [],
+      ...(method?.steps.includes("gear") && {
+        gear: draft.bought.reduce(
+          (g, p) => addGear(g, p.ref, p.qty, p.slot),
+          gearFromKit(STREETRAT_KITS[draft.role], draft.kitPicks),
+        ),
+        money: STARTING_MONEY - spentOn(draft.bought),
+      }),
     });
   }
 
@@ -178,7 +196,7 @@ export function CreationWizard({
           selected={draft.role}
           onPick={(role) => {
             // linha de stats e perícias são do role: trocou de role, refaz
-            if (role !== draft.role) setDraft({ ...draft, role, statsRow: null, skills: null });
+            if (role !== draft.role) setDraft({ ...draft, role, statsRow: null, skills: null, kitPicks: {} });
           }}
         />
       )}
@@ -212,6 +230,16 @@ export function CreationWizard({
           stats={stats ?? emptyStats()}
           role={draft.role}
           originLanguage={draft.lifepath.picks.language}
+        />
+      )}
+
+      {step === "gear" && draft.role && (
+        <StarterKit
+          role={draft.role}
+          picks={draft.kitPicks}
+          onPicks={(kitPicks) => setDraft({ ...draft, kitPicks })}
+          bought={draft.bought}
+          onBought={(bought) => setDraft({ ...draft, bought })}
         />
       )}
 

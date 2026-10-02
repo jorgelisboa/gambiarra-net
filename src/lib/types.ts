@@ -82,6 +82,24 @@ export interface SkillEntry {
   level: number;
 }
 
+export type ArmorSlot = "head" | "body";
+
+/** Um item no inventário. Regras (dano, SP, preço) vêm de `src/lib/rpg/gear`. */
+export interface GearItem {
+  id: string;
+  /** Id no catálogo; null = item escrito à mão. */
+  ref: string | null;
+  /** Marca ou apelido; vazio usa o nome do catálogo. */
+  name: string;
+  qty: number;
+  /** Armadura: onde está. */
+  slot?: ArmorSlot;
+  /** Armadura: SP atual (cai 1 a cada dano que passa). Escudo: HP atual. */
+  current?: number;
+  /** Armadura vestida / escudo em mãos. */
+  equipped?: boolean;
+}
+
 export interface Character {
   id: string;
   name: string;
@@ -93,6 +111,9 @@ export interface Character {
   roleRank: number;
   ability: AbilityState;
   skills: SkillEntry[];
+  gear: GearItem[];
+  /** Eurobucks. */
+  money: number;
   lifepath: Lifepath;
   notes: CharacterNotes;
   createdAt: number;

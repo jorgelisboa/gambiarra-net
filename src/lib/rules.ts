@@ -2,6 +2,7 @@ import { uid } from "./id";
 import {
   STARTING_RANK,
   emptyAbility,
+  effectiveStats,
   emptyLifepath,
   initiativeBonus,
   maxHp,
@@ -47,6 +48,8 @@ export function newCharacter(role: Role, stats: Stats = emptyStats()): Character
     roleRank: STARTING_RANK,
     ability: emptyAbility(),
     skills: [],
+    gear: [],
+    money: 0,
     lifepath: emptyLifepath(),
     notes: {
       alias: "",
@@ -70,6 +73,8 @@ export function normalizeCharacter(saved: Character & { interfaceRank?: number }
     roleRank: ch.roleRank ?? legacyRank ?? STARTING_RANK,
     ability: { ...emptyAbility(), ...ch.ability },
     skills: ch.skills ?? [],
+    gear: ch.gear ?? [],
+    money: ch.money ?? 0,
     lifepath: { ...emptyLifepath(), ...ch.lifepath },
   };
 }
@@ -103,7 +108,7 @@ export function vitalsOf(c: Combatant, characters: Character[]): Vitals {
       hp: ch.hp,
       maxHp: maxHp(ch.stats),
       netMax: netActionsOf(ch),
-      ref: ch.stats.REF,
+      ref: effectiveStats(ch).REF,
       initBonus: initiativeBonus(ch),
       color: colorFor(ch.id),
       seed: ch.id,

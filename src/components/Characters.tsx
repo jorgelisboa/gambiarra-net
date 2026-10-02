@@ -9,6 +9,7 @@ import {
 } from "@/lib/store";
 import {
   currentEmp,
+  effectiveStats,
   deathSave,
   fitToRank,
   isCyberpsycho,
@@ -30,11 +31,13 @@ import { CreationWizard } from "./CreationWizard";
 import { LifepathEditor } from "./LifepathEditor";
 import { Bar, Sprite } from "./Pixel";
 import { RoleAbility } from "./RoleAbility";
+import { GearSheet } from "./GearSheet";
 import { SkillSheet } from "./SkillSheet";
 
 const SHEET_TABS = [
   { id: "stats", label: "stats" },
   { id: "skills", label: "perícias" },
+  { id: "gear", label: "equipamento" },
   { id: "ability", label: "habilidade" },
   { id: "lore", label: "lore" },
   { id: "notes", label: "notas" },
@@ -147,6 +150,7 @@ function Editor({
   const humMax = maxHumanity(ch.stats);
   const wound = woundOf(ch.hp, hpMax);
   const emp = currentEmp(ch.stats, ch.humanity);
+  const eff = effectiveStats(ch);
 
   return (
     <section className="box min-w-0 space-y-5 p-3 sm:p-5">
@@ -212,6 +216,11 @@ function Editor({
                       em uso {emp}
                     </span>
                   )}
+                  {k !== "EMP" && eff[k] < ch.stats[k] && (
+                    <span className="block text-xs text-net" title="penalidade da armadura vestida">
+                      com armadura {eff[k]}
+                    </span>
+                  )}
                 </label>
               ))}
             </div>
@@ -261,13 +270,15 @@ function Editor({
           <SkillSheet
             skills={ch.skills}
             onChange={(skills) => save({ skills })}
-            stats={{ ...ch.stats, EMP: emp }}
+            stats={eff}
             role={ch.role}
             originLanguage={ch.lifepath.picks.language}
             penalty={wound.penalty}
             canRoll
           />
         )}
+
+        {tab === "gear" && <GearSheet ch={ch} save={save} />}
 
         {tab === "ability" && <RoleAbility ch={ch} save={save} />}
 

@@ -134,6 +134,10 @@ export const skillBase = (stats: Stats, e: SkillEntry) => {
   return (def ? stats[def.stat] : 0) + e.level;
 };
 
+/** Nível na perícia (a maior entrada, se tiver especialização). */
+export const skillLevel = (skills: SkillEntry[], skill: string) =>
+  Math.max(0, ...skills.filter((e) => e.skill === skill).map((e) => e.level));
+
 /** Perícia sem especialização: uma entrada só, com o id da própria perícia. */
 export function setSkillLevel(skills: SkillEntry[], skill: string, level: number): SkillEntry[] {
   const lvl = Math.max(0, Math.min(MAX_SKILL_LEVEL, level));

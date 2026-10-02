@@ -7,7 +7,7 @@ VTT **não oficial** pra Cyberpunk RED: fichas, iniciativa em tela cheia e (em b
 
 ## Abas
 
-- **Personagens** — criação em passos (método Streetrat): nome → role → lore (lifepath com cada tabela rolável, escolhível ou escrita à mão) → stats (1d10 na tabela do role) → perícias (o template Streetrat do role, mais 4 níveis no idioma da origem cultural). A ficha é dividida em abas: **stats** (stats, HP, Humanidade), **perícias** (as 66 do livro pelas 9 categorias, cada uma ligada à sua stat: base = stat + nível, com rolagem de 1d10 e penalidade de ferimento), **habilidade** (rank, limites, botões de rolar e tabela do rank), **lore** e **notas**. Um personagem pode ser marcado como "na sessão".
+- **Personagens** — criação em passos (método Streetrat): nome → role → lore (lifepath com cada tabela rolável, escolhível ou escrita à mão) → stats (1d10 na tabela do role) → perícias (o template Streetrat do role, mais 4 níveis no idioma da origem cultural) → equipamento (o kit do role com as escolhas "isto ou aquilo" e 500eb pra gastar na loja ou guardar). A ficha é dividida em abas: **stats** (stats, HP, Humanidade), **perícias** (as 66 do livro pelas 9 categorias, cada uma ligada à sua stat: base = stat + nível, com rolagem de 1d10 e penalidade de ferimento), **equipamento** (eurobucks e loja; armas com ataque = perícia + stat e rolagem de dano; armadura com SP por local, ablação e a penalidade em REF/DEX/MOVE, que vale nas perícias e na iniciativa), **habilidade** (rank, limites, botões de rolar e tabela do rank), **lore** e **notas**. Um personagem pode ser marcado como "na sessão".
 - **Combate** — iniciativa (1d10 + REF), HP ligado à ficha, ações de Carne (Ação/Movimento) e ações de Net para Netrunners. Modo **tela cheia** com avatares saltando no turno ativo (Espaço/→ passa o turno).
 - **Netrunner** — placeholder.
 
@@ -41,6 +41,7 @@ No login a pessoa escolhe **mestre** (combate, net e fichas) ou **jogador** (só
 - `tables.ts` — tabela de rolagem genérica (1d10 por padrão; linhas podem ocupar várias faces).
 - `lifepath/` — as tabelas do lifepath em arrays (`origins`, `personal`, `motivations`, `family`, `relations`, `goals`) e a ordem delas em `sections.ts`.
 - `skills.ts` — as 66 perícias (categoria, stat ligada, básica, x2, especialização) e os templates Streetrat por role. Os ids são as chaves salvas na ficha, então não renomeie.
+- `gear/` — armas (brancas, de longo alcance e exóticas), armaduras e escudo, munição, gear, roupas (estilo × peça), categorias de preço e os kits Streetrat por role (`kits.ts`). Ids salvos na ficha: não renomeie.
 - `creation.ts` — métodos de criação e seus passos (Edgerunner aparece como "em breve").
 - `stats.ts` — templates de stats por role: uma matriz 10×10 por role (linha = face do 1d10, colunas na ordem de `STAT_KEYS`), com a rolagem Streetrat (linha inteira) e Edgerunner (1d10 por stat).
 

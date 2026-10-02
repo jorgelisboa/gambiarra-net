@@ -11,7 +11,7 @@ import {
   startCombat,
   useApp,
 } from "@/lib/store";
-import { d10, initiativeBonus, woundOf } from "@/lib/rpg";
+import { d10, effectiveStats, initiativeBonus, woundOf } from "@/lib/rpg";
 import { uid } from "@/lib/id";
 import { vitalsOf } from "@/lib/rules";
 import type { Combatant } from "@/lib/types";
@@ -50,7 +50,7 @@ export function Combat() {
       blank({
         characterId: ch.id,
         name: ch.name,
-        initiative: d10() + ch.stats.REF + initiativeBonus(ch),
+        initiative: d10() + effectiveStats(ch).REF + initiativeBonus(ch),
       }),
     );
   }
