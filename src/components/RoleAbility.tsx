@@ -342,7 +342,7 @@ function UseCard({ use, ch, accent }: { use: UseDef; ch: Character; accent: stri
   );
 }
 
-function RollLine({ r, accent }: { r: RollResult; accent: string }) {
+export function RollLine({ r, accent }: { r: RollResult; accent: string }) {
   const color = r.ok === false ? "var(--dim)" : accent;
   const showTotal = r.dice.length > 1 || r.total !== r.dice[0];
   return (

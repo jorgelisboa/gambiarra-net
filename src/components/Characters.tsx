@@ -30,9 +30,11 @@ import { CreationWizard } from "./CreationWizard";
 import { LifepathEditor } from "./LifepathEditor";
 import { Bar, Sprite } from "./Pixel";
 import { RoleAbility } from "./RoleAbility";
+import { SkillSheet } from "./SkillSheet";
 
 const SHEET_TABS = [
   { id: "stats", label: "stats" },
+  { id: "skills", label: "perícias" },
   { id: "ability", label: "habilidade" },
   { id: "lore", label: "lore" },
   { id: "notes", label: "notas" },
@@ -253,6 +255,18 @@ function Editor({
               </Meter>
             </div>
           </>
+        )}
+
+        {tab === "skills" && (
+          <SkillSheet
+            skills={ch.skills}
+            onChange={(skills) => save({ skills })}
+            stats={{ ...ch.stats, EMP: emp }}
+            role={ch.role}
+            originLanguage={ch.lifepath.picks.language}
+            penalty={wound.penalty}
+            canRoll
+          />
         )}
 
         {tab === "ability" && <RoleAbility ch={ch} save={save} />}

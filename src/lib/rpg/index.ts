@@ -9,6 +9,7 @@ export * from "./derived";
 export * from "./dice";
 export * from "./lifepath";
 export * from "./roles";
+export * from "./skills";
 export * from "./stats";
 export * from "./tables";
 export type * from "./types";

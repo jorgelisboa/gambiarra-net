@@ -46,6 +46,7 @@ export function newCharacter(role: Role, stats: Stats = emptyStats()): Character
     humanity: maxHumanity(stats),
     roleRank: STARTING_RANK,
     ability: emptyAbility(),
+    skills: [],
     lifepath: emptyLifepath(),
     notes: {
       alias: "",
@@ -68,6 +69,7 @@ export function normalizeCharacter(saved: Character & { interfaceRank?: number }
     ...ch,
     roleRank: ch.roleRank ?? legacyRank ?? STARTING_RANK,
     ability: { ...emptyAbility(), ...ch.ability },
+    skills: ch.skills ?? [],
     lifepath: { ...emptyLifepath(), ...ch.lifepath },
   };
 }

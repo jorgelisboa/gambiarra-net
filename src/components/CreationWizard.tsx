@@ -5,14 +5,16 @@ import {
   CREATION_METHODS,
   CREATION_STEPS,
   emptyLifepath,
+  streetratSkills,
   templateRow,
   type CreationMethod,
   type CreationStepId,
 } from "@/lib/rpg";
-import { newCharacter } from "@/lib/rules";
-import type { Character, Lifepath, Role } from "@/lib/types";
+import { emptyStats, newCharacter } from "@/lib/rules";
+import type { Character, Lifepath, Role, SkillEntry } from "@/lib/types";
 import { LifepathEditor } from "./LifepathEditor";
 import { RolePicker } from "./RolePicker";
+import { SkillSheet } from "./SkillSheet";
 import { StatTemplatePicker } from "./StatTemplatePicker";
 
 type Step = "method" | CreationStepId;
@@ -24,6 +26,8 @@ interface Draft {
   lifepath: Lifepath;
   /** Linha da tabela de stats do role (1–10). */
   statsRow: number | null;
+  /** Null = ainda é o template do role (refeito se o role ou o idioma da origem mudar). */
+  skills: SkillEntry[] | null;
 }
 
 const METHOD_STEP = { label: "método", title: "como criar", hint: "escolha o método de criação." };
@@ -44,9 +48,13 @@ export function CreationWizard({
     role: null,
     lifepath: emptyLifepath(),
     statsRow: null,
+    skills: null,
   });
 
   const steps: Step[] = ["method", ...(method ?? CREATION_METHODS[0]).steps];
+  const stats = draft.role && draft.statsRow ? templateRow(draft.role, draft.statsRow) : undefined;
+  const skills =
+    draft.skills ?? (draft.role ? streetratSkills(draft.role, draft.lifepath.picks.language) : []);
   const at = steps.indexOf(step);
   const info = step === "method" ? METHOD_STEP : CREATION_STEPS[step];
   const isLast = step !== "method" && at === steps.length - 1;
@@ -67,13 +75,13 @@ export function CreationWizard({
 
   function finish() {
     if (!draft.role) return setStep("role");
-    const stats = draft.statsRow ? templateRow(draft.role, draft.statsRow) : undefined;
     const base = newCharacter(draft.role, stats);
     onDone({
       ...base,
       name: draft.name.trim() || base.name,
       notes: { ...base.notes, alias: draft.handle.trim() },
       lifepath: draft.lifepath,
+      skills: method?.steps.includes("skills") ? skills : [],
     });
   }
 
@@ -168,17 +176,24 @@ export function CreationWizard({
       {step === "role" && (
         <RolePicker
           selected={draft.role}
-          onPick={(role) =>
-            // a linha de stats é da tabela do role: trocou de role, escolhe de novo
-            setDraft({ ...draft, role, statsRow: role === draft.role ? draft.statsRow : null })
-          }
+          onPick={(role) => {
+            // linha de stats e perícias são do role: trocou de role, refaz
+            if (role !== draft.role) setDraft({ ...draft, role, statsRow: null, skills: null });
+          }}
         />
       )}
 
       {step === "lifepath" && (
         <LifepathEditor
           value={draft.lifepath}
-          onChange={(lifepath) => setDraft({ ...draft, lifepath })}
+          onChange={(lifepath) =>
+            setDraft({
+              ...draft,
+              lifepath,
+              // o idioma da origem entra no template de perícias
+              skills: lifepath.picks.language === draft.lifepath.picks.language ? draft.skills : null,
+            })
+          }
         />
       )}
 
@@ -187,6 +202,16 @@ export function CreationWizard({
           role={draft.role}
           face={draft.statsRow}
           onPick={(statsRow) => setDraft({ ...draft, statsRow })}
+        />
+      )}
+
+      {step === "skills" && draft.role && (
+        <SkillSheet
+          skills={skills}
+          onChange={(s) => setDraft({ ...draft, skills: s })}
+          stats={stats ?? emptyStats()}
+          role={draft.role}
+          originLanguage={draft.lifepath.picks.language}
         />
       )}
 

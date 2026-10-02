@@ -71,6 +71,17 @@ export interface Lifepath {
   lists: Record<string, LifepathEntry[]>;
 }
 
+/** Uma perícia na ficha. As regras (stat, categoria) vêm de `src/lib/rpg/skills.ts`. */
+export interface SkillEntry {
+  /** Único na ficha. Perícia sem especialização usa o próprio id da perícia. */
+  id: string;
+  /** Id da perícia em SKILLS. */
+  skill: string;
+  /** Idioma, região, ciência, instrumento ou estilo. Vazio nas perícias sem especialização. */
+  spec: string;
+  level: number;
+}
+
 export interface Character {
   id: string;
   name: string;
@@ -81,6 +92,7 @@ export interface Character {
   /** Rank da habilidade de role, 1–10 (Interface do Netrunner, Moto do Nomad...). */
   roleRank: number;
   ability: AbilityState;
+  skills: SkillEntry[];
   lifepath: Lifepath;
   notes: CharacterNotes;
   createdAt: number;
