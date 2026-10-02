@@ -115,6 +115,10 @@ export interface GearItem {
   current?: number;
   /** Armadura vestida / escudo em mãos. */
   equipped?: boolean;
+  /** Arma de fogo: balas no pente. */
+  loaded?: number;
+  /** Arma de fogo: munição carregada (id no catálogo). Não mistura tipos no pente. */
+  loadedRef?: string;
 }
 
 export interface Character {
@@ -154,6 +158,8 @@ export interface Combatant {
   deathSavePenalty?: number;
   /** Round em que o desvio de dano do Solo já foi usado. */
   deflectedRound?: number;
+  /** Desempate de iniciativa (rolar de novo até alguém ganhar). */
+  tie?: number;
   netMax: number;
   actionUsed: boolean;
   moveUsed: boolean;

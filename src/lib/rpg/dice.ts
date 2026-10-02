@@ -42,13 +42,16 @@ export function vsDvs(total: number, dvs: Dv[]) {
 /** Bônus direto no HP quando o dano tem dois ou mais 6 (ferimento crítico). */
 export const CRITICAL_INJURY_BONUS = 5;
 
-/** Dano "Nd6": soma dos dados. Dois ou mais 6 = ferimento crítico. */
+/** Dano "Nd6" (ou "2d6x4" no autofire): soma dos dados, vezes o multiplicador. Dois ou mais 6 = ferimento crítico. */
 export function rollDamage(expr: string) {
-  const n = Number(/^(\d+)d6$/.exec(expr)?.[1] ?? 0);
+  const m = /^(\d+)d6(?:x(\d+))?$/.exec(expr);
+  const n = Number(m?.[1] ?? 0);
+  const times = Number(m?.[2] ?? 1);
   const dice = Array.from({ length: n }, d6);
   return {
     dice,
-    total: dice.reduce((a, b) => a + b, 0),
+    times,
+    total: dice.reduce((a, b) => a + b, 0) * times,
     critical: dice.filter((d) => d === 6).length >= 2,
   };
 }

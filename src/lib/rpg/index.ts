@@ -3,6 +3,7 @@
  * limites por rank e dados. Os textos são resumos próprios em pt-BR, não o livro.
  */
 export * from "./ability";
+export * from "./actions";
 export * from "./character";
 export * from "./damage";
 export * from "./creation";

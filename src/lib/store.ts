@@ -425,7 +425,9 @@ export const setSessionCharacter = (id: string | null) =>
 
 /* ---------- combate ---------- */
 
-const byInitiative = (a: Combatant, b: Combatant) => b.initiative - a.initiative;
+/** Maior iniciativa primeiro; empate se resolve rolando de novo (o `tie` guarda esse sorteio). */
+const byInitiative = (a: Combatant, b: Combatant) =>
+  b.initiative - a.initiative || (b.tie ?? 0) - (a.tie ?? 0);
 
 export const addCombatant = (c: Combatant) =>
   mutate((d) => ({
@@ -488,6 +490,7 @@ export const applyHit = (id: string, hit: Hit) =>
     if (!c) return d;
     const v = vitalsOf(c, d.characters, d.combat.round);
     const r = resolveHit(hit, v);
+    const slot = hit.aim ? "body" : hit.location;
     const penalty = r.mortalHit ? 1 : 0;
     if (c.characterId) {
       return {
@@ -503,7 +506,7 @@ export const applyHit = (id: string, hit: Hit) =>
             ? {
                 ...ch,
                 hp: Math.max(0, ch.hp - r.hpLoss),
-                gear: r.ablate ? ablateArmor(ch.gear, hit.location) : ch.gear,
+                gear: r.ablate ? ablateArmor(ch.gear, slot) : ch.gear,
                 deathSavePenalty: ch.deathSavePenalty + penalty,
               }
             : ch,
@@ -519,7 +522,7 @@ export const applyHit = (id: string, hit: Hit) =>
             ? {
                 ...x,
                 hp: Math.max(0, x.hp - r.hpLoss),
-                armor: r.ablate ? { ...v.sp, [hit.location]: Math.max(0, v.sp[hit.location] - 1) } : x.armor,
+                armor: r.ablate ? { ...v.sp, [slot]: Math.max(0, v.sp[slot] - 1) } : x.armor,
                 deathSavePenalty: (x.deathSavePenalty ?? 0) + penalty,
               }
             : x,

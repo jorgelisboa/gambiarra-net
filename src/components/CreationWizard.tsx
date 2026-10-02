@@ -9,6 +9,7 @@ import {
   addGear,
   emptyLifepath,
   gearFromKit,
+  loadAll,
   streetratSkills,
   templateRow,
   type CreationMethod,
@@ -94,9 +95,12 @@ export function CreationWizard({
       lifepath: draft.lifepath,
       skills: method?.steps.includes("skills") ? skills : [],
       ...(method?.steps.includes("gear") && {
-        gear: draft.bought.reduce(
-          (g, p) => addGear(g, p.ref, p.qty, p.slot),
-          gearFromKit(STREETRAT_KITS[draft.role], draft.kitPicks),
+        // começa o jogo com as armas carregadas, com a munição do kit
+        gear: loadAll(
+          draft.bought.reduce(
+            (g, p) => addGear(g, p.ref, p.qty, p.slot),
+            gearFromKit(STREETRAT_KITS[draft.role], draft.kitPicks),
+          ),
         ),
         money: STARTING_MONEY - spentOn(draft.bought),
       }),

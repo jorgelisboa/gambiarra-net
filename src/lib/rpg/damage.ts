@@ -14,6 +14,8 @@ export interface Hit {
   critical: boolean;
   /** Veio de ataque corpo a corpo ou à distância (importa pro mortalmente ferido). */
   attack: boolean;
+  /** Tiro mirado na mão ou na perna (bate na armadura do corpo). */
+  aim?: "hand" | "leg";
 }
 
 export interface HitResult {
@@ -26,6 +28,8 @@ export interface HitResult {
   critical: boolean;
   /** Ferimento crítico por levar dano de ataque já mortalmente ferido. */
   mortalHit: boolean;
+  /** Efeito do tiro mirado na mão ou na perna, se passou dano da armadura. */
+  aimEffect?: string;
   bonus: number;
   /** Tirado pelo desvio de dano do Solo (1º dano do round). */
   deflected: number;
@@ -42,22 +46,31 @@ export interface HitResult {
  * 3. se levou qualquer dano, a armadura do local perde 1 de SP até ser consertada.
  * Ferimento crítico soma +5 direto no HP. Mortalmente ferido que leva dano de ataque
  * sofre ferimento crítico e ganha +1 na penalidade de death save. O desvio de dano do
- * Solo tira do 1º dano que ele leva no round.
+ * Solo tira do 1º dano que ele leva no round. Tiro mirado: cabeça dobra o que passa;
+ * mão faz largar um item e perna quebra a perna (ferimento crítico), se passar 1 ponto.
  */
 export function resolveHit(
   hit: Hit,
   target: { hp: number; sp: Record<ArmorSlot, number>; deflection?: number },
 ): HitResult {
-  const sp = hit.bypassArmor ? 0 : Math.max(0, target.sp[hit.location]);
-  const doubled = hit.location === "head";
+  const location = hit.aim ? "body" : hit.location;
+  const sp = hit.bypassArmor ? 0 : Math.max(0, target.sp[location]);
+  const doubled = location === "head";
   const through = Math.max(0, hit.damage - sp) * (doubled ? 2 : 1);
   const mortalHit = target.hp < 1 && hit.attack && through > 0;
-  const critical = hit.critical || mortalHit;
+  const brokenLeg = hit.aim === "leg" && through > 0;
+  const aimEffect =
+    through > 0 && hit.aim === "hand"
+      ? "larga um item da mão (à escolha do atacante), que cai na frente dele"
+      : brokenLeg
+        ? "ferimento crítico: perna quebrada (se tiver perna inteira)"
+        : undefined;
+  const critical = hit.critical || mortalHit || brokenLeg;
   const bonus = critical ? CRITICAL_INJURY_BONUS : 0;
   const taken = through + bonus;
   const deflected = taken > 0 ? Math.min(target.deflection ?? 0, taken) : 0;
   const hpLoss = taken - deflected;
-  return { sp, through, doubled, critical, mortalHit, bonus, deflected, hpLoss, ablate: sp > 0 && hpLoss > 0 };
+  return { sp, through, doubled, critical, mortalHit, aimEffect, bonus, deflected, hpLoss, ablate: sp > 0 && hpLoss > 0 };
 }
 
 /** Ablação: toda armadura vestida no local perde 1 de SP (mínimo 0). */

@@ -26,6 +26,8 @@ export interface WeaponStats {
   features: string[];
   /** BODY mínimo pra disparar. */
   requiresBody?: number;
+  /** Autofire: multiplicador máximo do dano (3 SMG, 4 fuzil) e a tabela de DV por distância. */
+  autofire?: { max: number; table: "smg" | "rifle" };
 }
 
 export type WeaponClass = "melee" | "ranged" | "exotic";

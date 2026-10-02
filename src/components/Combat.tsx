@@ -14,6 +14,8 @@ import {
   useApp,
 } from "@/lib/store";
 import {
+  COMBAT_ACTIONS,
+  COMBAT_RULES,
   SLOT_LABELS,
   d10,
   describeHit,
@@ -28,6 +30,7 @@ import { uid } from "@/lib/id";
 import { vitalsOf, type Vitals } from "@/lib/rules";
 import type { ArmorSlot, Combatant } from "@/lib/types";
 import { InitiativeStage } from "./InitiativeStage";
+import { RefBlock } from "./RoleAbility";
 import { Bar, Sprite } from "./Pixel";
 import { TurnActions } from "./TurnActions";
 
@@ -43,6 +46,7 @@ const blank = (p: Partial<Combatant>): Combatant => ({
   actionUsed: false,
   moveUsed: false,
   netUsed: 0,
+  tie: Math.random(),
   ...p,
 });
 
@@ -86,7 +90,7 @@ export function Combat() {
   function rerollAll() {
     for (const c of combat.combatants) {
       const v = vitalsOf(c, characters);
-      patchCombatant(c.id, { initiative: d10() + v.ref + v.initBonus });
+      patchCombatant(c.id, { initiative: d10() + v.ref + v.initBonus, tie: Math.random() });
     }
   }
 
@@ -132,6 +136,16 @@ export function Combat() {
           </>
         )}
       </div>
+
+      <details className="box p-3">
+        <summary className="select-none">
+          <span className="label">ações e regras do turno</span>
+        </summary>
+        <div className="mt-3 grid grid-cols-1 items-start gap-3 lg:grid-cols-2">
+          <RefBlock table={{ title: "ações (1 de movimento + 1 ação por turno)", rows: COMBAT_ACTIONS.map(([n, en, d]) => [n, en, d]) }} />
+          <RefBlock table={{ title: "regras", rows: COMBAT_RULES }} />
+        </div>
+      </details>
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="box p-4">
@@ -272,6 +286,11 @@ function CombatRow({ c }: { c: Combatant }) {
             SP cabeça <span className="text-fg">{v.sp.head}</span> · corpo{" "}
             <span className="text-fg">{v.sp.body}</span>
           </span>
+          {v.move !== null && (
+            <span title="ação de movimento: MOVE × 2 m/yd (ou MOVE quadrados no grid)">
+              anda <span className="text-fg">{v.move * 2}m</span>
+            </span>
+          )}
           {v.deathSavePenalty > 0 && (
             <span className="text-red">
               death save +{v.deathSavePenalty}{" "}
@@ -304,19 +323,29 @@ function CombatRow({ c }: { c: Combatant }) {
   );
 }
 
-const DAMAGE_DICE = ["1d6", "2d6", "3d6", "4d6", "5d6", "6d6", "8d6"];
+const DAMAGE_DICE = ["1d6", "2d6", "3d6", "4d6", "5d6", "6d6", "8d6", "2d6x2", "2d6x3", "2d6x4"];
+
+/** Onde o golpe pegou. Cabeça, mão e perna só com tiro mirado. */
+const TARGETS: { id: string; label: string; location: ArmorSlot; aim?: "hand" | "leg"; title?: string }[] = [
+  { id: "body", label: "corpo", location: "body" },
+  { id: "head", label: "cabeça · mirado ×2", location: "head", title: "tiro mirado: o que passa da armadura da cabeça dobra" },
+  { id: "hand", label: "mão · mirado", location: "body", aim: "hand", title: "tiro mirado: se passar 1 ponto da armadura do corpo, larga um item da mão" },
+  { id: "leg", label: "perna · mirado", location: "body", aim: "leg", title: "tiro mirado: se passar 1 ponto da armadura do corpo, perna quebrada (ferimento crítico)" },
+];
 
 /** Golpe que acertou: dano, local e o que passa da armadura (regra em src/lib/rpg/damage.ts). */
 function HitPanel({ c, v, onApplied }: { c: Combatant; v: Vitals; onApplied: (msg: string) => void }) {
   const [damage, setDamage] = useState(0);
-  const [location, setLocation] = useState<ArmorSlot>("body");
+  const [targetId, setTargetId] = useState("body");
+  const target = TARGETS.find((t) => t.id === targetId)!;
+  const location = target.location;
   const [bypassArmor, setBypassArmor] = useState(false);
   const [critical, setCritical] = useState(false);
   const [attack, setAttack] = useState(true);
   const [dice, setDice] = useState("3d6");
-  const [rolled, setRolled] = useState<number[] | null>(null);
+  const [rolled, setRolled] = useState<{ dice: number[]; times: number } | null>(null);
 
-  const hit: Hit = { damage, location, bypassArmor, critical, attack };
+  const hit: Hit = { damage, location, aim: target.aim, bypassArmor, critical, attack };
   const r = resolveHit(hit, v);
   const mortal = v.hp < 1;
 
@@ -324,7 +353,7 @@ function HitPanel({ c, v, onApplied }: { c: Combatant; v: Vitals; onApplied: (ms
     const res = rollDamage(dice);
     setDamage(res.total);
     setCritical(res.critical);
-    setRolled(res.dice);
+    setRolled({ dice: res.dice, times: res.times });
   }
 
   function apply() {
@@ -334,6 +363,7 @@ function HitPanel({ c, v, onApplied }: { c: Combatant; v: Vitals; onApplied: (ms
     const notes = [
       describeHit(hit, r),
       r.ablate && `SP ${SLOT_LABELS[location]} ${r.sp}→${r.sp - 1}`,
+      r.aimEffect,
       r.critical && "role na tabela de ferimento crítico",
       r.mortalHit && "+1 na penalidade de death save",
       after.label,
@@ -378,7 +408,9 @@ function HitPanel({ c, v, onApplied }: { c: Combatant; v: Vitals; onApplied: (ms
           onChange={(e) => setDice(e.target.value)}
         >
           {DAMAGE_DICE.map((d) => (
-            <option key={d}>{d}</option>
+            <option key={d} value={d}>
+              {d.includes("x") ? `autofire 2d6 × ${d.split("x")[1]}` : d}
+            </option>
           ))}
         </select>
         <button type="button" className="btn !px-2 !py-0" onClick={roll}>
@@ -386,27 +418,27 @@ function HitPanel({ c, v, onApplied }: { c: Combatant; v: Vitals; onApplied: (ms
         </button>
         {rolled && (
           <span className="flex gap-1" aria-label="dados rolados">
-            {rolled.map((d, i) => (
+            {rolled.dice.map((d, i) => (
               <span key={i} className={`animate-hop border-2 px-1 font-bold ${d === 6 ? "border-red text-red" : "border-line"}`}>
                 {d}
               </span>
             ))}
+            {rolled.times > 1 && <span className="font-bold">× {rolled.times}</span>}
           </span>
         )}
       </div>
 
       <div className="flex flex-wrap items-center gap-1">
-        {(["body", "head"] as const).map((loc) => (
+        {TARGETS.map((t) => (
           <button
-            key={loc}
+            key={t.id}
             type="button"
-            aria-pressed={location === loc}
-            className={toggle(location === loc)}
-            title={loc === "head" ? "só com tiro mirado na cabeça: o que passa da armadura dobra" : undefined}
-            onClick={() => setLocation(loc)}
+            aria-pressed={targetId === t.id}
+            className={toggle(targetId === t.id)}
+            title={t.title}
+            onClick={() => setTargetId(t.id)}
           >
-            {SLOT_LABELS[loc]} SP{v.sp[loc]}
-            {loc === "head" && " · mirado ×2"}
+            {t.label} · SP{v.sp[t.location]}
           </button>
         ))}
         <button
@@ -445,6 +477,7 @@ function HitPanel({ c, v, onApplied }: { c: Combatant; v: Vitals; onApplied: (ms
           {describeHit(hit, r)}
           {r.ablate && <span className="text-dim"> · a armadura {location === "head" ? "da cabeça" : "do corpo"} perde 1 SP</span>}
           {r.mortalHit && <span className="text-red"> · mortal: crítico e +1 death save</span>}
+          {r.aimEffect && <span className="text-red"> · {r.aimEffect}</span>}
           {v.deflection > 0 && !r.deflected && (
             <span className="text-net"> · desvio de dano −{v.deflection} pronto pro 1º dano do round</span>
           )}

@@ -454,7 +454,7 @@ function TierLine({ text }: { text: string }) {
 }
 
 /** Tabela de consulta: a primeira coluna em destaque, o resto em linha. */
-function RefBlock({ table }: { table: RefTable }) {
+export function RefBlock({ table }: { table: RefTable }) {
   return (
     <div className="box bg-raise min-w-0 p-3">
       <span className="label">{table.title}</span>

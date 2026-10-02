@@ -96,6 +96,8 @@ export interface Vitals {
   deathSavePenalty: number;
   /** Desvio de dano do Solo ainda disponível neste round. */
   deflection: number;
+  /** MOVE que vale agora (armadura, ferimento); null pro PNJ, que não tem. */
+  move: number | null;
   color: string;
   seed: string;
   linked: boolean;
@@ -123,6 +125,7 @@ export function vitalsOf(c: Combatant, characters: Character[], round?: number):
       sp: { head: armorAt(ch.gear, "head")?.sp ?? 0, body: armorAt(ch.gear, "body")?.sp ?? 0 },
       deathSavePenalty: ch.deathSavePenalty,
       deflection: c.deflectedRound !== undefined && c.deflectedRound === round ? 0 : combatModsOf(ch).deflection,
+      move: effectiveStats(ch).MOVE,
       color: colorFor(ch.id),
       seed: ch.id,
       linked: true,
@@ -138,6 +141,7 @@ export function vitalsOf(c: Combatant, characters: Character[], round?: number):
     sp: { head: c.armor?.head ?? 0, body: c.armor?.body ?? 0 },
     deathSavePenalty: c.deathSavePenalty ?? 0,
     deflection: 0,
+    move: null,
     color: colorFor(c.id),
     seed: c.id,
     linked: false,

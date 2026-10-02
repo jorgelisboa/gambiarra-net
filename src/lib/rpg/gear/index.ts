@@ -5,8 +5,8 @@ import { ARMORS, SHIELDS } from "./armor";
 import { FASHION } from "./fashion";
 import { ITEMS, PROGRAMS } from "./items";
 import { kitItems, type RoleKit } from "./kits";
-import { EXOTIC_WEAPONS, MELEE_WEAPONS, RANGED_WEAPONS } from "./weapons";
-import type { ArmorDef, CatalogItem } from "./types";
+import { EXOTIC_WEAPONS, MELEE_WEAPONS, RANGED_WEAPONS, ammoTypesFor, weaponStats } from "./weapons";
+import type { AmmoDef, ArmorDef, CatalogItem, WeaponDef } from "./types";
 
 export * from "./ammo";
 export * from "./armor";
@@ -97,3 +97,62 @@ export function armorAt(gear: GearItem[], slot: ArmorSlot) {
 /** Penalidade em REF, DEX e MOVE: a pior entre as vestidas, uma vez só. */
 export const armorPenalty = (gear: GearItem[]) =>
   Math.min(0, ...worn(gear).map((g) => armorDef(g)!.penalty));
+
+/* ---------- pente ---------- */
+
+const weaponDef = (g: GearItem) => {
+  const d = catalogItem(g.ref);
+  return d?.kind === "weapon" ? (d as WeaponDef) : undefined;
+};
+
+/** Pente da arma (undefined = não usa pente: arma branca, arco). */
+export function magazineOf(g: GearItem) {
+  const d = weaponDef(g);
+  const w = d && weaponStats(d);
+  return w?.magazine ? { size: w.magazine, types: ammoTypesFor(w) } : undefined;
+}
+
+/** Munição do inventário que cabe na arma. */
+export function compatibleAmmo(gear: GearItem[], weapon: GearItem): GearItem[] {
+  const mag = magazineOf(weapon);
+  if (!mag) return [];
+  return gear.filter((g) => {
+    const d = catalogItem(g.ref);
+    return d?.kind === "ammo" && g.qty > 0 && mag.types.includes((d as AmmoDef).ammo);
+  });
+}
+
+/**
+ * Recarregar (1 ação): troca o pente inteiro por um de um tipo só. As balas que sobraram
+ * voltam pro inventário; o pente novo sai da pilha escolhida.
+ */
+export function reload(gear: GearItem[], weaponId: string, ammoId: string): GearItem[] {
+  const weapon = gear.find((g) => g.id === weaponId);
+  const ammo = gear.find((g) => g.id === ammoId);
+  const mag = weapon && magazineOf(weapon);
+  if (!weapon || !ammo?.ref || !mag) return gear;
+  let out = gear;
+  if (weapon.loaded && weapon.loadedRef) out = addGear(out, weapon.loadedRef, weapon.loaded);
+  const stack = out.find((g) => g.ref === ammo.ref && g.qty > 0) ?? ammo;
+  const take = Math.min(mag.size, stack.qty);
+  return out.map((g) => {
+    if (g.id === stack.id) return { ...g, qty: g.qty - take };
+    if (g.id === weaponId) return { ...g, loaded: take, loadedRef: ammo.ref! };
+    return g;
+  });
+}
+
+/** Gasta balas do pente. */
+export const fire = (gear: GearItem[], weaponId: string, rounds: number): GearItem[] =>
+  gear.map((g) => (g.id === weaponId ? { ...g, loaded: Math.max(0, (g.loaded ?? 0) - rounds) } : g));
+
+/** Carrega as armas de fogo vazias com a munição do inventário (kit inicial). */
+export function loadAll(gear: GearItem[]): GearItem[] {
+  let out = gear;
+  for (const w of gear) {
+    if (!magazineOf(w) || w.loaded) continue;
+    const ammo = compatibleAmmo(out, w)[0];
+    if (ammo) out = reload(out, w.id, ammo.id);
+  }
+  return out;
+}
