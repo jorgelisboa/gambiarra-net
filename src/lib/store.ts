@@ -4,15 +4,20 @@ import { useSyncExternalStore } from "react";
 import type { AppData, Character, Combatant, UserRole } from "./types";
 import { maxHp } from "./rpg";
 import { normalizeCharacter, vitalsOf } from "./rules";
+import { supabase } from "./supabase";
 
 /**
- * Persistência local (localStorage), separada por username.
- * Quando entrar o Supabase, basta trocar load/save por chamadas à API.
+ * Persistência.
+ * - Com Supabase configurado: login com Google; o AppData fica na tabela `app_data` (uma linha por
+ *   usuário) e um cache no localStorage deixa a tela instantânea ao recarregar.
+ * - Sem Supabase (dev sem .env): login por username, tudo no localStorage.
+ * O papel (mestre/jogador) é escolhido a cada login e lembrado neste navegador até sair.
  */
 
 const USER_KEY = "gambiarra:user";
 const ROLE_KEY = "gambiarra:role";
 const dataKey = (user: string) => `gambiarra:data:${user}`;
+const cloudKey = (uid: string) => `gambiarra:cloud:${uid}`;
 
 export const emptyData = (): AppData => ({
   characters: [],
@@ -20,52 +25,102 @@ export const emptyData = (): AppData => ({
   combat: { active: false, round: 1, activeId: null, combatants: [] },
 });
 
+export type AuthMode = "cloud" | "local";
+
 interface Snapshot {
   ready: boolean;
+  mode: AuthMode;
+  /** Nome exibido (Google) ou username (modo local). */
   user: string | null;
+  /** auth.users.id no modo cloud. */
+  userId: string | null;
+  avatarUrl: string | null;
+  /** Papel salvo no perfil, pra vir pré-selecionado no login. */
+  lastRole: UserRole | null;
   role: UserRole | null;
   data: AppData;
+  /** Falha ao salvar na nuvem (o cache local segue valendo). */
+  syncError: string | null;
 }
 
-const SERVER: Snapshot = { ready: false, user: null, role: null, data: emptyData() };
+const MODE: AuthMode = supabase ? "cloud" : "local";
+
+const blankSnap = (ready: boolean): Snapshot => ({
+  ready,
+  mode: MODE,
+  user: null,
+  userId: null,
+  avatarUrl: null,
+  lastRole: null,
+  role: null,
+  data: emptyData(),
+  syncError: null,
+});
+
+const SERVER = blankSnap(false);
 
 const isRole = (r: unknown): r is UserRole => r === "mestre" || r === "jogador";
 
 let snap: Snapshot | null = null;
 const listeners = new Set<() => void>();
 
-function readData(user: string): AppData {
-  try {
-    const raw = localStorage.getItem(dataKey(user));
-    if (raw) {
-      const data: AppData = { ...emptyData(), ...JSON.parse(raw) };
-      return { ...data, characters: data.characters.map(normalizeCharacter) };
-    }
-  } catch {}
-  return emptyData();
-}
-
-function getSnapshot(): Snapshot {
-  if (!snap) {
-    let user: string | null = null;
-    let role: UserRole | null = null;
-    try {
-      user = localStorage.getItem(USER_KEY);
-      const r = localStorage.getItem(ROLE_KEY);
-      role = isRole(r) ? r : null;
-    } catch {}
-    // sessão antiga (sem papel salvo) volta pro login pra escolher
-    if (!role) user = null;
-    snap = { ready: true, user, role, data: user ? readData(user) : emptyData() };
-  }
-  return snap;
-}
-
 const emit = () => listeners.forEach((l) => l());
 
 function set(next: Snapshot) {
   snap = next;
   emit();
+}
+
+const lsGet = (k: string) => {
+  try {
+    return localStorage.getItem(k);
+  } catch {
+    return null;
+  }
+};
+const lsSet = (k: string, v: string) => {
+  try {
+    localStorage.setItem(k, v);
+  } catch {}
+};
+const lsDel = (k: string) => {
+  try {
+    localStorage.removeItem(k);
+  } catch {}
+};
+
+function parseData(raw: unknown): AppData {
+  const obj = typeof raw === "string" ? JSON.parse(raw) : raw;
+  const data: AppData = { ...emptyData(), ...(obj as Partial<AppData>) };
+  return { ...data, characters: data.characters.map(normalizeCharacter) };
+}
+
+function readLocal(key: string): AppData | null {
+  const raw = lsGet(key);
+  if (!raw) return null;
+  try {
+    return parseData(raw);
+  } catch {
+    return null;
+  }
+}
+
+function getSnapshot(): Snapshot {
+  if (!snap) {
+    if (MODE === "local") {
+      const user = lsGet(USER_KEY);
+      const r = lsGet(ROLE_KEY);
+      const role = isRole(r) ? r : null;
+      // sessão antiga (sem papel salvo) volta pro login pra escolher
+      snap = role && user
+        ? { ...blankSnap(true), user, role, data: readLocal(dataKey(user)) ?? emptyData() }
+        : blankSnap(true);
+    } else {
+      snap = blankSnap(false);
+      startCloud();
+    }
+  }
+  return snap;
 }
 
 export function useApp(): Snapshot {
@@ -79,31 +134,166 @@ export function useApp(): Snapshot {
   );
 }
 
-export function login(username: string, role: UserRole) {
-  const user = username.trim();
-  if (!user) return;
-  try {
-    localStorage.setItem(USER_KEY, user);
-    localStorage.setItem(ROLE_KEY, role);
-  } catch {}
-  set({ ready: true, user, role, data: readData(user) });
+/* ---------- modo cloud ---------- */
+
+let cloudStarted = false;
+let loadedFor: string | null = null;
+
+function startCloud() {
+  if (cloudStarted || !supabase) return;
+  cloudStarted = true;
+  supabase.auth.onAuthStateChange((_event, session) => {
+    // não chamar o supabase dentro do callback (trava o lock de auth): agenda
+    setTimeout(() => {
+      if (!session) {
+        loadedFor = null;
+        set(blankSnap(true));
+      } else if (loadedFor !== session.user.id) {
+        loadedFor = session.user.id;
+        void loadCloud(session.user.id, session.user.user_metadata ?? {});
+      }
+    }, 0);
+  });
 }
 
-export function logout() {
+/** Fichas de logins locais antigos, pra não perder nada na primeira entrada com Google. */
+function localCharacters(): Character[] {
+  const out: Character[] = [];
   try {
-    localStorage.removeItem(USER_KEY);
-    localStorage.removeItem(ROLE_KEY);
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k?.startsWith("gambiarra:data:")) continue;
+      for (const c of readLocal(k)?.characters ?? []) {
+        if (!out.some((x) => x.id === c.id)) out.push(c);
+      }
+    }
   } catch {}
-  set({ ready: true, user: null, role: null, data: emptyData() });
+  return out;
+}
+
+async function loadCloud(uid: string, meta: Record<string, unknown>) {
+  const sb = supabase!;
+  const cached = readLocal(cloudKey(uid));
+  const r = lsGet(ROLE_KEY);
+  const base: Snapshot = {
+    ...blankSnap(false),
+    user: (meta.full_name as string) ?? (meta.name as string) ?? "netrunner",
+    userId: uid,
+    avatarUrl: (meta.avatar_url as string) ?? null,
+    role: isRole(r) ? r : null,
+    data: cached ?? emptyData(),
+  };
+  // com cache, mostra na hora; a nuvem chega logo depois
+  if (cached) set({ ...base, ready: true });
+
+  const [profile, row] = await Promise.all([
+    sb.from("profiles").select("display_name, avatar_url, role").eq("id", uid).maybeSingle(),
+    sb.from("app_data").select("data").eq("user_id", uid).maybeSingle(),
+  ]);
+  if (loadedFor !== uid) return;
+
+  let data = base.data;
+  let syncError: string | null = profile.error?.message ?? row.error?.message ?? null;
+  if (row.data) {
+    data = parseData(row.data.data);
+  } else if (!row.error) {
+    data = { ...emptyData(), characters: localCharacters() };
+    const { error } = await sb.from("app_data").insert({ user_id: uid, data });
+    syncError = error?.message ?? syncError;
+  }
+  lsSet(cloudKey(uid), JSON.stringify(data));
+
+  const p = profile.data;
+  set({
+    ...base,
+    ready: true,
+    user: p?.display_name || base.user,
+    avatarUrl: p?.avatar_url ?? base.avatarUrl,
+    lastRole: isRole(p?.role) ? p.role : null,
+    data,
+    syncError,
+  });
+}
+
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+let pending: { uid: string; data: AppData } | null = null;
+
+async function flush() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = null;
+  const job = pending;
+  pending = null;
+  if (!job || !supabase) return;
+  const { error } = await supabase
+    .from("app_data")
+    .upsert({ user_id: job.uid, data: job.data, updated_at: new Date().toISOString() });
+  const cur = getSnapshot();
+  if (cur.userId === job.uid && (cur.syncError ?? null) !== (error?.message ?? null)) {
+    set({ ...cur, syncError: error?.message ?? null });
+  }
+}
+
+function queueSave(uid: string, data: AppData) {
+  pending = { uid, data };
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => void flush(), 400);
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("pagehide", () => void flush());
+}
+
+/* ---------- login ---------- */
+
+export async function loginWithGoogle() {
+  await supabase?.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: window.location.origin },
+  });
+}
+
+/** Modo local: username sem senha. */
+export function login(username: string, role: UserRole) {
+  const user = username.trim();
+  if (!user || MODE !== "local") return;
+  lsSet(USER_KEY, user);
+  lsSet(ROLE_KEY, role);
+  set({ ...blankSnap(true), user, role, data: readLocal(dataKey(user)) ?? emptyData() });
+}
+
+/** Modo cloud: escolhe o papel depois do Google. */
+export function chooseRole(role: UserRole) {
+  const cur = getSnapshot();
+  if (!cur.userId) return;
+  lsSet(ROLE_KEY, role);
+  set({ ...cur, role, lastRole: role });
+  void supabase
+    ?.from("profiles")
+    .update({ role, updated_at: new Date().toISOString() })
+    .eq("id", cur.userId);
+}
+
+export async function logout() {
+  lsDel(USER_KEY);
+  lsDel(ROLE_KEY);
+  if (MODE === "cloud") {
+    await flush();
+    await supabase?.auth.signOut();
+  }
+  loadedFor = null;
+  set(blankSnap(true));
 }
 
 export function mutate(fn: (d: AppData) => AppData) {
   const cur = getSnapshot();
   if (!cur.user) return;
   const data = fn(cur.data);
-  try {
-    localStorage.setItem(dataKey(cur.user), JSON.stringify(data));
-  } catch {}
+  if (cur.mode === "cloud" && cur.userId) {
+    lsSet(cloudKey(cur.userId), JSON.stringify(data));
+    queueSave(cur.userId, data);
+  } else {
+    lsSet(dataKey(cur.user), JSON.stringify(data));
+  }
   set({ ...cur, data });
 }
 

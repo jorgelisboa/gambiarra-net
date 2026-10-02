@@ -6,6 +6,12 @@ import { useApp } from "@/lib/store";
 
 export default function Home() {
   const { ready, user, role } = useApp();
-  if (!ready) return null;
+  if (!ready) {
+    return (
+      <main className="flex flex-1 items-center justify-center text-dim">
+        <span className="cursor">conectando</span>
+      </main>
+    );
+  }
   return user && role ? <Shell user={user} role={role} /> : <Login />;
 }

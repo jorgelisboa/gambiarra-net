@@ -17,8 +17,17 @@ Terminal minimalista em pixel art. Detalhes em [DESIGN.md](DESIGN.md).
 
 ## Dados
 
-Tudo fica no `localStorage` do navegador, separado por username (login sem senha por enquanto).
-A camada de persistência está isolada em [`src/lib/store.ts`](src/lib/store.ts) pra facilitar a troca por Supabase.
+Com Supabase configurado, o login é pelo Google e tudo fica salvo no perfil (tabela `app_data`, uma linha por usuário, protegida por RLS). Sem as variáveis de ambiente, o app roda no modo local: login por username e tudo no `localStorage`.
+A camada de persistência está em [`src/lib/store.ts`](src/lib/store.ts); o schema, em [`supabase/migrations/`](supabase/migrations/).
+
+No login a pessoa escolhe **mestre** (combate, net e fichas) ou **jogador** (só criar e ver os próprios personagens).
+
+### Configurando o Supabase
+
+1. Copie `.env.example` pra `.env.local` e preencha `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+2. Aplique a migration de `supabase/migrations/`.
+3. Em Authentication → Providers, ative o Google com o Client ID/Secret do Google Cloud (redirect `https://<projeto>.supabase.co/auth/v1/callback`).
+4. Em Authentication → URL Configuration, coloque a URL do app (e `http://localhost:3000`) em Site URL / Redirect URLs.
 
 ## Sistema de regras
 

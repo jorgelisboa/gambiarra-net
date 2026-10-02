@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { logout } from "@/lib/store";
+import { logout, useApp } from "@/lib/store";
 import type { UserRole } from "@/lib/types";
 import { Characters } from "./Characters";
 import { Combat } from "./Combat";
@@ -16,6 +16,7 @@ const TABS = [
 type TabId = (typeof TABS)[number]["id"];
 
 export function Shell({ user, role }: { user: string; role: UserRole }) {
+  const { syncError } = useApp();
   const tabs = TABS.filter((t) => (t.roles as readonly UserRole[]).includes(role));
   const [tab, setTab] = useState<TabId>(role === "mestre" ? "combat" : "chars");
 
@@ -52,7 +53,12 @@ export function Shell({ user, role }: { user: string; role: UserRole }) {
               @<span className="text-fg">{user}</span>
             </span>
           </span>
-          <button className="btn btn-danger" onClick={logout}>
+          {syncError && (
+            <span className="text-red" title={syncError}>
+              offline
+            </span>
+          )}
+          <button className="btn btn-danger" onClick={() => void logout()}>
             sair
           </button>
         </div>

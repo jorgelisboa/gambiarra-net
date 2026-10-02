@@ -42,3 +42,4 @@ next-env.d.ts
 
 # skills de agente (reinstalar com skills-lock.json)
 .claude/skills/
+!.env.example
