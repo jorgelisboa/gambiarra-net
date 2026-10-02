@@ -8,7 +8,7 @@ import { supabase } from "./supabase";
 
 /**
  * Persistência.
- * - Com Supabase configurado: login com Google; as fichas ficam na tabela `characters` (uma linha
+ * - Com Supabase configurado: login com email e senha; as fichas ficam na tabela `characters` (uma linha
  *   por personagem). Combate e personagem da sessão ficam só no cache do localStorage, que também
  *   deixa a tela instantânea ao recarregar.
  * - Sem Supabase (dev sem .env): login por username, tudo no localStorage.
@@ -31,7 +31,7 @@ export type AuthMode = "cloud" | "local";
 interface Snapshot {
   ready: boolean;
   mode: AuthMode;
-  /** Nome exibido (Google) ou username (modo local). */
+  /** Nome do perfil ou username (modo local). */
   user: string | null;
   /** auth.users.id no modo cloud. */
   userId: string | null;
@@ -157,7 +157,7 @@ function startCloud() {
   });
 }
 
-/** Fichas de logins locais antigos, pra não perder nada na primeira entrada com Google. */
+/** Fichas de logins locais antigos, pra não perder nada na primeira entrada na conta. */
 function localCharacters(): Character[] {
   const out: Character[] = [];
   try {
@@ -291,11 +291,67 @@ if (typeof window !== "undefined") {
 
 /* ---------- login ---------- */
 
-export async function loginWithGoogle() {
-  await supabase?.auth.signInWithOAuth({
-    provider: "google",
-    options: { redirectTo: window.location.origin },
+const AUTH_ERRORS: Record<string, string> = {
+  invalid_credentials: "email ou senha errados.",
+  email_not_confirmed: "confirme o email antes de entrar (veja sua caixa de entrada).",
+  user_already_exists: "esse email já tem conta. use entrar.",
+  weak_password: "senha fraca: use pelo menos 6 caracteres.",
+  email_address_invalid: "email inválido.",
+  email_address_not_authorized: "o supabase não conseguiu enviar o email de confirmação pra esse endereço.",
+  over_email_send_rate_limit: "muitos emails enviados. tente de novo em alguns minutos.",
+  over_request_rate_limit: "muitas tentativas. espere um pouco.",
+  signup_disabled: "cadastro desativado.",
+};
+
+const authError = (e: { code?: string; message: string }) =>
+  AUTH_ERRORS[e.code ?? ""] ?? e.message;
+
+/** `needsConfirm`: cadastro feito, mas a conta só entra pelo link do email. */
+export type AuthResult = { error: string | null; needsConfirm?: boolean };
+
+// o builder do supabase-js só envia a requisição no then/await
+const saveRole = (uid: string, role: UserRole) =>
+  void supabase
+    ?.from("profiles")
+    .update({ role, updated_at: new Date().toISOString() })
+    .eq("id", uid)
+    .then(() => undefined);
+
+// O papel vai pro localStorage antes de entrar: quando a sessão chega, loadCloud já abre o app.
+
+export async function signIn(email: string, password: string, role: UserRole): Promise<AuthResult> {
+  if (!supabase) return { error: "supabase não configurado." };
+  lsSet(ROLE_KEY, role);
+  const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+  if (error) {
+    lsDel(ROLE_KEY);
+    return { error: authError(error) };
+  }
+  saveRole(data.user.id, role);
+  return { error: null };
+}
+
+export async function signUp(
+  name: string,
+  email: string,
+  password: string,
+  role: UserRole,
+): Promise<AuthResult> {
+  if (!supabase) return { error: "supabase não configurado." };
+  lsSet(ROLE_KEY, role);
+  const { data, error } = await supabase.auth.signUp({
+    email: email.trim(),
+    password,
+    options: { data: { full_name: name.trim() }, emailRedirectTo: window.location.origin },
   });
+  if (error) {
+    lsDel(ROLE_KEY);
+    return { error: authError(error) };
+  }
+  // com "confirm email" ligado no supabase não vem sessão: a conta entra pelo link
+  if (!data.session) return { error: null, needsConfirm: true };
+  if (data.user) saveRole(data.user.id, role);
+  return { error: null };
 }
 
 /** Modo local: username sem senha. */
@@ -307,16 +363,13 @@ export function login(username: string, role: UserRole) {
   set({ ...blankSnap(true), user, role, data: readLocal(dataKey(user)) ?? emptyData() });
 }
 
-/** Modo cloud: escolhe o papel depois do Google. */
+/** Modo cloud com sessão já aberta (ex.: voltou do link de confirmação): escolhe o papel. */
 export function chooseRole(role: UserRole) {
   const cur = getSnapshot();
   if (!cur.userId) return;
   lsSet(ROLE_KEY, role);
   set({ ...cur, role, lastRole: role });
-  void supabase
-    ?.from("profiles")
-    .update({ role, updated_at: new Date().toISOString() })
-    .eq("id", cur.userId);
+  saveRole(cur.userId, role);
 }
 
 export async function logout() {

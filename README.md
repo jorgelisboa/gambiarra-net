@@ -17,7 +17,7 @@ Terminal minimalista em pixel art. Detalhes em [DESIGN.md](DESIGN.md).
 
 ## Dados
 
-Com Supabase configurado, o login é pelo Google e as fichas ficam salvas no perfil (tabela `characters`, uma linha por personagem, protegida por RLS). Combate e personagem da sessão ficam no navegador por enquanto. Sem as variáveis de ambiente, o app roda no modo local: login por username e tudo no `localStorage`.
+Com Supabase configurado, o login é por email e senha e as fichas ficam salvas no perfil (tabela `characters`, uma linha por personagem, protegida por RLS). Combate e personagem da sessão ficam no navegador por enquanto. Sem as variáveis de ambiente, o app roda no modo local: login por username e tudo no `localStorage`.
 A camada de persistência está em [`src/lib/store.ts`](src/lib/store.ts); o schema, em [`supabase/migrations/`](supabase/migrations/).
 
 No login a pessoa escolhe **mestre** (combate, net e fichas) ou **jogador** (só criar e ver os próprios personagens).
@@ -26,7 +26,7 @@ No login a pessoa escolhe **mestre** (combate, net e fichas) ou **jogador** (só
 
 1. Copie `.env.example` pra `.env.local` e preencha `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 2. Aplique a migration de `supabase/migrations/`.
-3. Em Authentication → Providers, ative o Google com o Client ID/Secret do Google Cloud (redirect `https://<projeto>.supabase.co/auth/v1/callback`).
+3. Em Authentication → Sign In / Providers → Email, desligue **Confirm email**. Sem SMTP próprio, o Supabase só envia email pros membros da org, então quem não é da equipe não conseguiria confirmar a conta.
 4. Em Authentication → URL Configuration, coloque a URL do app (e `http://localhost:3000`) em Site URL / Redirect URLs.
 
 ## Sistema de regras
