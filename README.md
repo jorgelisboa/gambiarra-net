@@ -2,6 +2,8 @@
 
 VTT **não oficial** pra Cyberpunk RED: fichas, iniciativa em tela cheia e (em breve) simulador de netrunning.
 
+Feito pra mesa presencial: o mestre no PC ligado na TV, os jogadores com a ficha no celular. Visão, telas, módulos de regras e o caminho até lá em [MAPA.md](MAPA.md).
+
 > Projeto de fã, gratuito e sem fins lucrativos. Não é afiliado nem endossado pela R. Talsorian Games.
 > Cyberpunk e Cyberpunk RED são marcas da R. Talsorian Games. Este repositório não contém arte do livro; regras e tabelas aparecem resumidas em pt-BR, pra uso na mesa.
 
