@@ -8,8 +8,9 @@ import { supabase } from "./supabase";
 
 /**
  * Persistência.
- * - Com Supabase configurado: login com Google; o AppData fica na tabela `app_data` (uma linha por
- *   usuário) e um cache no localStorage deixa a tela instantânea ao recarregar.
+ * - Com Supabase configurado: login com Google; as fichas ficam na tabela `characters` (uma linha
+ *   por personagem). Combate e personagem da sessão ficam só no cache do localStorage, que também
+ *   deixa a tela instantânea ao recarregar.
  * - Sem Supabase (dev sem .env): login por username, tudo no localStorage.
  * O papel (mestre/jogador) é escolhido a cada login e lembrado neste navegador até sair.
  */
@@ -186,21 +187,33 @@ async function loadCloud(uid: string, meta: Record<string, unknown>) {
   // com cache, mostra na hora; a nuvem chega logo depois
   if (cached) set({ ...base, ready: true });
 
-  const [profile, row] = await Promise.all([
+  const [profile, rows] = await Promise.all([
     sb.from("profiles").select("display_name, avatar_url, role").eq("id", uid).maybeSingle(),
-    sb.from("app_data").select("data").eq("user_id", uid).maybeSingle(),
+    sb.from("characters").select("data").eq("user_id", uid).order("created_at"),
   ]);
   if (loadedFor !== uid) return;
 
-  let data = base.data;
-  let syncError: string | null = profile.error?.message ?? row.error?.message ?? null;
-  if (row.data) {
-    data = parseData(row.data.data);
-  } else if (!row.error) {
-    data = { ...emptyData(), characters: localCharacters() };
-    const { error } = await sb.from("app_data").insert({ user_id: uid, data });
-    syncError = error?.message ?? syncError;
+  let characters = base.data.characters;
+  let syncError: string | null = profile.error?.message ?? rows.error?.message ?? null;
+  if (rows.data?.length) {
+    characters = rows.data.map((r) => normalizeCharacter(r.data as Character));
+  } else if (rows.data) {
+    // primeira entrada: sobe as fichas que já existiam neste navegador
+    characters = localCharacters();
+    if (characters.length) {
+      const { error } = await sb.from("characters").upsert(characters.map((c) => toRow(uid, c)));
+      syncError = error?.message ?? syncError;
+    }
   }
+  const ids = new Set(characters.map((c) => c.id));
+  const data: AppData = {
+    ...base.data,
+    characters,
+    sessionCharacterId:
+      base.data.sessionCharacterId && ids.has(base.data.sessionCharacterId)
+        ? base.data.sessionCharacterId
+        : null,
+  };
   lsSet(cloudKey(uid), JSON.stringify(data));
 
   const p = profile.data;
@@ -215,8 +228,19 @@ async function loadCloud(uid: string, meta: Record<string, unknown>) {
   });
 }
 
+/* Só as fichas vão pra nuvem; combate e personagem da sessão ficam no cache local. */
+
+const toRow = (uid: string, c: Character) => ({
+  id: c.id,
+  user_id: uid,
+  name: c.name,
+  role: c.role,
+  data: c,
+  updated_at: new Date().toISOString(),
+});
+
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
-let pending: { uid: string; data: AppData } | null = null;
+let pending: { uid: string; dirty: Map<string, Character>; deleted: Set<string> } | null = null;
 
 async function flush() {
   if (saveTimer) clearTimeout(saveTimer);
@@ -224,17 +248,35 @@ async function flush() {
   const job = pending;
   pending = null;
   if (!job || !supabase) return;
-  const { error } = await supabase
-    .from("app_data")
-    .upsert({ user_id: job.uid, data: job.data, updated_at: new Date().toISOString() });
+  const results = await Promise.all([
+    job.dirty.size
+      ? supabase.from("characters").upsert([...job.dirty.values()].map((c) => toRow(job.uid, c)))
+      : null,
+    job.deleted.size
+      ? supabase.from("characters").delete().in("id", [...job.deleted])
+      : null,
+  ]);
+  const error = results.find((r) => r?.error)?.error?.message ?? null;
   const cur = getSnapshot();
-  if (cur.userId === job.uid && (cur.syncError ?? null) !== (error?.message ?? null)) {
-    set({ ...cur, syncError: error?.message ?? null });
-  }
+  if (cur.userId === job.uid && cur.syncError !== error) set({ ...cur, syncError: error });
 }
 
-function queueSave(uid: string, data: AppData) {
-  pending = { uid, data };
+/** Marca o que mudou entre duas versões da lista de fichas e agenda o envio. */
+function queueSave(uid: string, prev: Character[], next: Character[]) {
+  if (prev === next) return;
+  if (!pending || pending.uid !== uid) pending = { uid, dirty: new Map(), deleted: new Set() };
+  const before = new Map(prev.map((c) => [c.id, c]));
+  for (const c of next) {
+    if (before.get(c.id) !== c) {
+      pending.dirty.set(c.id, c);
+      pending.deleted.delete(c.id);
+    }
+    before.delete(c.id);
+  }
+  for (const id of before.keys()) {
+    pending.deleted.add(id);
+    pending.dirty.delete(id);
+  }
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(() => void flush(), 400);
 }
@@ -290,7 +332,7 @@ export function mutate(fn: (d: AppData) => AppData) {
   const data = fn(cur.data);
   if (cur.mode === "cloud" && cur.userId) {
     lsSet(cloudKey(cur.userId), JSON.stringify(data));
-    queueSave(cur.userId, data);
+    queueSave(cur.userId, cur.data.characters, data.characters);
   } else {
     lsSet(dataKey(cur.user), JSON.stringify(data));
   }

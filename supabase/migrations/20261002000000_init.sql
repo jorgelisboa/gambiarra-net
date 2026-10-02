@@ -1,4 +1,5 @@
--- gambiarra.net: perfil do usuário (login Google) + dados do app (fichas, combate) por usuário.
+-- gambiarra.net: perfil do usuário (login Google) + fichas de personagem.
+-- Combate e personagem da sessão ficam só no navegador por enquanto.
 
 create table public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
@@ -10,15 +11,22 @@ create table public.profiles (
   updated_at timestamptz not null default now()
 );
 
--- AppData inteiro em jsonb (mesmo formato do localStorage). Uma linha por usuário.
-create table public.app_data (
-  user_id uuid primary key references auth.users (id) on delete cascade,
-  data jsonb not null default '{}'::jsonb,
+-- Uma linha por ficha. `data` é o Character do app (src/lib/types.ts) inteiro;
+-- nome e role ficam também em colunas pra listar/consultar sem abrir o json.
+create table public.characters (
+  id text primary key,
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  name text not null,
+  role text not null,
+  data jsonb not null,
+  created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
+create index characters_user_id_idx on public.characters (user_id);
+
 alter table public.profiles enable row level security;
-alter table public.app_data enable row level security;
+alter table public.characters enable row level security;
 
 create policy "perfil: dono lê" on public.profiles
   for select to authenticated using ((select auth.uid()) = id);
@@ -27,12 +35,14 @@ create policy "perfil: dono cria" on public.profiles
 create policy "perfil: dono edita" on public.profiles
   for update to authenticated using ((select auth.uid()) = id) with check ((select auth.uid()) = id);
 
-create policy "dados: dono lê" on public.app_data
+create policy "ficha: dono lê" on public.characters
   for select to authenticated using ((select auth.uid()) = user_id);
-create policy "dados: dono cria" on public.app_data
+create policy "ficha: dono cria" on public.characters
   for insert to authenticated with check ((select auth.uid()) = user_id);
-create policy "dados: dono edita" on public.app_data
+create policy "ficha: dono edita" on public.characters
   for update to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+create policy "ficha: dono apaga" on public.characters
+  for delete to authenticated using ((select auth.uid()) = user_id);
 
 -- perfil criado junto com o usuário, com nome e foto do Google
 create function public.handle_new_user()

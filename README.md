@@ -17,7 +17,7 @@ Terminal minimalista em pixel art. Detalhes em [DESIGN.md](DESIGN.md).
 
 ## Dados
 
-Com Supabase configurado, o login é pelo Google e tudo fica salvo no perfil (tabela `app_data`, uma linha por usuário, protegida por RLS). Sem as variáveis de ambiente, o app roda no modo local: login por username e tudo no `localStorage`.
+Com Supabase configurado, o login é pelo Google e as fichas ficam salvas no perfil (tabela `characters`, uma linha por personagem, protegida por RLS). Combate e personagem da sessão ficam no navegador por enquanto. Sem as variáveis de ambiente, o app roda no modo local: login por username e tudo no `localStorage`.
 A camada de persistência está em [`src/lib/store.ts`](src/lib/store.ts); o schema, em [`supabase/migrations/`](supabase/migrations/).
 
 No login a pessoa escolhe **mestre** (combate, net e fichas) ou **jogador** (só criar e ver os próprios personagens).
