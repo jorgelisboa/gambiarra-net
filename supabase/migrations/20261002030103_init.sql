@@ -13,17 +13,17 @@ create table public.profiles (
 
 -- Uma linha por ficha. `data` é o Character do app (src/lib/types.ts) inteiro;
 -- nome e role ficam também em colunas pra listar/consultar sem abrir o json.
+-- chave (user_id, id): duas contas no mesmo navegador podem importar as mesmas fichas locais.
 create table public.characters (
-  id text primary key,
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  id text not null,
   name text not null,
   role text not null,
   data jsonb not null,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  primary key (user_id, id)
 );
-
-create index characters_user_id_idx on public.characters (user_id);
 
 alter table public.profiles enable row level security;
 alter table public.characters enable row level security;

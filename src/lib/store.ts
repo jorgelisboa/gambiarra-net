@@ -201,7 +201,9 @@ async function loadCloud(uid: string, meta: Record<string, unknown>) {
     // primeira entrada: sobe as fichas que já existiam neste navegador
     characters = localCharacters();
     if (characters.length) {
-      const { error } = await sb.from("characters").upsert(characters.map((c) => toRow(uid, c)));
+      const { error } = await sb
+        .from("characters")
+        .upsert(characters.map((c) => toRow(uid, c)), { onConflict: "user_id,id" });
       syncError = error?.message ?? syncError;
     }
   }
@@ -250,10 +252,12 @@ async function flush() {
   if (!job || !supabase) return;
   const results = await Promise.all([
     job.dirty.size
-      ? supabase.from("characters").upsert([...job.dirty.values()].map((c) => toRow(job.uid, c)))
+      ? supabase
+          .from("characters")
+          .upsert([...job.dirty.values()].map((c) => toRow(job.uid, c)), { onConflict: "user_id,id" })
       : null,
     job.deleted.size
-      ? supabase.from("characters").delete().in("id", [...job.deleted])
+      ? supabase.from("characters").delete().eq("user_id", job.uid).in("id", [...job.deleted])
       : null,
   ]);
   const error = results.find((r) => r?.error)?.error?.message ?? null;
