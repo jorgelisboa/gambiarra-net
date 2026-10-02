@@ -11,6 +11,11 @@ import { rockerboy } from "./rockerboy";
 import { solo } from "./solo";
 import { tech } from "./tech";
 
+export * from "./team";
+export { REPAIR_SKILLS } from "./tech";
+export { VEHICLE_SKILLS } from "./nomad";
+export { teamSize } from "./exec";
+
 /** Um por role. O Record garante que nenhum role de `ROLES` fica sem definição. */
 export const ROLE_DEFS: Record<Role, RoleDef> = {
   Rockerboy: rockerboy,

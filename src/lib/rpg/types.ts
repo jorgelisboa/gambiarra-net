@@ -1,10 +1,17 @@
-import type { AbilityState, Role, Stats } from "../types";
+import type { AbilityState, Role, SkillEntry, StatKey, Stats } from "../types";
 
 /** O que uma rolagem precisa saber do personagem. */
 export interface RollCtx {
   rank: number;
+  /** Stats que valem no teste (armadura, EMP em uso...). */
   stats: Stats;
   state: AbilityState;
+  skills: SkillEntry[];
+}
+
+export interface Mod {
+  label: string;
+  value: number;
 }
 
 export interface RollResult {
@@ -27,8 +34,8 @@ export interface UseDef {
   desc?: string;
   /** Custo em combate, ex.: "1 ação de net". */
   cost?: string;
-  /** Modificador escolhido num select antes de rolar (perícia, provas...). */
-  mods?: { label: string; value: number }[];
+  /** Modificador escolhido num select antes de rolar (perícia da ficha, provas...). */
+  mods?: Mod[] | ((ctx: RollCtx) => Mod[]);
   /** Motivo do bloqueio, ou null se pode usar. */
   locked?: (ctx: RollCtx) => string | null;
   roll: (ctx: RollCtx, mod: number) => RollResult;
@@ -60,7 +67,7 @@ export interface AllocDef {
 export interface ListDef {
   id: string;
   title: string;
-  max: (rank: number) => number;
+  max: (rank: number, state: AbilityState) => number;
   placeholder: string;
   /** Etiquetas que um item pode ter (Nomad: veículo ou melhoria). */
   tags?: string[];
@@ -75,9 +82,50 @@ export interface Tier {
 
 export interface TierTable {
   title: string;
+  /** O que decide a faixa ativa; padrão é o rank (crio do Medtech usa os pontos). */
+  level?: (rank: number, state: AbilityState) => number;
   /** Benefícios acumulam (Exec, veículos do Nomad) em vez de valer só a faixa atual. */
   cumulative?: boolean;
   tiers: Tier[];
+}
+
+/** Tabela de consulta (fármacos, melhorias, rumores...). A primeira coluna é o nome da linha. */
+export interface RefTable {
+  title: string;
+  /** Rótulos das colunas depois da primeira. */
+  head?: string[];
+  rows: string[][];
+  note?: string;
+}
+
+/** Bônus da habilidade numa perícia da ficha. */
+export interface SkillBonus {
+  skill: string;
+  value: number;
+  /** De onde vem, ex.: "campo (maker)". */
+  source: string;
+}
+
+/** Perícia que só existe pelo role (Surgery e Medical Tech do Medtech). */
+export interface RoleSkill {
+  id: string;
+  name: string;
+  namePt: string;
+  stat: StatKey;
+  level: number;
+  desc: string;
+}
+
+/** O que a habilidade muda em combate (Solo). */
+export interface CombatMods {
+  /** Somado em todo ataque. */
+  attack: number;
+  /** Somado no dano (antes da armadura) do 1º acerto do round. */
+  firstHitDamage: number;
+  /** Falha crítica (1) ao atacar não rola o dado extra; conta como 1. */
+  ignoreFumble: boolean;
+  /** Tirado do 1º dano levado no round. */
+  deflection: number;
 }
 
 export interface AbilityDef {
@@ -85,6 +133,14 @@ export interface AbilityDef {
   name: string;
   namePt: string;
   summary: string;
+  /** Como funciona, em parágrafos (resumo próprio em pt-BR do texto do livro). */
+  about?: string[];
+  refs?: RefTable[];
+  /** Equipe do Exec: membros liberados no rank. */
+  team?: { max: (rank: number) => number };
+  skillBonus?: (rank: number, state: AbilityState) => SkillBonus[];
+  roleSkills?: (rank: number, state: AbilityState) => RoleSkill[];
+  combat?: (rank: number, state: AbilityState) => Partial<CombatMods>;
   alloc?: AllocDef;
   lists?: ListDef[];
   uses?: UseDef[];

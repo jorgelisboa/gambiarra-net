@@ -5,7 +5,7 @@ import type { AbilityDef, AllocDef, AllocOption, ListDef, Tier, TierTable } from
 export const STARTING_RANK = 4;
 export const MAX_RANK = 10;
 
-export const emptyAbility = (): AbilityState => ({ alloc: {}, lists: {} });
+export const emptyAbility = (): AbilityState => ({ alloc: {}, lists: {}, team: [] });
 
 /* ---------- pontos (Solo, Tech, Medtech) ---------- */
 
@@ -71,11 +71,12 @@ export const listItems = (state: AbilityState, id: string): AbilityItem[] =>
   state.lists[id] ?? [];
 
 export const canAddItem = (def: ListDef, state: AbilityState, rank: number) =>
-  listItems(state, def.id).length < def.max(rank);
+  listItems(state, def.id).length < def.max(rank, state);
 
 /* ---------- tabelas por rank ---------- */
 
-export const tierActive = (table: TierTable, t: Tier, rank: number) =>
-  table.cumulative ? rank >= t.from : rank >= t.from && rank <= t.to;
+/** `level` é o rank, ou o que a tabela usar no lugar (pontos de uma especialidade). */
+export const tierActive = (table: TierTable, t: Tier, level: number) =>
+  table.cumulative ? level >= t.from : level >= t.from && level <= t.to;
 
 export const rankRange = (t: Tier) => (t.from === t.to ? `${t.from}` : `${t.from}–${t.to}`);

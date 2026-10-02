@@ -486,12 +486,18 @@ export const applyHit = (id: string, hit: Hit) =>
   mutate((d) => {
     const c = d.combat.combatants.find((x) => x.id === id);
     if (!c) return d;
-    const v = vitalsOf(c, d.characters);
+    const v = vitalsOf(c, d.characters, d.combat.round);
     const r = resolveHit(hit, v);
     const penalty = r.mortalHit ? 1 : 0;
     if (c.characterId) {
       return {
         ...d,
+        combat: r.deflected
+          ? {
+              ...d.combat,
+              combatants: d.combat.combatants.map((x) => (x.id === id ? { ...x, deflectedRound: d.combat.round } : x)),
+            }
+          : d.combat,
         characters: d.characters.map((ch) =>
           ch.id === c.characterId
             ? {
@@ -549,9 +555,12 @@ const resetTurn = (c: Combatant): Combatant => ({
   netUsed: 0,
 });
 
+/** Combate novo (ou encerrado): turno zerado e o desvio de dano do Solo volta a valer. */
+const resetCombatant = (c: Combatant): Combatant => ({ ...resetTurn(c), deflectedRound: undefined });
+
 export const startCombat = () =>
   mutate((d) => {
-    const combatants = d.combat.combatants.map(resetTurn).sort(byInitiative);
+    const combatants = d.combat.combatants.map(resetCombatant).sort(byInitiative);
     return {
       ...d,
       combat: { active: true, round: 1, activeId: combatants[0]?.id ?? null, combatants },
@@ -566,7 +575,7 @@ export const endCombat = () =>
       active: false,
       round: 1,
       activeId: null,
-      combatants: d.combat.combatants.map(resetTurn),
+      combatants: d.combat.combatants.map(resetCombatant),
     },
   }));
 

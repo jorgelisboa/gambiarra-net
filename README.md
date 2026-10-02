@@ -33,7 +33,7 @@ No login a pessoa escolhe **mestre** (combate, net e fichas) ou **jogador** (só
 
 [`src/lib/rpg/`](src/lib/rpg/) guarda as regras do RED usadas pelo app, separadas da interface:
 
-- `roles/` — um arquivo por role: resumo em pt-BR e a habilidade (pontos a distribuir, listas com limite, usos que rolam, tabelas por rank).
+- `roles/` — um arquivo por role: resumo em pt-BR, "como funciona" (resumo próprio do texto do livro), pontos, listas, usos que rolam com as perícias da ficha, tabelas por rank e de consulta, e o que a habilidade muda no resto da ficha (bônus em perícias, perícias do role, combate). `team.ts` tem as classes de membro da equipe do Exec.
 - `ability.ts` — limites: orçamento de pontos, tetos, corte quando o rank cai, listas.
 - `dice.ts` — d6/d10, teste com crítico, comparação com DV.
 - `derived.ts` — stats derivados: HP, limiar de ferimento grave, death save, humanidade, EMP em uso, estado de ferimento.

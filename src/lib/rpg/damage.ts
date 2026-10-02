@@ -27,6 +27,8 @@ export interface HitResult {
   /** Ferimento crítico por levar dano de ataque já mortalmente ferido. */
   mortalHit: boolean;
   bonus: number;
+  /** Tirado pelo desvio de dano do Solo (1º dano do round). */
+  deflected: number;
   /** Total que sai do HP. */
   hpLoss: number;
   /** A armadura do local perde 1 de SP. */
@@ -39,17 +41,23 @@ export interface HitResult {
  * 2. tira o SP do local (corpo, ou cabeça num tiro mirado) e o resto sai do HP;
  * 3. se levou qualquer dano, a armadura do local perde 1 de SP até ser consertada.
  * Ferimento crítico soma +5 direto no HP. Mortalmente ferido que leva dano de ataque
- * sofre ferimento crítico e ganha +1 na penalidade de death save.
+ * sofre ferimento crítico e ganha +1 na penalidade de death save. O desvio de dano do
+ * Solo tira do 1º dano que ele leva no round.
  */
-export function resolveHit(hit: Hit, target: { hp: number; sp: Record<ArmorSlot, number> }): HitResult {
+export function resolveHit(
+  hit: Hit,
+  target: { hp: number; sp: Record<ArmorSlot, number>; deflection?: number },
+): HitResult {
   const sp = hit.bypassArmor ? 0 : Math.max(0, target.sp[hit.location]);
   const doubled = hit.location === "head";
   const through = Math.max(0, hit.damage - sp) * (doubled ? 2 : 1);
   const mortalHit = target.hp < 1 && hit.attack && through > 0;
   const critical = hit.critical || mortalHit;
   const bonus = critical ? CRITICAL_INJURY_BONUS : 0;
-  const hpLoss = through + bonus;
-  return { sp, through, doubled, critical, mortalHit, bonus, hpLoss, ablate: sp > 0 && hpLoss > 0 };
+  const taken = through + bonus;
+  const deflected = taken > 0 ? Math.min(target.deflection ?? 0, taken) : 0;
+  const hpLoss = taken - deflected;
+  return { sp, through, doubled, critical, mortalHit, bonus, deflected, hpLoss, ablate: sp > 0 && hpLoss > 0 };
 }
 
 /** Ablação: toda armadura vestida no local perde 1 de SP (mínimo 0). */
@@ -67,5 +75,6 @@ export function describeHit(hit: Hit, r: HitResult): string {
   if (!hit.bypassArmor) parts[0] += ` = ${base}`;
   if (r.doubled && base > 0) parts.push(`×2 cabeça = ${r.through}`);
   if (r.critical) parts.push(`+${r.bonus} ${r.mortalHit ? "crítico (mortal)" : "crítico"}`);
+  if (r.deflected) parts.push(`−${r.deflected} desvio de dano`);
   return `${parts.join(" · ")} → ${r.hpLoss} no HP`;
 }

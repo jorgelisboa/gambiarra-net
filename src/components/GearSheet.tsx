@@ -11,6 +11,7 @@ import {
   armorPenalty,
   catalogItem,
   check,
+  combatModsOf,
   effectiveStats,
   fmtEb,
   itemName,
@@ -62,6 +63,7 @@ export function GearSheet({ ch, save }: { ch: Character; save: Save }) {
 
   const stats = effectiveStats(ch);
   const wound = woundOf(ch.hp, maxHp(ch.stats)).penalty;
+  const mods = combatModsOf(ch);
   const gear = ch.gear;
   const setGear = (g: GearItem[]) => save({ gear: g });
   const patch = (id: string, p: Partial<GearItem>) => setGear(gear.map((g) => (g.id === id ? { ...g, ...p } : g)));
@@ -87,17 +89,27 @@ export function GearSheet({ ch, save }: { ch: Character; save: Save }) {
     const sd = skillDef(w.skill);
     if (!sd) return;
     const lvl = skillLevel(ch.skills, w.skill);
-    const res = check(stats[sd.stat] + lvl + wound);
+    const res = check(stats[sd.stat] + lvl + mods.attack + wound, { ignoreFumble: mods.ignoreFumble });
     const parts = [`${sd.name} ${lvl}`, `${sd.stat.toLowerCase()} ${stats[sd.stat]}`];
+    if (mods.attack) parts.push(`ataque preciso ${mods.attack}`);
     if (wound) parts.push(`ferimento ${wound}`);
-    show(it.id, { dice: res.dice, total: res.total, crit: res.crit, text: `ataque: ${parts.join(" + ")} + 1d10` });
+    const fumble = "fumbleIgnored" in res ? " · falha crítica ignorada (recuperar falha)" : "";
+    show(it.id, {
+      dice: res.dice,
+      total: res.total,
+      crit: res.crit,
+      text: `ataque: ${parts.join(" + ")} + 1d10${fumble}`,
+    });
   }
 
   function damage(it: GearItem, def: WeaponDef) {
     const w = weaponStats(def);
     const res = rollDamage(w.damage);
     const crit = res.critical ? ` · ferimento crítico! +${CRITICAL_INJURY_BONUS} direto no HP` : "";
-    show(it.id, { dice: res.dice, total: res.total, text: `dano ${w.damage}${crit}` });
+    const weak = mods.firstHitDamage
+      ? ` · se for o 1º acerto do round: +${mods.firstHitDamage} ponto fraco = ${res.total + mods.firstHitDamage}`
+      : "";
+    show(it.id, { dice: res.dice, total: res.total, text: `dano ${w.damage}${weak}${crit}` });
   }
 
   return (
@@ -163,6 +175,7 @@ export function GearSheet({ ch, save }: { ch: Character; save: Save }) {
                     it={it}
                     ch={ch}
                     stats={stats}
+                    attackBonus={mods.attack}
                     onName={(name) => patch(it.id, { name })}
                     onRemove={() => remove(it.id)}
                     onAttack={(d) => attack(it, d)}
@@ -258,6 +271,7 @@ function WeaponCard({
   it,
   ch,
   stats,
+  attackBonus,
   onName,
   onRemove,
   onAttack,
@@ -267,6 +281,8 @@ function WeaponCard({
   it: GearItem;
   ch: Character;
   stats: Stats;
+  /** Ataque preciso do Solo. */
+  attackBonus: number;
   onName: (name: string) => void;
   onRemove: () => void;
   onAttack: (d: WeaponDef) => void;
@@ -295,8 +311,13 @@ function WeaponCard({
       {sd && (
         <div className="text-xs">
           ataque: <span className="text-dim">{sd.name.toLowerCase()}</span> {lvl} +{" "}
-          <span className="text-dim">{sd.stat.toLowerCase()}</span> {stats[sd.stat]} ={" "}
-          <span className="text-base font-bold text-red">{stats[sd.stat] + lvl}</span>
+          <span className="text-dim">{sd.stat.toLowerCase()}</span> {stats[sd.stat]}
+          {attackBonus > 0 && (
+            <>
+              {" "}+ <span className="text-net">preciso {attackBonus}</span>
+            </>
+          )}{" "}
+          = <span className="text-base font-bold text-red">{stats[sd.stat] + lvl + attackBonus}</span>
           {lvl === 0 && <span className="text-dim"> · sem a perícia</span>}
         </div>
       )}

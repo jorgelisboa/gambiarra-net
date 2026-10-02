@@ -10,6 +10,8 @@ import {
 import {
   currentEmp,
   effectiveStats,
+  roleSkillsOf,
+  skillBonusesOf,
   deathSave,
   fitToRank,
   isCyberpsycho,
@@ -286,6 +288,8 @@ function Editor({
             role={ch.role}
             originLanguage={ch.lifepath.picks.language}
             penalty={wound.penalty}
+            bonuses={skillBonusesOf(ch)}
+            roleSkills={roleSkillsOf(ch)}
             canRoll
           />
         )}

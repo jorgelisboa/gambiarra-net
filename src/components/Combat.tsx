@@ -193,7 +193,7 @@ export function Combat() {
 
 function CombatRow({ c }: { c: Combatant }) {
   const { data } = useApp();
-  const v = vitalsOf(c, data.characters);
+  const v = vitalsOf(c, data.characters, data.combat.round);
   const wound = woundOf(v.hp, v.maxHp);
   const isActive = data.combat.active && data.combat.activeId === c.id;
   const [delta, setDelta] = useState(1);
@@ -445,6 +445,9 @@ function HitPanel({ c, v, onApplied }: { c: Combatant; v: Vitals; onApplied: (ms
           {describeHit(hit, r)}
           {r.ablate && <span className="text-dim"> · a armadura {location === "head" ? "da cabeça" : "do corpo"} perde 1 SP</span>}
           {r.mortalHit && <span className="text-red"> · mortal: crítico e +1 death save</span>}
+          {v.deflection > 0 && !r.deflected && (
+            <span className="text-net"> · desvio de dano −{v.deflection} pronto pro 1º dano do round</span>
+          )}
         </span>
         <button className="btn btn-primary !py-0" disabled={damage <= 0 && !critical}>
           aplicar

@@ -5,15 +5,15 @@ export const netActionsFor = (rank: number) =>
   rank >= 10 ? 5 : rank >= 7 ? 4 : rank >= 4 ? 3 : 2;
 
 const INTERFACE: [id: string, name: string, desc: string][] = [
-  ["backdoor", "Backdoor", "quebra senhas e portas da arquitetura"],
-  ["cloak", "Cloak", "apaga teus rastros antes de sair"],
-  ["control", "Control", "controla o que está ligado à arquitetura: câmeras, torretas, portas"],
-  ["eyedee", "Eye-Dee", "identifica um dado achado e quanto ele vale"],
-  ["pathfinder", "Pathfinder", "revela o mapa da arquitetura"],
-  ["scanner", "Scanner", "acha pontos de acesso na área"],
-  ["slide", "Slide", "foge de um Black ICE que está te seguindo"],
-  ["virus", "Virus", "planta um vírus no fundo da arquitetura"],
-  ["zap", "Zap", "ataque básico contra programas e netrunners"],
+  ["backdoor", "Backdoor", "passa por senhas e outras barreiras da arquitetura"],
+  ["cloak", "Cloak", "esconde o que você fez na arquitetura antes de sair"],
+  ["control", "Control", "controla o que está ligado à arquitetura"],
+  ["eyedee", "Eye-Dee", "descobre o que é um dado encontrado e quanto ele vale"],
+  ["pathfinder", "Pathfinder", "descobre o mapa da arquitetura"],
+  ["scanner", "Scanner", "acha onde estão os sistemas numa área"],
+  ["slide", "Slide", "escapa de um Black ICE que está te seguindo"],
+  ["virus", "Virus", "deixa um vírus customizado no núcleo da arquitetura"],
+  ["zap", "Zap", "ataque básico de netrunner, contra programas e contra outros netrunners"],
 ];
 
 const uses: UseDef[] = INTERFACE.map(([id, name, desc]) => ({
@@ -38,6 +38,21 @@ export const netrunner: RoleDef = {
     namePt: "interface",
     summary:
       "Define quantas ações de net você tem por turno e é a base de todas as habilidades de netrun.",
+    about: [
+      "A interface deixa o netrunner fazer netrun, define quantas ações de net ele tem no turno e dá acesso às habilidades de interface (abaixo).",
+      "O netrunning completo (arquiteturas, andares, ICE e programas) entra no módulo do mestre, que ainda vai chegar.",
+    ],
+    tables: [
+      {
+        title: "ações de net por turno",
+        tiers: [
+          { from: 1, to: 3, lines: ["ações de net: 2"] },
+          { from: 4, to: 6, lines: ["ações de net: 3"] },
+          { from: 7, to: 9, lines: ["ações de net: 4"] },
+          { from: 10, to: 10, lines: ["ações de net: 5"] },
+        ],
+      },
+    ],
     passives: (rank) => {
       const next = [4, 7, 10].find((r) => r > rank);
       return [

@@ -18,6 +18,7 @@ import {
   tierActive,
   type AllocDef,
   type ListDef,
+  type RefTable,
   type RollResult,
   type TierTable,
   type UseDef,
@@ -25,6 +26,7 @@ import {
 import { uid } from "@/lib/id";
 import type { AbilityItem, AbilityState, Character } from "@/lib/types";
 import { Bar } from "./Pixel";
+import { TeamPanel } from "./TeamPanel";
 
 /** Habilidade de role na ficha: rank, limites, botões de uso e tabelas por rank. */
 export function RoleAbility({
@@ -59,6 +61,17 @@ export function RoleAbility({
         <RankControl rank={rank} color={accent} onChange={setRank} />
       </div>
 
+      {ab.about && (
+        <div className="box bg-raise space-y-2 p-3">
+          <span className="label">como funciona</span>
+          {ab.about.map((para) => (
+            <p key={para.slice(0, 40)} className="max-w-prose">
+              {para}
+            </p>
+          ))}
+        </div>
+      )}
+
       {passives.length > 0 && (
         <ul className="flex flex-wrap gap-2">
           {passives.map((p) => (
@@ -79,6 +92,8 @@ export function RoleAbility({
         />
       )}
 
+      {ab.team && <TeamPanel ch={ch} save={save} max={ab.team.max(rank)} />}
+
       {ab.lists?.map((l) => (
         <ListBlock key={l.id} def={l} state={ch.ability} rank={rank} onChange={setState} />
       ))}
@@ -92,8 +107,16 @@ export function RoleAbility({
       )}
 
       {ab.tables?.map((t) => (
-        <TierBlock key={t.title} table={t} rank={rank} accent={accent} />
+        <TierBlock key={t.title} table={t} level={t.level?.(rank, ch.ability) ?? rank} accent={accent} />
       ))}
+
+      {ab.refs && (
+        <div className="grid gap-2 lg:grid-cols-2">
+          {ab.refs.map((t) => (
+            <RefBlock key={t.title} table={t} />
+          ))}
+        </div>
+      )}
 
       {ab.notes && (
         <ul className="space-y-1 text-xs text-dim">
@@ -233,7 +256,7 @@ function ListBlock({
   onChange: (s: AbilityState) => void;
 }) {
   const items = listItems(state, def.id);
-  const max = def.max(rank);
+  const max = def.max(rank, state);
   const setItems = (next: AbilityItem[]) =>
     onChange({ ...state, lists: { ...state.lists, [def.id]: next } });
   const patch = (id: string, p: Partial<AbilityItem>) =>
@@ -250,7 +273,7 @@ function ListBlock({
         </span>
       </div>
       {max === 0 && items.length === 0 && (
-        <p className="text-xs text-dim">nada liberado no rank {rank}.</p>
+        <p className="text-xs text-dim">nada liberado ainda.</p>
       )}
       <ul className="space-y-2">
         {items.map((it, i) => (
@@ -283,7 +306,7 @@ function ListBlock({
       </ul>
       {items.length > max && (
         <p className="mt-2 text-xs text-red">
-          acima do limite do rank {rank}: remova {items.length - max}.
+          acima do limite: remova {items.length - max}.
         </p>
       )}
       <button
@@ -300,7 +323,9 @@ function ListBlock({
 function UseCard({ use, ch, accent }: { use: UseDef; ch: Character; accent: string }) {
   const ctx = rollCtx(ch);
   const lock = use.locked?.(ctx) ?? null;
-  const [mod, setMod] = useState(use.mods?.[0]?.value ?? 0);
+  const mods = typeof use.mods === "function" ? use.mods(ctx) : use.mods;
+  const [pick, setPick] = useState(0);
+  const mod = mods?.[Math.min(pick, mods.length - 1)]?.value ?? 0;
   const [last, setLast] = useState<{ n: number; r: RollResult } | null>(null);
 
   return (
@@ -314,15 +339,15 @@ function UseCard({ use, ch, accent }: { use: UseDef; ch: Character; accent: stri
       <div className="text-xs">{use.formula}</div>
       {use.desc && <p className="text-xs text-dim">{use.desc}</p>}
       <div className="mt-auto flex flex-wrap items-center gap-2 pt-2">
-        {use.mods && (
+        {mods && (
           <select
-            className="field !w-auto !py-1 text-xs"
+            className="field !w-auto min-w-0 max-w-full !py-1 text-xs"
             aria-label="modificador"
-            value={mod}
-            onChange={(e) => setMod(Number(e.target.value))}
+            value={Math.min(pick, mods.length - 1)}
+            onChange={(e) => setPick(Number(e.target.value))}
           >
-            {use.mods.map((m) => (
-              <option key={m.label} value={m.value}>
+            {mods.map((m, i) => (
+              <option key={m.label} value={i}>
                 {m.label}
               </option>
             ))}
@@ -376,27 +401,28 @@ export function RollLine({ r, accent }: { r: RollResult; accent: string }) {
 
 function TierBlock({
   table,
-  rank,
+  level,
   accent,
 }: {
   table: TierTable;
-  rank: number;
+  /** Rank, ou o que a tabela usa no lugar (pontos de uma especialidade). */
+  level: number;
   accent: string;
 }) {
   const [all, setAll] = useState(false);
-  const shown = all ? table.tiers : table.tiers.filter((t) => tierActive(table, t, rank));
-  const next = table.tiers.find((t) => t.from > rank);
+  const shown = all ? table.tiers : table.tiers.filter((t) => tierActive(table, t, level));
+  const next = table.tiers.find((t) => t.from > level);
   return (
     <div className="box bg-raise p-3">
       <div className="mb-2 flex items-center justify-between gap-3">
         <span className="label">{table.title}</span>
         <button className="btn !py-0 text-xs" onClick={() => setAll(!all)}>
-          {all ? "só o meu rank" : "todos os ranks"}
+          {all ? "só o que vale agora" : "ver tudo"}
         </button>
       </div>
       <ul className="space-y-2">
         {shown.map((t) => {
-          const on = tierActive(table, t, rank);
+          const on = tierActive(table, t, level);
           return (
             <li key={t.from} className="flex gap-3" style={{ opacity: on ? 1 : 0.45 }}>
               <span className="w-10 shrink-0 font-bold" style={{ color: on ? accent : undefined }}>
@@ -411,7 +437,8 @@ function TierBlock({
           );
         })}
       </ul>
-      {!all && next && <p className="mt-2 text-xs text-dim">próximo degrau: rank {next.from}</p>}
+      {!all && next && <p className="mt-2 text-xs text-dim">próximo degrau: {next.from}</p>}
+      {!all && shown.length === 0 && <p className="text-xs text-dim">nada liberado ainda.</p>}
     </div>
   );
 }
@@ -422,6 +449,30 @@ function TierLine({ text }: { text: string }) {
   return (
     <div>
       <span className="text-dim">{text.slice(0, i)}:</span> {text.slice(i + 2)}
+    </div>
+  );
+}
+
+/** Tabela de consulta: a primeira coluna em destaque, o resto em linha. */
+function RefBlock({ table }: { table: RefTable }) {
+  return (
+    <div className="box bg-raise min-w-0 p-3">
+      <span className="label">{table.title}</span>
+      <ul className="mt-2 space-y-1.5">
+        {table.rows.map(([first, ...rest]) => (
+          <li key={first + rest[0]}>
+            <span className="font-bold">{first}</span>
+            {rest.map((cell, i) => (
+              <span key={i}>
+                {" · "}
+                {table.head?.[i] && <span className="text-dim">{table.head[i]} </span>}
+                {cell}
+              </span>
+            ))}
+          </li>
+        ))}
+      </ul>
+      {table.note && <p className="mt-2 text-xs text-dim">{table.note}</p>}
     </div>
   );
 }

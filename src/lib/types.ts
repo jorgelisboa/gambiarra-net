@@ -48,12 +48,29 @@ export interface AbilityItem {
   tag?: string;
 }
 
+/** Membro da equipe do Exec. Classe, stats e pacotes vêm de `src/lib/rpg/roles/team.ts`. */
+export interface TeamMember {
+  id: string;
+  /** Classe na tabela do livro (guarda-costas, motorista...). */
+  job: string;
+  name: string;
+  /** Emprego de fachada. */
+  cover: string;
+  /** Linha da tabela de stats (1–6). */
+  row: number;
+  hp: number;
+  /** Sem teto durante a sessão; no fim dela, no máximo 10. */
+  loyalty: number;
+}
+
 /** O que o jogador escolheu dentro da habilidade de role. Regras em `src/lib/rpg`. */
 export interface AbilityState {
   /** Pontos distribuídos por opção (Solo, Tech, Medtech). Ids são únicos entre roles. */
   alloc: Record<string, number>;
-  /** Listas com limite por rank (motorpool do Nomad, equipe do Exec). */
+  /** Listas com limite (motorpool do Nomad, fármacos do Medtech). */
   lists: Record<string, AbilityItem[]>;
+  /** Equipe do Exec. */
+  team: TeamMember[];
 }
 
 export interface LifepathEntry {
@@ -135,6 +152,8 @@ export interface Combatant {
   armor?: Record<ArmorSlot, number>;
   /** Só PNJ: +1 a cada dano de ataque levado já mortalmente ferido. */
   deathSavePenalty?: number;
+  /** Round em que o desvio de dano do Solo já foi usado. */
+  deflectedRound?: number;
   netMax: number;
   actionUsed: boolean;
   moveUsed: boolean;

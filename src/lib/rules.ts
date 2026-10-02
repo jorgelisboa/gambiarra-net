@@ -2,6 +2,7 @@ import { uid } from "./id";
 import {
   STARTING_RANK,
   armorAt,
+  combatModsOf,
   emptyAbility,
   effectiveStats,
   emptyLifepath,
@@ -93,6 +94,8 @@ export interface Vitals {
   /** SP atual por local (armadura vestida na ficha, ou a do PNJ). */
   sp: Record<ArmorSlot, number>;
   deathSavePenalty: number;
+  /** Desvio de dano do Solo ainda disponível neste round. */
+  deflection: number;
   color: string;
   seed: string;
   linked: boolean;
@@ -106,7 +109,8 @@ export const colorFor = (seed: string) => {
   return PALETTE[h % PALETTE.length];
 };
 
-export function vitalsOf(c: Combatant, characters: Character[]): Vitals {
+/** `round`: o round atual do combate, pra saber se o desvio de dano do Solo já foi usado. */
+export function vitalsOf(c: Combatant, characters: Character[], round?: number): Vitals {
   const ch = c.characterId ? characters.find((x) => x.id === c.characterId) : null;
   if (ch) {
     return {
@@ -118,6 +122,7 @@ export function vitalsOf(c: Combatant, characters: Character[]): Vitals {
       initBonus: initiativeBonus(ch),
       sp: { head: armorAt(ch.gear, "head")?.sp ?? 0, body: armorAt(ch.gear, "body")?.sp ?? 0 },
       deathSavePenalty: ch.deathSavePenalty,
+      deflection: c.deflectedRound !== undefined && c.deflectedRound === round ? 0 : combatModsOf(ch).deflection,
       color: colorFor(ch.id),
       seed: ch.id,
       linked: true,
@@ -132,6 +137,7 @@ export function vitalsOf(c: Combatant, characters: Character[]): Vitals {
     initBonus: 0,
     sp: { head: c.armor?.head ?? 0, body: c.armor?.body ?? 0 },
     deathSavePenalty: c.deathSavePenalty ?? 0,
+    deflection: 0,
     color: colorFor(c.id),
     seed: c.id,
     linked: false,

@@ -10,7 +10,9 @@ import {
   setSkillLevel,
   skillBase,
   streetratSkills,
+  type RoleSkill,
   type RollResult,
+  type SkillBonus,
   type SkillDef,
 } from "@/lib/rpg";
 import type { Role, SkillEntry, Stats } from "@/lib/types";
@@ -30,6 +32,8 @@ export function SkillSheet({
   originLanguage,
   penalty = 0,
   canRoll = false,
+  bonuses = [],
+  roleSkills = [],
 }: {
   skills: SkillEntry[];
   onChange: (skills: SkillEntry[]) => void;
@@ -41,7 +45,12 @@ export function SkillSheet({
   /** Ferimento: −2 grave, −4 mortal. */
   penalty?: number;
   canRoll?: boolean;
+  /** Bônus da habilidade de role (Tech: campo; Nomad: moto; Solo: detectar ameaça). */
+  bonuses?: SkillBonus[];
+  /** Perícias que só existem pelo role (Medtech). */
+  roleSkills?: RoleSkill[];
 }) {
+  const bonusOf = (skill: string) => bonuses.filter((b) => b.skill === skill);
   const [filter, setFilter] = useState<Filter>(skills.length > 0 ? "trained" : "all");
   const [query, setQuery] = useState("");
   const [last, setLast] = useState<{ id: string; n: number; r: RollResult } | null>(null);
@@ -70,15 +79,28 @@ export function SkillSheet({
   }
 
   function roll(def: SkillDef, e: SkillEntry) {
-    const base = skillBase(stats, e);
+    const extra = bonusOf(def.id);
+    const base = skillBase(stats, e) + extra.reduce((a, b) => a + b.value, 0);
     const res = check(base + penalty);
     const name = e.spec ? `${def.name} (${e.spec})` : def.name;
     const parts = [`${def.stat.toLowerCase()} ${stats[def.stat]}`, `perícia ${e.level}`];
+    for (const b of extra) parts.push(`${b.source} ${b.value}`);
     if (penalty) parts.push(`ferimento ${penalty}`);
     setLast({
       id: e.id,
       n: (last?.n ?? 0) + 1,
       r: { dice: res.dice, total: res.total, crit: res.crit, text: `${name}: ${parts.join(" + ")} + 1d10` },
+    });
+  }
+
+  function rollRole(rs: RoleSkill) {
+    const res = check(stats[rs.stat] + rs.level + penalty);
+    const parts = [`${rs.stat.toLowerCase()} ${stats[rs.stat]}`, `perícia ${rs.level}`];
+    if (penalty) parts.push(`ferimento ${penalty}`);
+    setLast({
+      id: `role-${rs.id}`,
+      n: (last?.n ?? 0) + 1,
+      r: { dice: res.dice, total: res.total, crit: res.crit, text: `${rs.name}: ${parts.join(" + ")} + 1d10` },
     });
   }
 
@@ -131,6 +153,45 @@ export function SkillSheet({
         {penalty < 0 && <span className="text-red"> · ferimento: {penalty} em todo teste</span>}
       </p>
 
+      {roleSkills.length > 0 && (
+        <section className="box bg-raise p-3" aria-labelledby="cat-role">
+          <header className="mb-1">
+            <h3 id="cat-role" className="font-pixel text-lg leading-tight">
+              do role <span className="font-mono text-xs text-dim">{role.toLowerCase()}</span>
+            </h3>
+            <p className="text-xs text-dim">só existem pela habilidade de role; o nível vem dela.</p>
+          </header>
+          <ul className="divide-y-2 divide-line">
+            {roleSkills.map((rs) => (
+              <li key={rs.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
+                <div className="min-w-0 flex-1 basis-40">
+                  <div className="font-bold">{rs.name}</div>
+                  <div className="text-xs text-dim">
+                    {rs.stat.toLowerCase()} <span className="text-fg">{stats[rs.stat]}</span> · {rs.namePt} · {rs.desc}
+                  </div>
+                </div>
+                <div className="ml-auto flex shrink-0 items-center gap-3">
+                  <span className="text-dim">
+                    nível <span className="font-bold text-fg">{rs.level}</span>
+                  </span>
+                  <span className="w-8 text-right text-xl font-bold text-red">{stats[rs.stat] + rs.level}</span>
+                  {canRoll && (
+                    <button className="btn !px-2 !py-0 text-xs" aria-label={`rolar ${rs.name}`} onClick={() => rollRole(rs)}>
+                      1d10
+                    </button>
+                  )}
+                </div>
+                {last?.id === `role-${rs.id}` && (
+                  <div className="basis-full">
+                    <RollLine key={last.n} r={last.r} accent="var(--red)" />
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {skills.length === 0 && filter === "trained" && !q ? (
         <div className="box space-y-3 p-6 text-center">
           <p className="text-dim">nenhuma perícia ainda.</p>
@@ -159,6 +220,7 @@ export function SkillSheet({
                         def={def}
                         entry={e}
                         stat={stats[def.stat]}
+                        bonus={bonusOf(def.id)}
                         canRoll={canRoll}
                         onLevel={(lvl) => setLevel(def, e, lvl)}
                         onSpec={def.spec ? (spec) => patch(e.id, { spec }) : undefined}
@@ -191,6 +253,7 @@ function SkillRow({
   entry,
   stat,
   canRoll,
+  bonus,
   onLevel,
   onSpec,
   onRemove,
@@ -201,6 +264,7 @@ function SkillRow({
   entry: SkillEntry;
   stat: number;
   canRoll: boolean;
+  bonus: SkillBonus[];
   onLevel: (level: number) => void;
   onSpec?: (spec: string) => void;
   onRemove?: () => void;
@@ -261,11 +325,16 @@ function SkillRow({
             </button>
           </div>
 
+          {bonus.length > 0 && (
+            <span className="text-xs text-net" title={bonus.map((b) => `${b.source} +${b.value}`).join(", ")}>
+              +{bonus.reduce((a, b) => a + b.value, 0)}
+            </span>
+          )}
           <span
             className="w-8 shrink-0 text-right text-xl font-bold text-red"
-            title={`base: ${def.stat.toLowerCase()} ${stat} + ${entry.level}`}
+            title={`base: ${def.stat.toLowerCase()} ${stat} + ${entry.level}${bonus.map((b) => ` + ${b.source} ${b.value}`).join("")}`}
           >
-            {stat + entry.level}
+            {stat + entry.level + bonus.reduce((a, b) => a + b.value, 0)}
           </span>
 
           {canRoll && (
