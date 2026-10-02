@@ -147,10 +147,10 @@ function Editor({
   const emp = currentEmp(ch.stats, ch.humanity);
 
   return (
-    <section className="box space-y-5 p-5">
+    <section className="box min-w-0 space-y-5 p-3 sm:p-5">
       <div className="flex flex-wrap items-center gap-3">
         <input
-          className="field font-pixel max-w-sm text-2xl"
+          className="field font-pixel min-w-0 flex-1 basis-48 text-xl sm:max-w-sm sm:text-2xl"
           aria-label="nome"
           value={ch.name}
           onChange={(e) => save({ name: e.target.value })}
@@ -165,7 +165,7 @@ function Editor({
             <option key={r} value={r}>{r.toLowerCase()}</option>
           ))}
         </select>
-        <div className="ml-auto flex gap-2">
+        <div className="ml-auto flex flex-wrap gap-2">
           <button
             className={`btn ${inSession ? "btn-primary" : ""}`}
             onClick={() => setSessionCharacter(inSession ? null : ch.id)}

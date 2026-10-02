@@ -39,12 +39,12 @@ export function InitiativeStage({ onClose }: { onClose: () => void }) {
   const av = active ? vitalsOf(active, characters) : null;
 
   return (
-    <div ref={root} className="fixed inset-0 z-50 flex flex-col bg-bg p-8">
+    <div ref={root} className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-bg p-4 sm:p-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="font-pixel text-3xl">
+        <span className="font-pixel text-2xl sm:text-3xl">
           round <span className="font-mono font-bold text-red">{String(combat.round).padStart(2, "0")}</span>
         </span>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button className="btn btn-primary" onClick={nextTurn}>
             próximo turno
           </button>
@@ -63,7 +63,7 @@ export function InitiativeStage({ onClose }: { onClose: () => void }) {
         </div>
       </div>
 
-      <div className="flex flex-1 flex-wrap items-end justify-center gap-x-12 gap-y-16 pb-10 pt-20">
+      <div className="flex flex-1 flex-wrap items-end justify-center gap-x-4 gap-y-10 pb-6 pt-10 sm:gap-x-12 sm:gap-y-16 sm:pb-10 sm:pt-20">
         {combat.combatants.map((c) => {
           const v = vitalsOf(c, characters);
           const isActive = c.id === combat.activeId;
@@ -72,13 +72,13 @@ export function InitiativeStage({ onClose }: { onClose: () => void }) {
           return (
             <div
               key={c.id}
-              className="flex w-40 flex-col items-center gap-3"
+              className="flex w-28 flex-col items-center gap-3 sm:w-40"
               style={{ opacity: isActive ? 1 : 0.55 }}
             >
               <span style={{ color: v.color, visibility: isActive ? "visible" : "hidden" }}>
                 <Icon name="down" size={24} />
               </span>
-              <div className={isActive ? "animate-jump" : ""}>
+              <div className={`stage-sprite ${isActive ? "animate-jump" : ""}`}>
                 <Sprite
                   seed={v.seed}
                   color={v.color}
@@ -88,7 +88,7 @@ export function InitiativeStage({ onClose }: { onClose: () => void }) {
               </div>
               <div className="w-full text-center">
                 <div
-                  className="font-pixel truncate text-xl"
+                  className="font-pixel truncate text-lg sm:text-xl"
                   style={{ color: isActive ? v.color : undefined }}
                 >
                   {v.name}
@@ -109,12 +109,12 @@ export function InitiativeStage({ onClose }: { onClose: () => void }) {
       </div>
 
       {active && av && (
-        <div className="flex flex-col items-center gap-3 border-t-2 border-line pt-6">
+        <div className="flex flex-col items-center gap-3 border-t-2 border-line pt-4 sm:pt-6">
           <span className="text-dim">
             turno de <span style={{ color: av.color }}>{av.name}</span>
           </span>
           <TurnActions c={active} netMax={av.netMax} size={40} />
-          <span className="text-xs text-dim">espaço / → passa o turno</span>
+          <span className="hidden text-xs text-dim sm:inline">espaço / → passa o turno</span>
         </div>
       )}
     </div>

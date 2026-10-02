@@ -81,7 +81,7 @@ export function Combat() {
     <div className="mx-auto max-w-5xl space-y-5">
       {stage && <InitiativeStage onClose={() => setStage(false)} />}
 
-      <div className="box flex flex-wrap items-center gap-3 p-4">
+      <div className="box flex flex-wrap items-center gap-2 p-3 sm:gap-3 sm:p-4">
         {combat.active ? (
           <>
             <span className="font-pixel mr-2 text-xl">
@@ -186,7 +186,7 @@ function CombatRow({ c }: { c: Combatant }) {
 
   return (
     <li
-      className={`box flex flex-wrap items-center gap-4 p-3 ${isActive ? "box-active" : ""}`}
+      className={`box flex flex-wrap items-center gap-3 p-3 sm:gap-4 ${isActive ? "box-active" : ""}`}
     >
       <input
         type="number"
@@ -199,7 +199,7 @@ function CombatRow({ c }: { c: Combatant }) {
         }
       />
       <Sprite seed={v.seed} color={v.color} size={44} dim={v.hp <= 0} />
-      <div className="min-w-40 flex-1">
+      <div className="min-w-0 flex-1 basis-40">
         <div className="font-pixel text-lg leading-tight">
           {v.name}
           {!v.linked && <span className="ml-2 text-xs text-dim">pnj</span>}
@@ -207,7 +207,7 @@ function CombatRow({ c }: { c: Combatant }) {
         <div className="mt-2">
           <Bar value={v.hp} max={v.maxHp} color="var(--red)" />
         </div>
-        <div className="mt-2 flex items-center gap-2 text-xs">
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
           <button
             className="btn btn-bare !px-2 !py-0"
             aria-label="causar dano"

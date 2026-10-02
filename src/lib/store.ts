@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import type { AppData, Character, Combatant } from "./types";
+import type { AppData, Character, Combatant, UserRole } from "./types";
 import { maxHp } from "./rpg";
 import { normalizeCharacter, vitalsOf } from "./rules";
 
@@ -11,6 +11,7 @@ import { normalizeCharacter, vitalsOf } from "./rules";
  */
 
 const USER_KEY = "gambiarra:user";
+const ROLE_KEY = "gambiarra:role";
 const dataKey = (user: string) => `gambiarra:data:${user}`;
 
 export const emptyData = (): AppData => ({
@@ -22,10 +23,13 @@ export const emptyData = (): AppData => ({
 interface Snapshot {
   ready: boolean;
   user: string | null;
+  role: UserRole | null;
   data: AppData;
 }
 
-const SERVER: Snapshot = { ready: false, user: null, data: emptyData() };
+const SERVER: Snapshot = { ready: false, user: null, role: null, data: emptyData() };
+
+const isRole = (r: unknown): r is UserRole => r === "mestre" || r === "jogador";
 
 let snap: Snapshot | null = null;
 const listeners = new Set<() => void>();
@@ -44,10 +48,15 @@ function readData(user: string): AppData {
 function getSnapshot(): Snapshot {
   if (!snap) {
     let user: string | null = null;
+    let role: UserRole | null = null;
     try {
       user = localStorage.getItem(USER_KEY);
+      const r = localStorage.getItem(ROLE_KEY);
+      role = isRole(r) ? r : null;
     } catch {}
-    snap = { ready: true, user, data: user ? readData(user) : emptyData() };
+    // sessão antiga (sem papel salvo) volta pro login pra escolher
+    if (!role) user = null;
+    snap = { ready: true, user, role, data: user ? readData(user) : emptyData() };
   }
   return snap;
 }
@@ -70,20 +79,22 @@ export function useApp(): Snapshot {
   );
 }
 
-export function login(username: string) {
+export function login(username: string, role: UserRole) {
   const user = username.trim();
   if (!user) return;
   try {
     localStorage.setItem(USER_KEY, user);
+    localStorage.setItem(ROLE_KEY, role);
   } catch {}
-  set({ ready: true, user, data: readData(user) });
+  set({ ready: true, user, role, data: readData(user) });
 }
 
 export function logout() {
   try {
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(ROLE_KEY);
   } catch {}
-  set({ ready: true, user: null, data: emptyData() });
+  set({ ready: true, user: null, role: null, data: emptyData() });
 }
 
 export function mutate(fn: (d: AppData) => AppData) {

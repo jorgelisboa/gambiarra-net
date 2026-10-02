@@ -5,7 +5,7 @@ import { Shell } from "@/components/Shell";
 import { useApp } from "@/lib/store";
 
 export default function Home() {
-  const { ready, user } = useApp();
+  const { ready, user, role } = useApp();
   if (!ready) return null;
-  return user ? <Shell user={user} /> : <Login />;
+  return user && role ? <Shell user={user} role={role} /> : <Login />;
 }

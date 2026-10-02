@@ -29,6 +29,9 @@ export const ROLES = [
 
 export type Role = (typeof ROLES)[number];
 
+/** Quem está logado: o mestre vê a mesa toda; o jogador só as próprias fichas. */
+export type UserRole = "mestre" | "jogador";
+
 export interface CharacterNotes {
   alias: string;
   age: string;
