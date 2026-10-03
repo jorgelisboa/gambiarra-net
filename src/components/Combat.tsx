@@ -29,6 +29,7 @@ import {
 import { uid } from "@/lib/id";
 import { vitalsOf, type Vitals } from "@/lib/rules";
 import type { ArmorSlot, Combatant } from "@/lib/types";
+import { HeartMonitor, WOUND_COLORS } from "./HeartMonitor";
 import { InitiativeStage } from "./InitiativeStage";
 import { RefBlock } from "./RoleAbility";
 import { Bar } from "./Pixel";
@@ -211,6 +212,9 @@ function CombatRow({ c }: { c: Combatant }) {
   const v = vitalsOf(c, data.characters, data.combat.round);
   const wound = woundOf(v.hp, v.maxHp);
   const isActive = data.combat.active && data.combat.activeId === c.id;
+  const woundColor = WOUND_COLORS[wound.id];
+  // muda a cada começo de turno: o monitor varre e o retrato pula uma vez
+  const turn = isActive ? `${data.combat.round}-${c.id}` : null;
   const [delta, setDelta] = useState(1);
   const [hitting, setHitting] = useState(false);
   const [last, setLast] = useState<string | null>(null);
@@ -229,14 +233,16 @@ function CombatRow({ c }: { c: Combatant }) {
           patchCombatant(c.id, { initiative: Number(e.target.value) || 0 })
         }
       />
-      <Portrait photo={v.photo} seed={v.seed} color={v.color} size={44} dim={v.hp <= 0} />
+      <div key={turn ?? "idle"} className={turn ? "animate-hop" : undefined}>
+        <Portrait photo={v.photo} seed={v.seed} color={v.color} size={44} dim={v.hp <= 0} />
+      </div>
       <div className="min-w-0 flex-1 basis-40">
         <div className="font-pixel text-lg leading-tight">
           {v.name}
           {!v.linked && <span className="ml-2 text-xs text-dim">pnj</span>}
         </div>
         <div className="mt-2">
-          <Bar value={v.hp} max={v.maxHp} color="var(--red)" />
+          <Bar value={v.hp} max={v.maxHp} color={woundColor} />
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
           <button
@@ -273,14 +279,13 @@ function CombatRow({ c }: { c: Combatant }) {
             value={delta}
             onChange={(e) => setDelta(Math.max(1, Number(e.target.value) || 1))}
           />
-          {wound.short && (
-            <span
-              className={wound.id === "light" ? "text-dim" : "text-red"}
-              title={`${wound.effect} · estabilizar ${wound.stabilize}`}
-            >
-              {wound.short}
-            </span>
-          )}
+          <span
+            className="uppercase"
+            style={{ color: woundColor }}
+            title={wound.effect ? `${wound.effect} · estabilizar ${wound.stabilize}` : undefined}
+          >
+            {wound.short || "ileso"}
+          </span>
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 text-xs text-dim">
           <span>
@@ -305,6 +310,7 @@ function CombatRow({ c }: { c: Combatant }) {
           )}
         </div>
       </div>
+      <HeartMonitor wound={wound.id} play={turn} width={144} />
       <TurnActions c={c} netMax={v.netMax} size={20} />
       <button
         className="btn btn-danger btn-bare"
