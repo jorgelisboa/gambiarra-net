@@ -45,20 +45,21 @@ function trace(id: Wound["id"]) {
 export function HeartMonitor({
   wound,
   play,
-  width = 160,
+  width,
 }: {
   wound: Wound["id"];
   /** Identidade do turno: muda → varre de novo. null → traço parado. */
   play: string | null;
+  /** Largura em px; sem ela ocupa a largura toda de quem contém. */
   width?: number;
 }) {
   return (
     <svg
-      width={width}
-      height={(width * H) / W}
+      width={width ?? "100%"}
+      height={width ? (width * H) / W : undefined}
       viewBox={`0 0 ${W} ${H}`}
       shapeRendering="crispEdges"
-      className="ml-auto block h-auto max-w-full border-2 border-line bg-bg"
+      className={`block h-auto max-w-full border-2 border-line bg-bg ${width ? "ml-auto" : ""}`}
       aria-hidden
     >
       {/* grade do monitor */}

@@ -67,17 +67,59 @@ input[type="number"]::-webkit-outer-spin-button { appearance: none; margin: 0; }
 }
 .ecg-sweep { stroke-dasharray: 1; animation: ecg-sweep 1.2s steps(32, end) 1 both; }
 
-/* roleta do palco: as cartas giram em passos; a foto (ou o sprite) ocupa a largura da carta */
+/* carrossel do palco: cartas na altura da tela, 4 por vez no desktop e a próxima vazando
+   quando tem mais. --per-* vêm do componente (quantas cartas cabem por tela). */
+.carousel {
+  --gap: 12px;
+  --pad: 12px;
+  --per: var(--per-base);
+  position: relative;
+  display: flex;
+  justify-content: safe center;
+  gap: var(--gap);
+  height: 100%;
+  min-height: 440px;
+  padding-inline: var(--pad);
+  scroll-padding-inline: var(--pad);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.carousel::-webkit-scrollbar { display: none; }
+@media (min-width: 640px) { .carousel { --gap: 16px; --pad: 16px; --per: var(--per-sm); } }
+@media (min-width: 1024px) { .carousel { --per: var(--per-lg); } }
+
 .stage-card {
-  transition: transform 0.45s steps(6, end), opacity 0.45s steps(6, end);
-  /* carta que entra (ou dá a volta) surge depois que as outras andaram */
-  animation: stage-enter 0.7s steps(7, end) both;
+  position: relative;
+  flex: 0 0 calc((100% - var(--gap) * (var(--per) - 1)) / var(--per));
+  overflow: hidden;
+  scroll-snap-align: start;
+  border: 2px solid var(--line);
+  background: var(--color-panel);
 }
-@keyframes stage-enter {
-  from { opacity: 0; }
-  60% { opacity: 0; }
+.stage-card-active { border-color: var(--red); }
+/* quem não está no turno fica com a arte apagada; o HUD continua legível */
+.stage-art { position: absolute; inset: 0; transition: filter 0.3s steps(3, end); }
+.stage-card:not(.stage-card-active) .stage-art { filter: brightness(0.5) saturate(0.6); }
+/* linhas de varredura, como tela de CRT */
+.stage-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(to bottom, transparent 0 2px, rgb(0 0 0 / 0.16) 2px 3px);
+  pointer-events: none;
 }
-.stage-photo :is(svg, img) { width: 100%; height: auto; }
+/* começo do turno: a arte dá um glitch, uma vez */
+.animate-glitch-once { animation: glitch 0.45s steps(1, end) 1; }
+/* o HUD é uma camada sobre a base da carta; o degradê segura a leitura em cima da foto */
+.stage-hud {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  padding: 72px 8px 8px;
+  background: linear-gradient(to bottom, transparent, rgb(8 8 10 / 0.85) 45%);
+}
 .cursor::after {
   content: "";
   display: inline-block;
@@ -89,13 +131,15 @@ input[type="number"]::-webkit-outer-spin-button { appearance: none; margin: 0; }
   animation: blink 1s steps(1, end) infinite;
 }
 
-/* foto do personagem: quadrada, borda de 2px na cor dele; foto não é pixel art, então reduz suave */
+/* foto do personagem: quadrada, borda de 2px na cor dele; foto não é pixel art, então reduz suave.
+   foto em pé mostra o topo (onde fica a cabeça) */
 .portrait {
   display: block;
   flex-shrink: 0;
   border: 2px solid var(--line);
   background: var(--bg);
   object-fit: cover;
+  object-position: top;
   image-rendering: auto;
 }
 .portrait-dim { opacity: 0.4; filter: grayscale(1); }
@@ -164,7 +208,7 @@ button:disabled { cursor: not-allowed; }
 @media (prefers-reduced-motion: reduce) {
   .btn:hover:not(:disabled), .glitch-hover:hover { animation: none; }
   .ecg-sweep { animation: none; }
-  .stage-card { transition: none; animation: none; }
+  .stage-art, .animate-glitch-once { transition: none; animation: none; }
 }
 
 .role-option:has(input:focus-visible) { outline: 2px solid var(--net); outline-offset: 2px; }

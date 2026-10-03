@@ -34,7 +34,49 @@ export function Portrait({
       unoptimized
       onError={() => setBroken(photo)}
       className={`portrait ${dim ? "portrait-dim" : ""}`}
-      style={{ borderColor: color }}
+      // quadrada mesmo com foto em pé: o height: auto do preflight seguiria a proporção da foto
+      style={{ borderColor: color, width: size, height: size }}
+    />
+  );
+}
+
+/**
+ * Foto ocupando o contêiner todo (carta do palco), presa no topo pra não cortar a cabeça.
+ * Sem foto: o sprite grande, num fundo na cor do personagem.
+ */
+export function PortraitArt({
+  photo,
+  seed,
+  color,
+  dim,
+}: {
+  photo?: string | null;
+  seed: string;
+  color: string;
+  dim?: boolean;
+}) {
+  const [broken, setBroken] = useState<string | null>(null);
+  if (!photo || broken === photo) {
+    return (
+      <div
+        className="absolute inset-0 flex items-start justify-center pt-[22%]"
+        style={{ background: `color-mix(in srgb, ${color} 12%, var(--color-panel))` }}
+      >
+        <div className="w-3/5 [&>svg]:h-auto [&>svg]:w-full">
+          <Sprite seed={seed} color={color} size={256} dim={dim} />
+        </div>
+      </div>
+    );
+  }
+  return (
+    <Image
+      src={photo}
+      alt=""
+      fill
+      sizes="(min-width: 1024px) 25vw, (min-width: 640px) 45vw, 90vw"
+      unoptimized
+      onError={() => setBroken(photo)}
+      className={`object-cover object-top ${dim ? "portrait-dim" : ""}`}
     />
   );
 }

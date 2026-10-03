@@ -9,26 +9,34 @@ import { supabase } from "./supabase";
  */
 
 const BUCKET = "portraits";
-/** Lado do quadrado salvo: o palco da iniciativa mostra a 144px, então aguenta tela 2x sem pesar. */
-const SIZE = 384;
+/** Retrato salvo: cabe em 576×960 (3:5). O palco da iniciativa mostra a foto na altura da tela. */
+const MAX_W = 576;
+const MAX_H = 960;
 /** Antes de reduzir: acima disso o navegador pode engasgar pra decodificar. */
 const MAX_INPUT_MB = 20;
 
 const toBlob = (canvas: HTMLCanvasElement, type: string) =>
   new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, 0.85));
 
-/** Recorta o centro num quadrado e reduz pra SIZE px. Transparência vira o fundo do app. */
-async function squareImage(file: File): Promise<Blob> {
+/**
+ * Recorta pelo centro e reduz pra caber em MAX_W×MAX_H. Foto em pé fica em pé (até 3:5),
+ * deitada vira quadrado. Transparência vira o fundo do app.
+ */
+async function portraitImage(file: File): Promise<Blob> {
   const bmp = await createImageBitmap(file);
-  const side = Math.min(bmp.width, bmp.height);
-  const out = Math.min(SIZE, side);
+  // largura/altura entre 3:5 e 1:1; o que passar disso é cortado
+  const ratio = Math.min(1, Math.max(MAX_W / MAX_H, bmp.width / bmp.height));
+  const sw = Math.min(bmp.width, bmp.height * ratio);
+  const sh = sw / ratio;
+  const scale = Math.min(1, MAX_W / sw, MAX_H / sh);
   const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = out;
+  canvas.width = Math.round(sw * scale);
+  canvas.height = Math.round(sh * scale);
   const ctx = canvas.getContext("2d")!;
   ctx.fillStyle = "#08080a";
-  ctx.fillRect(0, 0, out, out);
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(bmp, (bmp.width - side) / 2, (bmp.height - side) / 2, side, side, 0, 0, out, out);
+  ctx.drawImage(bmp, (bmp.width - sw) / 2, (bmp.height - sh) / 2, sw, sh, 0, 0, canvas.width, canvas.height);
   bmp.close();
   // navegador que não gera webp devolve png: aí vai jpeg
   const webp = await toBlob(canvas, "image/webp");
@@ -55,7 +63,7 @@ export async function storePhoto(owner: string | null, characterId: string, file
   }
   let blob: Blob;
   try {
-    blob = await squareImage(file);
+    blob = await portraitImage(file);
   } catch {
     throw new Error("não deu pra ler essa imagem. use png, jpg ou webp.");
   }
