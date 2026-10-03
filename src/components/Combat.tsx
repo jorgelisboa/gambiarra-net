@@ -29,7 +29,7 @@ import {
 import { uid } from "@/lib/id";
 import { vitalsOf, type Vitals } from "@/lib/rules";
 import type { ArmorSlot, Combatant } from "@/lib/types";
-import { HeartMonitor, WOUND_COLORS } from "./HeartMonitor";
+import { TurnPulse, WOUND_COLORS } from "./TurnPulse";
 import { InitiativeStage } from "./InitiativeStage";
 import { RefBlock } from "./RoleAbility";
 import { Bar } from "./Pixel";
@@ -213,7 +213,7 @@ function CombatRow({ c }: { c: Combatant }) {
   const wound = woundOf(v.hp, v.maxHp);
   const isActive = data.combat.active && data.combat.activeId === c.id;
   const woundColor = WOUND_COLORS[wound.id];
-  // muda a cada começo de turno: o monitor varre e o retrato pula uma vez
+  // muda a cada começo de turno: o retrato pula, pisca na cor do estado e o traço corre, uma vez
   const turn = isActive ? `${data.combat.round}-${c.id}` : null;
   const [delta, setDelta] = useState(1);
   const [hitting, setHitting] = useState(false);
@@ -233,8 +233,9 @@ function CombatRow({ c }: { c: Combatant }) {
           patchCombatant(c.id, { initiative: Number(e.target.value) || 0 })
         }
       />
-      <div key={turn ?? "idle"} className={turn ? "animate-hop" : undefined}>
+      <div key={turn ?? "idle"} className={`relative isolate ${turn ? "animate-hop" : ""}`}>
         <Portrait photo={v.photo} seed={v.seed} color={v.color} size={44} dim={v.hp <= 0} />
+        <TurnPulse wound={wound.id} play={turn} />
       </div>
       <div className="min-w-0 flex-1 basis-40">
         <div className="font-pixel text-lg leading-tight">
@@ -310,7 +311,6 @@ function CombatRow({ c }: { c: Combatant }) {
           )}
         </div>
       </div>
-      <HeartMonitor wound={wound.id} play={turn} width={144} />
       <TurnActions c={c} netMax={v.netMax} size={20} />
       <button
         className="btn btn-danger btn-bare"

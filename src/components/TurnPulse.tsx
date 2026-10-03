@@ -39,44 +39,38 @@ function trace(id: Wound["id"]) {
 }
 
 /**
- * Monitor cardíaco do palco de iniciativa. O traço é varrido uma vez quando `play` muda
- * (o `key` reinicia a animação no começo do turno); fora isso fica parado.
+ * Começo do turno, por cima da foto: o personagem pisca na cor do estado e o traço do
+ * batimento corre pela foto uma vez e some. `play` muda a cada turno (o `key` reinicia as
+ * animações); null não desenha nada. O pai precisa ser posicionado.
  */
-export function HeartMonitor({
+export function TurnPulse({
   wound,
   play,
-  width,
+  traceClass = "top-1/2 -translate-y-1/2",
 }: {
   wound: Wound["id"];
-  /** Identidade do turno: muda → varre de novo. null → traço parado. */
   play: string | null;
-  /** Largura em px; sem ela ocupa a largura toda de quem contém. */
-  width?: number;
+  /** Onde o traço passa na altura da foto. */
+  traceClass?: string;
 }) {
+  if (!play) return null;
+  const color = WOUND_COLORS[wound];
+  const points = trace(wound);
+  const sweep = { animationDuration: `${RHYTHM[wound].ms}ms` };
   return (
-    <svg
-      width={width ?? "100%"}
-      height={width ? (width * H) / W : undefined}
-      viewBox={`0 0 ${W} ${H}`}
-      shapeRendering="crispEdges"
-      className={`block h-auto max-w-full border-2 border-line bg-bg ${width ? "ml-auto" : ""}`}
-      aria-hidden
-    >
-      {/* grade do monitor */}
-      {Array.from({ length: W / 12 - 1 }, (_, i) => (
-        <rect key={i} x={(i + 1) * 12} y={0} width={0.5} height={H} fill="var(--line)" />
-      ))}
-      <polyline
-        key={play ?? "idle"}
-        points={trace(wound)}
-        pathLength={1}
-        fill="none"
-        stroke={WOUND_COLORS[wound]}
-        strokeWidth={1.5}
-        strokeLinejoin="miter"
-        className={play ? "ecg-sweep" : undefined}
-        style={play ? { animationDuration: `${RHYTHM[wound].ms}ms` } : undefined}
-      />
-    </svg>
+    <div key={play} className="pointer-events-none absolute inset-0" aria-hidden>
+      <div className="status-blink absolute inset-0" style={{ background: color }} />
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        shapeRendering="crispEdges"
+        className={`ecg-trace absolute inset-x-0 h-auto w-full ${traceClass}`}
+        // some depois que o traço termina de correr
+        style={{ animationDuration: `${RHYTHM[wound].ms + 900}ms` }}
+      >
+        {/* contorno escuro pra ler em cima de qualquer foto */}
+        <polyline points={points} pathLength={1} fill="none" stroke="var(--bg)" strokeWidth={2.6} style={sweep} />
+        <polyline points={points} pathLength={1} fill="none" stroke={color} strokeWidth={1.2} style={sweep} />
+      </svg>
+    </div>
   );
 }

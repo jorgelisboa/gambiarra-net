@@ -7,7 +7,7 @@ import { woundOf } from "@/lib/rpg";
 import { vitalsOf, type Vitals } from "@/lib/rules";
 import type { Combatant } from "@/lib/types";
 import { Bar, Icon } from "./Pixel";
-import { HeartMonitor, WOUND_COLORS } from "./HeartMonitor";
+import { TurnPulse, WOUND_COLORS } from "./TurnPulse";
 import { Portrait, PortraitArt } from "./Portrait";
 import { TurnActions } from "./TurnActions";
 
@@ -238,7 +238,7 @@ export function InitiativeStage({ onClose }: { onClose: () => void }) {
               v={v}
               label={`${i + 1} de ${n}: ${v.name}`}
               active={i === activeIndex}
-              // muda a cada começo de turno: a arte dá o glitch e o monitor varre, uma vez
+              // muda a cada começo de turno: a foto pisca e o traço corre, uma vez
               turn={i === activeIndex ? `${combat.round}-${c.id}` : null}
             />
           ))}
@@ -275,8 +275,9 @@ function StageCard({
       aria-label={label}
       aria-current={active ? "step" : undefined}
     >
-      <div key={turn ?? "idle"} className={`stage-art ${turn ? "animate-glitch-once" : ""}`}>
+      <div className="stage-art">
         <PortraitArt photo={v.photo} seed={v.seed} color={v.color} dim={v.hp <= 0} />
+        <TurnPulse wound={wound.id} play={turn} traceClass="top-[34%]" />
       </div>
 
       <div className="absolute inset-x-2 top-2 flex items-start justify-between gap-2">
@@ -316,7 +317,6 @@ function StageCard({
               {wound.short || "ileso"}
             </span>
           </div>
-          <HeartMonitor wound={wound.id} play={turn} />
           {v.deathSavePenalty > 0 && <div className="text-red">death save +{v.deathSavePenalty}</div>}
           {active && <TurnActions c={c} netMax={v.netMax} size={28} />}
         </div>

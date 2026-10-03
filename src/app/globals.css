@@ -60,12 +60,23 @@ input[type="number"]::-webkit-outer-spin-button { appearance: none; margin: 0; }
 
 .animate-hop { animation: hop 0.3s steps(4, end) 1; }
 
-/* monitor cardíaco: o traço é varrido uma vez no começo do turno (duração vem do ritmo) */
+/* começo do turno (TurnPulse): o traço do batimento corre pela foto uma vez e some,
+   e o personagem pisca 3 vezes na cor do estado. Durações do traço vêm do ritmo */
 @keyframes ecg-sweep {
   from { stroke-dashoffset: 1; }
   to { stroke-dashoffset: 0; }
 }
-.ecg-sweep { stroke-dasharray: 1; animation: ecg-sweep 1.2s steps(32, end) 1 both; }
+@keyframes ecg-fade {
+  0%, 80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes status-blink {
+  0%, 40%, 80% { opacity: 0.85; }
+  20%, 60%, 100% { opacity: 0; }
+}
+.ecg-trace { animation: ecg-fade 2s steps(4, end) 1 forwards; }
+.ecg-trace polyline { stroke-dasharray: 1; animation: ecg-sweep 1.2s steps(32, end) 1 both; }
+.status-blink { mix-blend-mode: color; animation: status-blink 0.9s steps(1, end) 1 forwards; }
 
 /* carrossel do palco: cartas na altura da tela, 4 por vez no desktop e a próxima vazando
    quando tem mais. --per-* vêm do componente (quantas cartas cabem por tela). */
@@ -100,7 +111,7 @@ input[type="number"]::-webkit-outer-spin-button { appearance: none; margin: 0; }
 }
 .stage-card-active { border-color: var(--red); }
 /* quem não está no turno fica com a arte apagada; o HUD continua legível */
-.stage-art { position: absolute; inset: 0; transition: filter 0.3s steps(3, end); }
+.stage-art { position: absolute; inset: 0; isolation: isolate; transition: filter 0.3s steps(3, end); }
 .stage-card:not(.stage-card-active) .stage-art { filter: brightness(0.5) saturate(0.6); }
 /* linhas de varredura, como tela de CRT */
 .stage-art::after {
@@ -110,8 +121,6 @@ input[type="number"]::-webkit-outer-spin-button { appearance: none; margin: 0; }
   background: repeating-linear-gradient(to bottom, transparent 0 2px, rgb(0 0 0 / 0.16) 2px 3px);
   pointer-events: none;
 }
-/* começo do turno: a arte dá um glitch, uma vez */
-.animate-glitch-once { animation: glitch 0.45s steps(1, end) 1; }
 /* o HUD é uma camada sobre a base da carta; o degradê segura a leitura em cima da foto */
 .stage-hud {
   position: absolute;
@@ -207,8 +216,8 @@ button:disabled { cursor: not-allowed; }
 }
 @media (prefers-reduced-motion: reduce) {
   .btn:hover:not(:disabled), .glitch-hover:hover { animation: none; }
-  .ecg-sweep { animation: none; }
-  .stage-art, .animate-glitch-once { transition: none; animation: none; }
+  .ecg-trace, .status-blink { display: none; }
+  .stage-art { transition: none; }
 }
 
 .role-option:has(input:focus-visible) { outline: 2px solid var(--net); outline-offset: 2px; }
