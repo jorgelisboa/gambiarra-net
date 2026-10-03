@@ -37,7 +37,10 @@ export function InitiativeStage({ onClose }: { onClose: () => void }) {
     };
   }, [onClose]);
 
-  const active = combat.combatants.find((c) => c.id === combat.activeId);
+  const activeIndex = combat.combatants.findIndex((c) => c.id === combat.activeId);
+  const active = combat.combatants[activeIndex];
+  const n = combat.combatants.length;
+  const half = Math.floor((n - 1) / 2);
   const av = active ? vitalsOf(active, characters) : null;
 
   return (
@@ -65,61 +68,64 @@ export function InitiativeStage({ onClose }: { onClose: () => void }) {
         </div>
       </div>
 
-      <ol className="flex flex-1 flex-col gap-2 py-6 sm:gap-3 sm:py-10">
-        {combat.combatants.map((c) => {
+      {/* roleta: o personagem do turno no centro, os outros em volta na ordem de iniciativa */}
+      <ol className="relative my-4 min-h-[440px] flex-1 overflow-hidden [--step:150px] sm:min-h-[520px] sm:[--step:250px]">
+        {combat.combatants.map((c, i) => {
           const v = vitalsOf(c, characters);
           const isActive = c.id === combat.activeId;
+          // dá a volta: os últimos da iniciativa ficam à esquerda do primeiro
+          const raw = i - Math.max(0, activeIndex);
+          const offset = mod(raw + half, n) - half;
           const wound = woundOf(v.hp, v.maxHp);
           const color = WOUND_COLORS[wound.id];
           // muda a cada começo de turno: o monitor varre e o retrato pula uma vez
           const turn = isActive ? `${combat.round}-${c.id}` : null;
           return (
             <li
-              key={c.id}
-              className={`box flex flex-wrap items-center gap-x-4 gap-y-2 p-2 sm:flex-nowrap sm:gap-x-6 sm:p-3 ${isActive ? "box-active" : ""}`}
-              style={{ opacity: isActive ? 1 : 0.55 }}
+              // quem dá a volta muda de key e reaparece do outro lado sem atravessar a roleta
+              key={`${c.id}:${offset - raw}`}
+              className="stage-card absolute left-1/2 top-1/2 flex w-40 flex-col items-center gap-2 sm:w-56"
+              style={{
+                transform: `translate(calc(-50% + ${offset} * var(--step)), -50%) scale(${isActive ? 1 : 0.72})`,
+                opacity: Math.abs(offset) > 3 ? 0 : isActive ? 1 : 0.5,
+                zIndex: 10 - Math.abs(offset),
+              }}
               aria-current={isActive ? "step" : undefined}
             >
-              <span className="w-8 text-center font-mono text-xl font-bold text-red sm:text-2xl">
-                {c.initiative}
-              </span>
-              <div key={turn ?? "idle"} className={turn ? "animate-hop" : undefined}>
-                <Portrait photo={v.photo} seed={v.seed} color={v.color} size={isActive ? 64 : 48} dim={v.hp <= 0} />
+              <span className="font-mono text-xl font-bold text-red sm:text-2xl">{c.initiative}</span>
+              <div
+                key={turn ?? "idle"}
+                className={`stage-photo w-32 sm:w-48 ${turn ? "animate-hop" : ""}`}
+              >
+                <Portrait photo={v.photo} seed={v.seed} color={v.color} size={192} dim={v.hp <= 0} />
               </div>
-              <div className="min-w-0 flex-1 basis-32">
-                <div
-                  className="font-pixel truncate text-lg sm:text-2xl"
-                  style={{ color: isActive ? v.color : undefined }}
-                >
-                  {v.name}
-                  {!v.linked && <span className="ml-2 font-mono text-xs text-dim">pnj</span>}
-                </div>
-                <div className="mt-1 flex items-center gap-2 text-xs">
-                  <div className="w-28 sm:w-40">
+              <div
+                className="font-pixel w-full truncate text-center text-lg sm:text-2xl"
+                style={{ color: isActive ? v.color : undefined }}
+              >
+                {v.name}
+              </div>
+              <div className={`box w-full space-y-2 p-2 text-xs ${isActive ? "box-active" : ""}`}>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
                     <Bar value={v.hp} max={v.maxHp} color={color} cells={12} height={8} />
                   </div>
                   <span className="font-mono">
                     {v.hp}/{v.maxHp}
                   </span>
                 </div>
-              </div>
-              <div className="flex basis-full items-center gap-x-4 sm:basis-auto sm:gap-x-6">
-                <dl className="grid grid-cols-[auto_auto] gap-x-2 text-xs">
-                  <dt className="text-dim">SP cabeça</dt>
-                  <dd className="font-mono">{v.sp.head}</dd>
-                  <dt className="text-dim">SP corpo</dt>
-                  <dd className="font-mono">{v.sp.body}</dd>
-                </dl>
-                <span
-                  className="text-xs uppercase sm:w-20"
-                  style={{ color }}
-                  title={wound.effect || undefined}
-                >
-                  {wound.short || "ileso"}
-                </span>
-                <div className="ml-auto min-w-0 flex-1 sm:flex-none">
-                  <HeartMonitor wound={wound.id} play={turn} width={isActive ? 192 : 144} />
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-dim">
+                    SP <span className="font-mono text-fg">{v.sp.head}</span>
+                    <span className="hidden sm:inline"> cabeça</span> ·{" "}
+                    <span className="font-mono text-fg">{v.sp.body}</span>
+                    <span className="hidden sm:inline"> corpo</span>
+                  </span>
+                  <span className="uppercase" style={{ color }} title={wound.effect || undefined}>
+                    {wound.short || "ileso"}
+                  </span>
                 </div>
+                <HeartMonitor wound={wound.id} play={turn} width={224} />
               </div>
             </li>
           );
@@ -138,3 +144,5 @@ export function InitiativeStage({ onClose }: { onClose: () => void }) {
     </div>
   );
 }
+
+const mod = (a: number, n: number) => ((a % n) + n) % n;
