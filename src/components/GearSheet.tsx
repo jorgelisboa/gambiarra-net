@@ -38,7 +38,7 @@ function groupOf(it: GearItem): (typeof GROUPS)[number]["id"] {
   const d = catalogItem(it.ref);
   if (!d) return "custom";
   if (d.kind === "shield") return "armor";
-  if (d.kind === "program") return "gear";
+  if (d.kind === "program" || d.kind === "cyberdeck") return "gear";
   return d.kind;
 }
 

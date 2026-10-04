@@ -40,6 +40,8 @@ export function specsOf(def: CatalogItem): string {
       return `${def.hp} HP · ocupa um braço`;
     case "ammo":
       return `pra ${AMMO_LABELS[def.ammo]}`;
+    case "cyberdeck":
+      return `${def.slots} slots (programas e hardware)`;
     default:
       return "";
   }

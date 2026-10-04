@@ -5,7 +5,7 @@ import { logout, useApp } from "@/lib/store";
 import type { UserRole } from "@/lib/types";
 import { Characters } from "./Characters";
 import { Combat } from "./Combat";
-import { NetTab } from "./NetTab";
+import { NetTab } from "./net/NetTab";
 
 const TABS = [
   { id: "net", label: "netrunner", roles: ["mestre"] },

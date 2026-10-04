@@ -1,7 +1,9 @@
+import type { CyberdeckDef } from "../net/types";
+
 /** Munição que uma arma usa (o "tipo" embaixo do pente na tabela do livro). */
 export type AmmoType = "mPistol" | "hPistol" | "vhPistol" | "slug" | "rifle" | "shell" | "arrow" | "grenade" | "rocket";
 
-interface CatalogBase {
+export interface CatalogBase {
   /** Chave salva na ficha: não renomeie. */
   id: string;
   /** Nome do livro (en). */
@@ -69,4 +71,4 @@ export interface FashionDef extends CatalogBase {
   piece: string;
 }
 
-export type CatalogItem = WeaponDef | ArmorDef | ShieldDef | AmmoDef | GearDef | FashionDef;
+export type CatalogItem = WeaponDef | ArmorDef | ShieldDef | AmmoDef | GearDef | FashionDef | CyberdeckDef;

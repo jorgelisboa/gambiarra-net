@@ -31,22 +31,28 @@ import {
 } from "@/lib/types";
 import { CreationWizard } from "./CreationWizard";
 import { LifepathEditor } from "./LifepathEditor";
+import { NetSheet } from "./net/NetSheet";
 import { Bar } from "./Pixel";
 import { PhotoPicker, Portrait } from "./Portrait";
 import { RoleAbility } from "./RoleAbility";
 import { GearSheet } from "./GearSheet";
 import { SkillSheet } from "./SkillSheet";
 
+/** `role`: a aba só aparece pra esse role. */
 const SHEET_TABS = [
   { id: "stats", label: "stats" },
   { id: "skills", label: "perícias" },
   { id: "gear", label: "equipamento" },
   { id: "ability", label: "habilidade" },
+  { id: "net", label: "netrun", role: "Netrunner" },
   { id: "lore", label: "lore" },
   { id: "notes", label: "notas" },
-] as const;
+] as const satisfies readonly { id: string; label: string; role?: Role }[];
 
 type SheetTab = (typeof SHEET_TABS)[number]["id"];
+type SheetTabDef = (typeof SHEET_TABS)[number];
+
+const tabsFor = (role: Role): SheetTabDef[] => SHEET_TABS.filter((t) => !("role" in t) || t.role === role);
 
 const NOTE_FIELDS: { key: keyof CharacterNotes; label: string; area?: boolean }[] = [
   { key: "alias", label: "apelido / handle" },
@@ -147,6 +153,9 @@ function Editor({
   onDelete: () => void;
 }) {
   const save = (patch: Partial<Character>) => upsertCharacter({ ...ch, ...patch });
+  const tabs = tabsFor(ch.role);
+  // a aba escolhida pode não existir pra este role (netrun só pro Netrunner)
+  const shown: SheetTab = tabs.some((t) => t.id === tab) ? tab : "stats";
   const changeRole = (role: Role) =>
     save({ role, ability: fitToRank(roleDef(role).ability, ch.ability, ch.roleRank) });
   const hpMax = maxHp(ch.stats);
@@ -200,15 +209,15 @@ function Editor({
         </div>
       </div>
 
-      <SheetTabs tab={tab} onTab={onTab} />
+      <SheetTabs tabs={tabs} tab={shown} onTab={onTab} />
 
       <div
         role="tabpanel"
-        id={`ficha-${tab}`}
-        aria-labelledby={`ficha-tab-${tab}`}
+        id={`ficha-${shown}`}
+        aria-labelledby={`ficha-tab-${shown}`}
         className="space-y-5"
       >
-        {tab === "stats" && (
+        {shown === "stats" && (
           <>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
               {STAT_KEYS.map((k) => (
@@ -290,7 +299,7 @@ function Editor({
           </>
         )}
 
-        {tab === "skills" && (
+        {shown === "skills" && (
           <SkillSheet
             skills={ch.skills}
             onChange={(skills) => save({ skills })}
@@ -304,15 +313,17 @@ function Editor({
           />
         )}
 
-        {tab === "gear" && <GearSheet ch={ch} save={save} />}
+        {shown === "gear" && <GearSheet ch={ch} save={save} />}
 
-        {tab === "ability" && <RoleAbility ch={ch} save={save} />}
+        {shown === "ability" && <RoleAbility ch={ch} save={save} />}
 
-        {tab === "lore" && (
+        {shown === "net" && <NetSheet ch={ch} save={save} />}
+
+        {shown === "lore" && (
           <LifepathEditor value={ch.lifepath} onChange={(lifepath) => save({ lifepath })} />
         )}
 
-        {tab === "notes" && (
+        {shown === "notes" && (
           <div className="grid gap-3 sm:grid-cols-2">
             {NOTE_FIELDS.map((f) => (
               <label key={f.key} className={f.area ? "sm:col-span-2" : ""}>
@@ -340,15 +351,23 @@ function Editor({
 }
 
 /** Abas da ficha. Setas ←/→ trocam de aba (padrão de tablist). */
-function SheetTabs({ tab, onTab }: { tab: SheetTab; onTab: (t: SheetTab) => void }) {
+function SheetTabs({
+  tabs,
+  tab,
+  onTab,
+}: {
+  tabs: SheetTabDef[];
+  tab: SheetTab;
+  onTab: (t: SheetTab) => void;
+}) {
   function go(i: number) {
-    const t = SHEET_TABS[(i + SHEET_TABS.length) % SHEET_TABS.length];
+    const t = tabs[(i + tabs.length) % tabs.length];
     onTab(t.id);
     document.getElementById(`ficha-tab-${t.id}`)?.focus();
   }
   return (
     <div role="tablist" aria-label="ficha" className="flex flex-wrap gap-x-1 border-b-2 border-line">
-      {SHEET_TABS.map((t, i) => {
+      {tabs.map((t, i) => {
         const on = t.id === tab;
         return (
           <button

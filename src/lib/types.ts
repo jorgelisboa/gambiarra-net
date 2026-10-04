@@ -113,12 +113,14 @@ export interface GearItem {
   slot?: ArmorSlot;
   /** Armadura: SP atual (cai 1 a cada dano que passa). Escudo: HP atual. */
   current?: number;
-  /** Armadura vestida / escudo em mãos. */
+  /** Armadura vestida / escudo em mãos / cyberdeck conectado (um só por vez). */
   equipped?: boolean;
   /** Arma de fogo: balas no pente. */
   loaded?: number;
   /** Arma de fogo: munição carregada (id no catálogo). Não mistura tipos no pente. */
   loadedRef?: string;
+  /** Programa (e hardware): id do cyberdeck onde está instalado. Regras em `src/lib/rpg/net`. */
+  deck?: string;
 }
 
 export interface Character {

@@ -98,7 +98,9 @@ export function RoleAbility({
         <ListBlock key={l.id} def={l} state={ch.ability} rank={rank} onChange={setState} />
       ))}
 
-      {ab.uses && (
+      {/* as ações de interface do Netrunner moram na aba netrun, junto com o cyberdeck */}
+      {ab.uses && ch.role === "Netrunner" && <p className="text-dim">as ações de interface ficam na aba netrun.</p>}
+      {ab.uses && ch.role !== "Netrunner" && (
         <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {ab.uses.map((u) => (
             <UseCard key={u.id} use={u} ch={ch} accent={accent} />
@@ -320,7 +322,7 @@ function ListBlock({
   );
 }
 
-function UseCard({ use, ch, accent }: { use: UseDef; ch: Character; accent: string }) {
+export function UseCard({ use, ch, accent }: { use: UseDef; ch: Character; accent: string }) {
   const ctx = rollCtx(ch);
   const lock = use.locked?.(ctx) ?? null;
   const mods = typeof use.mods === "function" ? use.mods(ctx) : use.mods;

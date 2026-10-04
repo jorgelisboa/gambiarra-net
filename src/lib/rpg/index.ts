@@ -11,6 +11,7 @@ export * from "./derived";
 export * from "./dice";
 export * from "./gear";
 export * from "./lifepath";
+export * from "./net";
 export * from "./roles";
 export * from "./skills";
 export * from "./stats";

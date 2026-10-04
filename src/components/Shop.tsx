@@ -19,7 +19,7 @@ const TABS = [
   { id: "weapons", label: "armas", kinds: ["weapon"] },
   { id: "armor", label: "armadura", kinds: ["armor", "shield"] },
   { id: "ammo", label: "munição", kinds: ["ammo"] },
-  { id: "gear", label: "equipamento", kinds: ["gear", "program"] },
+  { id: "gear", label: "equipamento", kinds: ["gear", "cyberdeck", "program"] },
   { id: "fashion", label: "roupas", kinds: ["fashion"] },
 ] as const;
 

@@ -1,5 +1,6 @@
-import { Icon } from "./Pixel";
+import { Icon } from "../Pixel";
 
+/** Aba de net do mestre: onde ele vai montar arquiteturas e mostrar em tela cheia pro netrunner. */
 export function NetTab() {
   return (
     <div className="box mx-auto max-w-2xl p-10">
@@ -8,7 +9,8 @@ export function NetTab() {
         <h2 className="font-pixel text-2xl">netrunner</h2>
       </div>
       <p className="mt-3 text-dim">
-        simulador de arquiteturas de net (andares, ice, programas) em breve.
+        aqui você vai montar arquiteturas (andares, ice, dados) e mostrar em tela cheia pro netrunner.
+        chega conforme as regras do capítulo da net entrarem.
       </p>
     </div>
   );

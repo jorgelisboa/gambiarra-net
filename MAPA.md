@@ -130,7 +130,7 @@ erDiagram
 
 ## Módulos de regras
 
-Tudo em [`src/lib/rpg/`](src/lib/rpg/), funções puras sem React. A UI em [`src/components/`](src/components/) só chama essas funções.
+Tudo em [`src/lib/rpg/`](src/lib/rpg/), funções puras sem React. A UI em [`src/components/`](src/components/) só chama essas funções. O netrunning é grande e tem pasta própria nos dois lados: [`src/lib/rpg/net/`](src/lib/rpg/net/) e [`src/components/net/`](src/components/net/).
 
 ```mermaid
 flowchart TD
@@ -146,7 +146,7 @@ flowchart TD
   actions[actions<br/>ações e regras do turno]
   creation[creation<br/>métodos e passos]
 
-  net[net<br/>arquiteturas, ICE, programas]:::falta
+  net[net<br/>cyberdeck; arquiteturas, ICE, programas a fazer]
   cyber[cyberware<br/>e perda de humanidade]:::falta
   crit[ferimentos críticos]:::falta
   heal[cura e death save]:::falta
@@ -177,12 +177,12 @@ flowchart TD
 | perícias | `skills.ts` | 66 perícias, 9 categorias, stat ligada, básicas, x2, especialização, templates Streetrat | feito | ficha, criação |
 | lifepath | `lifepath/` | tabelas de origem, personalidade, família, amigos, inimigos, objetivos | feito | criação, ficha |
 | equipamento | `gear/` | armas (brancas, de fogo, exóticas), armaduras, escudo, munição, gear, roupas, preços, kits, pente e recarga | feito; munição especial e granadas sem preço (pág. 344) | ficha, criação, combate |
-| roles | `roles/`, `ability.ts` | as 10 habilidades: pontos, listas, usos com rolagem, tabelas, efeitos na ficha, equipe do Exec | feito até rank 4; ranks altos de Rockerboy, Media e Fixer a conferir; Netrunner espera o módulo de net | ficha |
+| roles | `roles/`, `ability.ts` | as 10 habilidades: pontos, listas, usos com rolagem, tabelas, efeitos na ficha, equipe do Exec | feito até rank 4; ranks altos de Rockerboy, Media e Fixer a conferir; as ações de interface do Netrunner aparecem na aba netrun | ficha |
 | personagem | `character.ts` | stats efetivas (armadura, EMP, mortal) e efeitos do role em perícias e combate | feito | ficha, combate |
 | dano | `damage.ts` | SP do local, ablação, cabeça ×2, mão e perna, crítico +5, mortalmente ferido, desvio do Solo | feito | combate |
 | ações | `actions.ts` | ações de combate e regras do turno, resumidas | feito | combate |
 | criação | `creation.ts` | métodos e passos (Streetrat completo) | Edgerunner e Complete Package faltam | criação |
-| **net** | — | arquiteturas montadas pelo mestre, andares, ICE, programas, cyberdeck | falta (o livro vem depois) | console, telão, celular do netrunner |
+| **net** | `net/` | cyberdeck (3 tipos, slots, conectar um por vez, instalar programas) e o que precisa pra fazer netrun | começou (pág. 196); programas (pág. 201), hardware (pág. 208), arquiteturas montadas pelo mestre, andares, ICE e tela cheia pro netrunner a fazer | ficha (aba netrun), console, telão |
 | **cyberware** | — | implantes, slots, perda de humanidade | falta | ficha, criação |
 | **ferimentos críticos** | — | tabelas de corpo e cabeça, efeitos | falta | combate, ficha |
 | **cura e death save** | — | rolagem de death save, cura natural, estabilização | falta (só as DVs) | combate, ficha |

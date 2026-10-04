@@ -1,5 +1,6 @@
 import { uid } from "../../id";
 import type { ArmorSlot, GearItem } from "../../types";
+import { CYBERDECKS } from "../net/decks";
 import { AMMO } from "./ammo";
 import { ARMORS, SHIELDS } from "./armor";
 import { FASHION } from "./fashion";
@@ -26,6 +27,7 @@ export const CATALOG: CatalogItem[] = [
   ...SHIELDS,
   ...AMMO,
   ...ITEMS,
+  ...CYBERDECKS,
   ...PROGRAMS,
   ...FASHION,
 ];
@@ -36,9 +38,9 @@ export const catalogItem = (id: string | null | undefined) => (id ? BY_ID.get(id
 
 export const SLOT_LABELS: Record<ArmorSlot, string> = { head: "cabeça", body: "corpo" };
 
-/** Armas, armaduras e escudos são unidades com estado próprio; o resto empilha. */
+/** Armas, armaduras, escudos, cyberdecks e programas são unidades com estado próprio; o resto empilha. */
 export const isUnique = (c: CatalogItem | undefined) =>
-  c?.kind === "weapon" || c?.kind === "armor" || c?.kind === "shield";
+  c?.kind === "weapon" || c?.kind === "armor" || c?.kind === "shield" || c?.kind === "cyberdeck" || c?.kind === "program";
 
 export const itemName = (it: GearItem) => it.name || catalogItem(it.ref)?.name || "item";
 

@@ -22,7 +22,6 @@ export const ITEMS: GearDef[] = [
   g("carryall", "Carryall", "bolsa", 20, "bolsa pra carregar coisas."),
   g("chemicalAnalyzer", "Chemical Analyzer", "analisador químico", 1000, "compara uma substância com um banco de amostras."),
   g("computer", "Computer", "computador", 50, "notebook ou desktop."),
-  g("cyberdeck", "Cyberdeck", "cyberdeck", 500, "deck básico de netrunning, 7 slots (pág. 353)."),
   g("disposablePhone", "Disposable Cell Phone", "celular descartável", 50, "faz ligações. fácil de jogar fora."),
   g("drumSynth", "Drum Synthesizer", "bateria eletrônica", 500, "simula quase qualquer bateria. precisa de amp."),
   g("ductTape", "Duct Tape", "silver tape", 20, "várias cores, inclusive uma que brilha no escuro."),
@@ -58,7 +57,7 @@ export const ITEMS: GearDef[] = [
   g("biotoxin", "Vial of Biotoxin", "frasco de biotoxina", 500, "3d6 de dano. resiste com Resist Torture/Drugs. armadura não protege."),
   g("poison", "Vial of Poison", "frasco de veneno", 100, "2d6 de dano. resiste com Resist Torture/Drugs. armadura não protege."),
   g("videoCamera", "Video Camera", "câmera de vídeo", 100, "grava 12h de áudio e vídeo num memory chip."),
-  g("virtualityGoggles", "Virtuality Goggles", "óculos de virtualidade", 100, "projeta o ciberespaço sobre o mundo real."),
+  g("virtualityGoggles", "Virtuality Goggles", "óculos de virtualidade", 100, "projeta o ciberespaço por cima do que você vê: você enxerga o ICE e não tropeça no mundo real (pág. 196)."),
 ];
 
 /** Programas de netrunning que vêm no kit do Netrunner. Regras no capítulo da net. */

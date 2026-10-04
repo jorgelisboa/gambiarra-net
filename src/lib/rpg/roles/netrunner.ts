@@ -40,7 +40,7 @@ export const netrunner: RoleDef = {
       "Define quantas ações de net você tem por turno e é a base de todas as habilidades de netrun.",
     about: [
       "A interface deixa o netrunner fazer netrun, define quantas ações de net ele tem no turno e dá acesso às habilidades de interface (abaixo).",
-      "O netrunning completo (arquiteturas, andares, ICE e programas) entra no módulo do mestre, que ainda vai chegar.",
+      "As ações de interface ficam na aba netrun da ficha, junto com o cyberdeck. Arquiteturas, andares e ICE chegam com o resto do capítulo da net.",
     ],
     tables: [
       {
