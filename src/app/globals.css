@@ -129,6 +129,23 @@ input[type="number"]::-webkit-outer-spin-button { appearance: none; margin: 0; }
   padding: 72px 8px 8px;
   background: linear-gradient(to bottom, transparent, rgb(8 8 10 / 0.85) 45%);
 }
+/* arquitetura de net: grade de pontos como papel de diagrama, e o caminho do netrunner correndo */
+.net-grid {
+  background-color: var(--bg);
+  background-image: radial-gradient(var(--line) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+@keyframes net-flow { to { stroke-dashoffset: -12; } }
+.net-flow { stroke-dasharray: 8 4; animation: net-flow 0.8s steps(4, end) infinite; }
+/* linhas de varredura por cima do telão */
+.scanlines::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(to bottom, transparent 0 2px, rgb(0 0 0 / 0.18) 2px 3px);
+  pointer-events: none;
+}
+
 .cursor::after {
   content: "";
   display: inline-block;
@@ -217,6 +234,7 @@ button:disabled { cursor: not-allowed; }
 @media (prefers-reduced-motion: reduce) {
   .btn:hover:not(:disabled), .glitch-hover:hover { animation: none; }
   .ecg-trace, .status-blink { display: none; }
+  .net-flow { animation: none; }
   .stage-art { transition: none; }
 }
 

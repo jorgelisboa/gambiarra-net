@@ -177,8 +177,47 @@ export interface Combat {
   combatants: Combatant[];
 }
 
+export type NetDifficulty = "basic" | "standard" | "uncommon" | "advanced";
+export type FloorKind = "password" | "file" | "control" | "ice";
+
+/** Um andar da arquitetura. Regras em `src/lib/rpg/net/architecture.ts`. */
+export interface NetFloor {
+  id: string;
+  /** Andar de cima; null = andar 1 (entrada). Mais de um filho = galho. */
+  parent: string | null;
+  kind: FloorKind;
+  /** Senha, arquivo e nó de controle. */
+  dv: number;
+  /** Black ICE: nome no livro. */
+  ice: string;
+  /** O que a mesa lê no andar ("câmeras do saguão", "folha de pagamento"). */
+  label: string;
+  /** Só o mestre vê. */
+  note: string;
+  /** Aparece no telão. */
+  revealed: boolean;
+}
+
+export interface NetArchitecture {
+  id: string;
+  name: string;
+  difficulty: NetDifficulty;
+  /** Em ordem de desenho: cada andar vem depois do pai. */
+  floors: NetFloor[];
+  /** Andar onde o netrunner está; null = fora. */
+  runnerAt: string | null;
+  createdAt: number;
+}
+
+export interface NetState {
+  architectures: NetArchitecture[];
+  /** A arquitetura no telão; null = telão sem sinal. */
+  shownId: string | null;
+}
+
 export interface AppData {
   characters: Character[];
   sessionCharacterId: string | null;
   combat: Combat;
+  net: NetState;
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import type { AppData, Character, Combatant, UserRole } from "./types";
+import type { AppData, Character, Combatant, NetArchitecture, UserRole } from "./types";
 import { ablateArmor, maxHp, resolveHit, type Hit } from "./rpg";
 import { removePhoto, storePhoto } from "./photo";
 import { normalizeCharacter, vitalsOf } from "./rules";
@@ -10,10 +10,11 @@ import { supabase } from "./supabase";
 /**
  * Persistência.
  * - Com Supabase configurado: login com email e senha; as fichas ficam na tabela `characters` (uma linha
- *   por personagem). Combate e personagem da sessão ficam só no cache do localStorage, que também
+ *   por personagem). Combate, net e personagem da sessão ficam só no cache do localStorage, que também
  *   deixa a tela instantânea ao recarregar.
  * - Sem Supabase (dev sem .env): login por username, tudo no localStorage.
  * O papel (mestre/jogador) é escolhido a cada login e lembrado neste navegador até sair.
+ * Janelas do mesmo navegador (o console e o telão em `/tela`) se acompanham pelo evento `storage`.
  */
 
 const USER_KEY = "gambiarra:user";
@@ -25,6 +26,7 @@ export const emptyData = (): AppData => ({
   characters: [],
   sessionCharacterId: null,
   combat: { active: false, round: 1, activeId: null, combatants: [] },
+  net: { architectures: [], shownId: null },
 });
 
 export type AuthMode = "cloud" | "local";
@@ -93,8 +95,13 @@ const lsDel = (k: string) => {
 
 function parseData(raw: unknown): AppData {
   const obj = typeof raw === "string" ? JSON.parse(raw) : raw;
-  const data: AppData = { ...emptyData(), ...(obj as Partial<AppData>) };
-  return { ...data, characters: data.characters.map(normalizeCharacter) };
+  const empty = emptyData();
+  const data: AppData = { ...empty, ...(obj as Partial<AppData>) };
+  return {
+    ...data,
+    characters: data.characters.map(normalizeCharacter),
+    net: { ...empty.net, ...data.net },
+  };
 }
 
 function readLocal(key: string): AppData | null {
@@ -286,8 +293,22 @@ function queueSave(uid: string, prev: Character[], next: Character[]) {
   saveTimer = setTimeout(() => void flush(), 400);
 }
 
+/** Chave do cache da conta aberta (é ela que as outras janelas escutam). */
+function cacheKey(s: Snapshot) {
+  if (!s.user) return null;
+  return s.mode === "cloud" ? (s.userId ? cloudKey(s.userId) : null) : dataKey(s.user);
+}
+
 if (typeof window !== "undefined") {
   window.addEventListener("pagehide", () => void flush());
+  // outra janela (console ou telão) salvou: esta mostra o mesmo estado
+  window.addEventListener("storage", (e) => {
+    const cur = snap;
+    if (!cur || !e.newValue || e.key !== cacheKey(cur)) return;
+    try {
+      set({ ...cur, data: parseData(e.newValue) });
+    } catch {}
+  });
 }
 
 /* ---------- login ---------- */
@@ -621,3 +642,25 @@ export const nextTurn = () =>
       },
     };
   });
+
+/* ---------- net ---------- */
+
+const mapArchitectures = (fn: (list: NetArchitecture[]) => NetArchitecture[]) =>
+  mutate((d) => ({ ...d, net: { ...d.net, architectures: fn(d.net.architectures) } }));
+
+export const saveArchitecture = (arch: NetArchitecture) =>
+  mapArchitectures((list) =>
+    list.some((a) => a.id === arch.id) ? list.map((a) => (a.id === arch.id ? arch : a)) : [...list, arch],
+  );
+
+export const deleteArchitecture = (id: string) =>
+  mutate((d) => ({
+    ...d,
+    net: {
+      architectures: d.net.architectures.filter((a) => a.id !== id),
+      shownId: d.net.shownId === id ? null : d.net.shownId,
+    },
+  }));
+
+/** O que o telão mostra; null tira do ar. */
+export const showOnScreen = (id: string | null) => mutate((d) => ({ ...d, net: { ...d.net, shownId: id } }));
