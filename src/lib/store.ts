@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import type { AppData, Character, Combatant, NetArchitecture, UserRole } from "./types";
+import type { AppData, Character, Combatant, NetArchitecture, SecurityPlan, UserRole } from "./types";
 import { ablateArmor, maxHp, resolveHit, type Hit } from "./rpg";
 import { removePhoto, storePhoto } from "./photo";
 import { normalizeCharacter, vitalsOf } from "./rules";
@@ -26,7 +26,7 @@ export const emptyData = (): AppData => ({
   characters: [],
   sessionCharacterId: null,
   combat: { active: false, round: 1, activeId: null, combatants: [] },
-  net: { architectures: [], shownId: null },
+  net: { architectures: [], shownId: null, plans: [] },
 });
 
 export type AuthMode = "cloud" | "local";
@@ -657,10 +657,24 @@ export const deleteArchitecture = (id: string) =>
   mutate((d) => ({
     ...d,
     net: {
+      ...d.net,
       architectures: d.net.architectures.filter((a) => a.id !== id),
       shownId: d.net.shownId === id ? null : d.net.shownId,
+      // a infraestrutura que tinha gerado essa arquitetura volta a poder gerar outra
+      plans: d.net.plans.map((p) => (p.architectureId === id ? { ...p, architectureId: null } : p)),
     },
   }));
 
 /** O que o telão mostra; null tira do ar. */
 export const showOnScreen = (id: string | null) => mutate((d) => ({ ...d, net: { ...d.net, shownId: id } }));
+
+/* ---------- infra (infraestruturas de segurança) ---------- */
+
+const mapPlans = (fn: (list: SecurityPlan[]) => SecurityPlan[]) =>
+  mutate((d) => ({ ...d, net: { ...d.net, plans: fn(d.net.plans) } }));
+
+export const savePlan = (plan: SecurityPlan) =>
+  mapPlans((list) => (list.some((p) => p.id === plan.id) ? list.map((p) => (p.id === plan.id ? plan : p)) : [...list, plan]));
+
+/** Apaga só a infraestrutura; a arquitetura que ela gerou no construtor fica. */
+export const deletePlan = (id: string) => mapPlans((list) => list.filter((p) => p.id !== id));

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { deleteArchitecture, saveArchitecture, showOnScreen, useApp } from "@/lib/store";
 import {
   BLACK_ICE,
+  DEMONS,
   FLOOR_KINDS,
   MAX_FLOORS,
   NET_DIFFICULTIES,
@@ -28,10 +29,10 @@ import { NetMap } from "./NetMap";
 const openScreen = () => window.open("/tela", "gambiarra-telao");
 
 /** Aba de net do mestre: monta arquiteturas andar por andar e escolhe o que vai pro telão. */
-export function NetTab() {
+export function NetTab({ focusId = null }: { focusId?: string | null }) {
   const { data } = useApp();
   const { architectures, shownId } = data.net;
-  const [archId, setArchId] = useState<string | null>(null);
+  const [archId, setArchId] = useState<string | null>(focusId);
   const arch = architectures.find((a) => a.id === archId) ?? architectures[0];
 
   return (
@@ -318,11 +319,18 @@ function FloorInspector({
         </div>
       ) : (
         <div>
-          <div className="label mb-1">black ICE</div>
-          <select className="field" value={floor.ice} onChange={(e) => patch({ ice: e.target.value })} aria-label="black ICE">
-            {BLACK_ICE.map((i) => (
-              <option key={i}>{i}</option>
-            ))}
+          <div className="label mb-1">black ICE ou demon</div>
+          <select className="field" value={floor.ice} onChange={(e) => patch({ ice: e.target.value })} aria-label="black ICE ou demon">
+            <optgroup label="black ICE">
+              {BLACK_ICE.map((i) => (
+                <option key={i}>{i}</option>
+              ))}
+            </optgroup>
+            <optgroup label="demon">
+              {DEMONS.map((d) => (
+                <option key={d.name}>{d.name}</option>
+              ))}
+            </optgroup>
           </select>
         </div>
       )}

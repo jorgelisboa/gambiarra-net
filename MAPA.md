@@ -182,7 +182,7 @@ flowchart TD
 | dano | `damage.ts` | SP do local, ablação, cabeça ×2, mão e perna, crítico +5, mortalmente ferido, desvio do Solo | feito | combate |
 | ações | `actions.ts` | ações de combate e regras do turno, resumidas | feito | combate |
 | criação | `creation.ts` | métodos e passos (Streetrat completo) | Edgerunner e Complete Package faltam | criação |
-| **net** | `net/` | cyberdeck (3 tipos, slots, conectar um por vez, instalar programas), o que precisa pra fazer netrun e arquiteturas montadas pelo mestre (andares, galhos, DV por dificuldade, o que foi revelado, onde o netrunner está) | começou (pág. 196); programas (pág. 201), hardware (pág. 208), fichas de Black ICE e ações de net a fazer | ficha (aba netrun), console (aba netrunner), telão (`/tela`) |
+| **net** | `net/` | cyberdeck (3 tipos, slots, conectar um por vez, instalar programas), o que precisa pra fazer netrun arquiteturas montadas pelo mestre (andares, galhos, DV por dificuldade, o que foi revelado, onde o netrunner está) e infraestrutura de segurança com custo (`security.ts`: arquitetura, senhas, arquivos e nós pela DV, demons, defesas, limites) | começou (pág. 196); infraestrutura feita sem Black ICE (pág. 217); programas (pág. 201), hardware (pág. 208), fichas de Black ICE e ações de net a fazer | ficha (aba netrun), console (abas netrunner e infra), telão (`/tela`) |
 | **cyberware** | — | implantes, slots, perda de humanidade | falta | ficha, criação |
 | **ferimentos críticos** | — | tabelas de corpo e cabeça, efeitos | falta | combate, ficha |
 | **cura e death save** | — | rolagem de death save, cura natural, estabilização | falta (só as DVs) | combate, ficha |
@@ -201,6 +201,7 @@ Fora de `rpg/`, a cola da aplicação:
 - **Combate num aparelho só**: iniciativa, dano com armadura, PNJs, tela cheia de iniciativa (boa pro telão).
 - **Fichas na nuvem** por conta (Supabase), mas cada conta só vê as próprias; combate fica no navegador.
 - **Construtor de arquiteturas** no console (aba netrunner) e um **telão** em `/tela`: o mestre abre a janela, arrasta pra TV e escolhe qual arquitetura vai pro ar; o telão mostra só os andares revelados e onde o netrunner está. As duas janelas precisam estar no mesmo navegador (se acompanham pelo localStorage) até a mesa compartilhada chegar.
+- **Infraestrutura** no console (aba infra): o mestre compra a arquitetura e o que vai nela pelas regras de Home Security 2045, vê o custo e os limites, e manda pro construtor. Fica no localStorage, como o resto da net.
 - "Mestre" e "jogador" no login só escolhem quais abas aparecem; ainda não existe mesa.
 
 ## Caminho

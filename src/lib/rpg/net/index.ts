@@ -3,10 +3,12 @@
  * - cyberdeck: tipos, slots, conectar e instalar (`decks.ts`, `cyberdeck.ts`)
  * - o que precisa pra fazer netrun (`requirements.ts`)
  * - arquiteturas montadas pelo mestre: andares, galhos, o que foi revelado (`architecture.ts`)
+ * - infraestrutura de segurança: comprar a arquitetura, o que vai nela e quanto custa (`security.ts`)
  * - a fazer: programas (pág. 201), hardware (pág. 208), fichas de ICE e ações de net
  */
 export * from "./architecture";
 export * from "./cyberdeck";
 export * from "./decks";
 export * from "./requirements";
+export * from "./security";
 export type * from "./types";

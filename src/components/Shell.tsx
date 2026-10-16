@@ -5,10 +5,12 @@ import { logout, useApp } from "@/lib/store";
 import type { UserRole } from "@/lib/types";
 import { Characters } from "./Characters";
 import { Combat } from "./Combat";
+import { InfraTab } from "./infra/InfraTab";
 import { NetTab } from "./net/NetTab";
 
 const TABS = [
   { id: "net", label: "netrunner", roles: ["mestre"] },
+  { id: "infra", label: "infra", roles: ["mestre"] },
   { id: "combat", label: "combate", roles: ["mestre"] },
   { id: "chars", label: "personagens", roles: ["mestre", "jogador"] },
 ] as const satisfies readonly { id: string; label: string; roles: readonly UserRole[] }[];
@@ -19,6 +21,8 @@ export function Shell({ user, role }: { user: string; role: UserRole }) {
   const { syncError } = useApp();
   const tabs = TABS.filter((t) => (t.roles as readonly UserRole[]).includes(role));
   const [tab, setTab] = useState<TabId>(role === "mestre" ? "combat" : "chars");
+  /** Arquitetura que a aba infra pediu pra abrir no construtor da aba netrunner. */
+  const [focusArch, setFocusArch] = useState<string | null>(null);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -34,7 +38,11 @@ export function Shell({ user, role }: { user: string; role: UserRole }) {
             {tabs.map((t) => (
               <button
                 key={t.id}
-                onClick={() => setTab(t.id)}
+                onClick={() => {
+                  // trocar de aba na mão volta o construtor pra primeira arquitetura, como antes
+                  setFocusArch(null);
+                  setTab(t.id);
+                }}
                 aria-current={tab === t.id ? "page" : undefined}
                 className={`shrink-0 px-3 py-1 ${
                   tab === t.id ? "bg-red text-black" : "glitch-hover text-dim hover:text-fg"
@@ -64,7 +72,15 @@ export function Shell({ user, role }: { user: string; role: UserRole }) {
         </div>
       </header>
       <main className="flex-1 p-3 sm:p-5">
-        {tab === "net" && <NetTab />}
+        {tab === "net" && <NetTab focusId={focusArch} />}
+        {tab === "infra" && (
+          <InfraTab
+            onOpenArchitecture={(id) => {
+              setFocusArch(id);
+              setTab("net");
+            }}
+          />
+        )}
         {tab === "combat" && <Combat />}
         {tab === "chars" && <Characters />}
       </main>

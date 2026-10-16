@@ -209,10 +209,50 @@ export interface NetArchitecture {
   createdAt: number;
 }
 
+/** O que ocupa um andar comprado. Regras e preços em `src/lib/rpg/net/security.ts`. Sem Black ICE, por escolha da mesa. */
+export type SecurityFloorKind = "password" | "file" | "control" | "demon";
+/** DV que o netrunner tem que bater numa senha, arquivo ou nó de controle; define o preço. */
+export type FeatureDv = 6 | 8 | 10 | 12;
+export type DemonKey = "imp" | "efreet" | "balron";
+
+/** Um andar da infraestrutura. */
+export interface SecurityFloor {
+  id: string;
+  kind: SecurityFloorKind;
+  /** Senha, arquivo e nó de controle. Fica guardada mesmo quando o andar vira demon, pra voltar sem perder. */
+  dv: FeatureDv;
+  /** Só vale quando kind = "demon". */
+  demon: DemonKey;
+  /** Só vale quando kind = "control": id em DEFENSES, ou null = o nó controla outra coisa (porta, sprinkler), sem custo extra. */
+  defense: string | null;
+  /** O que a mesa lê no andar ("câmeras do saguão"). */
+  label: string;
+  /** Só o mestre vê. */
+  note: string;
+}
+
+/**
+ * Infraestrutura de segurança: uma arquitetura comprada e o que foi instalado nela, com o custo
+ * (Home Security 2045, livro págs. 217-218). Vira arquitetura jogável no construtor da aba netrunner.
+ */
+export interface SecurityPlan {
+  id: string;
+  name: string;
+  /** Onde fica no mundo real. */
+  location: string;
+  /** Andar 1 primeiro. É uma linha só; galhos, se quiser, se desenham depois no construtor. */
+  floors: SecurityFloor[];
+  /** Arquitetura criada no construtor a partir deste plano; null = ainda não mandou. */
+  architectureId: string | null;
+  createdAt: number;
+}
+
 export interface NetState {
   architectures: NetArchitecture[];
   /** A arquitetura no telão; null = telão sem sinal. */
   shownId: string | null;
+  /** Infraestruturas montadas na aba infra. */
+  plans: SecurityPlan[];
 }
 
 export interface AppData {
