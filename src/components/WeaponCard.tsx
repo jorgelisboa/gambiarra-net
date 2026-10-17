@@ -17,13 +17,12 @@ import {
   fire,
   itemName,
   magazineOf,
-  maxHp,
   reload,
   rollDamage,
   skillDef,
   skillLevel,
   weaponStats,
-  woundOf,
+  woundPenaltyOf,
   type AimTarget,
   type RollResult,
   type WeaponDef,
@@ -42,12 +41,15 @@ export function WeaponCard({
   onGear,
   onName,
   onRemove,
+  locked,
 }: {
   it: GearItem;
   ch: Character;
   onGear: (gear: GearItem[]) => void;
   onName: (name: string) => void;
   onRemove: () => void;
+  /** Texto da etiqueta de arma que não sai do inventário (implante). Esconde o remover e o apelido; ataca e recarrega normal. */
+  locked?: string;
 }) {
   const [aim, setAim] = useState<AimTarget | "">("");
   const [range, setRange] = useState(2);
@@ -59,13 +61,13 @@ export function WeaponCard({
   const sd = skillDef(w.skill);
   const stats = effectiveStats(ch);
   const mods = combatModsOf(ch);
-  const wound = woundOf(ch.hp, maxHp(ch.stats)).penalty;
+  const wound = woundPenaltyOf(ch);
   const lvl = skillLevel(ch.skills, w.skill);
   const mag = magazineOf(it);
   const loaded = it.loaded ?? 0;
   const ammo = compatibleAmmo(ch.gear, it);
   const pick = ammo[Math.min(ammoPick, ammo.length - 1)];
-  const tooWeak = w.requiresBody && ch.stats.BODY < w.requiresBody;
+  const tooWeak = w.requiresBody && stats.BODY < w.requiresBody;
   const base = sd ? stats[sd.stat] + lvl + mods.attack : 0;
   const show = (r: RollResult) => setLast({ n: (last?.n ?? 0) + 1, r });
   const aimed = `−${Math.abs(AIMED_PENALTY)}`;
@@ -131,13 +133,18 @@ export function WeaponCard({
     <div className="box bg-raise flex min-w-0 flex-col gap-1 p-3">
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
-          <div className="font-pixel text-lg leading-tight">{itemName(it)}</div>
+          <div className="flex flex-wrap items-baseline gap-x-2">
+            <span className="font-pixel text-lg leading-tight">{itemName(it)}</span>
+            {locked && <span className="text-xs text-net">{locked}</span>}
+          </div>
           {it.name && <div className="text-xs text-dim">{def.name}</div>}
           <div className="text-xs text-dim">{def.namePt}</div>
         </div>
-        <button className="btn btn-danger btn-bare !px-1.5 !py-0" aria-label={`remover ${itemName(it)}`} onClick={onRemove}>
-          x
-        </button>
+        {!locked && (
+          <button className="btn btn-danger btn-bare !px-1.5 !py-0" aria-label={`remover ${itemName(it)}`} onClick={onRemove}>
+            x
+          </button>
+        )}
       </div>
       <div className="text-xs">{specsOf(def)}</div>
       {w.features.length > 0 && <div className="text-xs text-net">{w.features.join(" · ")}</div>}
@@ -258,13 +265,15 @@ export function WeaponCard({
         </div>
       )}
 
-      <input
-        className="field mt-1 !py-0.5 text-xs"
-        placeholder="marca / apelido"
-        aria-label={`nome de ${def.name}`}
-        value={it.name}
-        onChange={(e) => onName(e.target.value)}
-      />
+      {!locked && (
+        <input
+          className="field mt-1 !py-0.5 text-xs"
+          placeholder="marca / apelido"
+          aria-label={`nome de ${def.name}`}
+          value={it.name}
+          onChange={(e) => onName(e.target.value)}
+        />
+      )}
       {last && <RollLine key={last.n} r={last.r} accent="var(--red)" />}
     </div>
   );

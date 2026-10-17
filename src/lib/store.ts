@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import type { AppData, Character, Combatant, NetArchitecture, SecurityPlan, UserRole } from "./types";
-import { ablateArmor, maxHp, resolveHit, type Hit } from "./rpg";
+import { ablateArmor, hpMaxOf, resolveHit, type Hit } from "./rpg";
 import { removePhoto, storePhoto } from "./photo";
 import { normalizeCharacter, vitalsOf } from "./rules";
 import { supabase } from "./supabase";
@@ -507,7 +507,7 @@ export const setCombatantHp = (id: string, hp: number) =>
       return {
         ...d,
         characters: d.characters.map((ch) =>
-          ch.id === c.characterId ? { ...ch, hp: Math.min(next, maxHp(ch.stats)) } : ch,
+          ch.id === c.characterId ? { ...ch, hp: Math.min(next, hpMaxOf(ch)) } : ch,
         ),
       };
     }

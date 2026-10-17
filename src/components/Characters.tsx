@@ -12,14 +12,16 @@ import {
   effectiveStats,
   roleSkillsOf,
   skillBonusesOf,
-  deathSave,
+  cyberpsychosis,
+  deathSaveOf,
   fitToRank,
-  isCyberpsycho,
-  maxHp,
+  hpMaxOf,
+  humanityCap,
   maxHumanity,
   roleDef,
   seriousThreshold,
   woundOf,
+  woundPenaltyOf,
 } from "@/lib/rpg";
 import { STAT_LABELS, colorFor } from "@/lib/rules";
 import {
@@ -30,6 +32,7 @@ import {
   type Role,
 } from "@/lib/types";
 import { CreationWizard } from "./CreationWizard";
+import { CyberSheet, psychosisTone } from "./cyber/CyberSheet";
 import { LifepathEditor } from "./LifepathEditor";
 import { NetSheet } from "./net/NetSheet";
 import { Bar } from "./Pixel";
@@ -43,6 +46,7 @@ const SHEET_TABS = [
   { id: "stats", label: "stats" },
   { id: "skills", label: "perícias" },
   { id: "gear", label: "equipamento" },
+  { id: "cyber", label: "cyberware" },
   { id: "ability", label: "habilidade" },
   { id: "net", label: "netrun", role: "Netrunner" },
   { id: "lore", label: "lore" },
@@ -158,10 +162,12 @@ function Editor({
   const shown: SheetTab = tabs.some((t) => t.id === tab) ? tab : "stats";
   const changeRole = (role: Role) =>
     save({ role, ability: fitToRank(roleDef(role).ability, ch.ability, ch.roleRank) });
-  const hpMax = maxHp(ch.stats);
+  const hpMax = hpMaxOf(ch);
   const humMax = maxHumanity(ch.stats);
   const wound = woundOf(ch.hp, hpMax);
   const emp = currentEmp(ch.stats, ch.humanity);
+  const cap = humanityCap(ch);
+  const psy = cyberpsychosis(ch);
   const eff = effectiveStats(ch);
   const [photoError, setPhotoError] = useState<string | null>(null);
 
@@ -242,6 +248,11 @@ function Editor({
                       com armadura {eff[k]}
                     </span>
                   )}
+                  {k !== "EMP" && eff[k] > ch.stats[k] && (
+                    <span className="block text-xs text-net" title="cyberware">
+                      com cyberware {eff[k]}
+                    </span>
+                  )}
                 </label>
               ))}
             </div>
@@ -260,7 +271,7 @@ function Editor({
                   {wound.effect && <span className="text-dim"> · {wound.effect}</span>}
                 </p>
                 <p className="text-dim">
-                  grave abaixo de {seriousThreshold(hpMax)} · death save {deathSave(ch.stats)}
+                  grave abaixo de {seriousThreshold(hpMax)} · death save {deathSaveOf(ch)}
                   {wound.stabilize && <> · estabilizar {wound.stabilize}</>}
                 </p>
                 {ch.deathSavePenalty > 0 && (
@@ -284,15 +295,16 @@ function Editor({
                 onChange={(v) => save({ humanity: v })}
               >
                 <p>
-                  {isCyberpsycho(ch.humanity) ? (
-                    <span className="text-red">ciberpsicose</span>
-                  ) : (
-                    <>
-                      emp em uso <span className="font-bold">{emp}</span>
-                      <span className="text-dim">/{ch.stats.EMP}</span>
-                    </>
-                  )}
+                  emp em uso <span className="font-bold">{emp}</span>
+                  <span className="text-dim">/{ch.stats.EMP}</span>
                 </p>
+                {cap < humMax && <p className="text-dim">teto com o cyberware {cap}</p>}
+                {psy.level > 0 && (
+                  <p>
+                    <span className={psychosisTone(psy.level)}>{psy.label}</span>{" "}
+                    <span className="text-dim">{psy.text}</span>
+                  </p>
+                )}
                 <p className="text-dim">o EMP cai 1 a cada dezena de humanidade perdida.</p>
               </Meter>
             </div>
@@ -306,7 +318,7 @@ function Editor({
             stats={eff}
             role={ch.role}
             originLanguage={ch.lifepath.picks.language}
-            penalty={wound.penalty}
+            penalty={woundPenaltyOf(ch)}
             bonuses={skillBonusesOf(ch)}
             roleSkills={roleSkillsOf(ch)}
             canRoll
@@ -314,6 +326,8 @@ function Editor({
         )}
 
         {shown === "gear" && <GearSheet ch={ch} save={save} />}
+
+        {shown === "cyber" && <CyberSheet ch={ch} save={save} />}
 
         {shown === "ability" && <RoleAbility ch={ch} save={save} />}
 

@@ -42,6 +42,17 @@ function groupOf(it: GearItem): (typeof GROUPS)[number]["id"] {
   return d.kind;
 }
 
+const IMPLANT_ARMOR_HINT = "implantada: sai só removendo o cyberware, na aba cyberware";
+
+/** Etiqueta dos itens que vêm de um implante (armas, armadura, escudo). */
+function ImplantTag() {
+  return (
+    <span className="text-xs text-net" title="vem de um implante: sai só removendo o cyberware, na aba cyberware">
+      implante
+    </span>
+  );
+}
+
 /** Aba "equipamento": dinheiro, loja, armas ligadas às perícias e armadura por local. */
 export function GearSheet({ ch, save }: { ch: Character; save: Save }) {
   const [shop, setShop] = useState(false);
@@ -134,6 +145,7 @@ export function GearSheet({ ch, save }: { ch: Character; save: Save }) {
                     onGear={setGear}
                     onName={(name) => patch(it.id, { name })}
                     onRemove={() => remove(it.id)}
+                    locked={it.implant ? "implante" : undefined}
                   />
                 ))}
               </div>
@@ -234,33 +246,52 @@ function ArmorRow({
   const max = def.kind === "armor" ? def.sp : def.hp;
   const cur = it.current ?? max;
   const unit = def.kind === "armor" ? "SP" : "HP";
+  // armadura implantada fica sempre vestida e no mesmo local; escudo implantado levanta e abaixa, mas não sai
+  const fixedArmor = !!it.implant && def.kind === "armor";
   return (
     <li className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
       <div className="min-w-0 flex-1 basis-40">
-        <div>
-          <span className="font-bold">{itemName(it)}</span> <span className="text-xs text-dim">{def.namePt}</span>
+        <div className="flex flex-wrap items-baseline gap-x-2">
+          <span>
+            <span className="font-bold">{itemName(it)}</span> <span className="text-xs text-dim">{def.namePt}</span>
+          </span>
+          {it.implant && <ImplantTag />}
         </div>
         <div className="text-xs text-dim">{specsOf(def)}</div>
       </div>
       <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-2">
-        {def.kind === "armor" && (
-          <select
-            className="field !w-auto !py-0.5 text-xs"
-            aria-label="local"
-            value={it.slot ?? "body"}
-            onChange={(e) => onPatch({ slot: e.target.value as ArmorSlot })}
+        {def.kind === "armor" &&
+          (fixedArmor ? (
+            <span className="text-xs text-dim">{SLOT_LABELS[it.slot ?? "body"]}</span>
+          ) : (
+            <select
+              className="field !w-auto !py-0.5 text-xs"
+              aria-label="local"
+              value={it.slot ?? "body"}
+              onChange={(e) => onPatch({ slot: e.target.value as ArmorSlot })}
+            >
+              <option value="body">corpo</option>
+              <option value="head">cabeça</option>
+            </select>
+          ))}
+        {fixedArmor ? (
+          <button
+            disabled
+            aria-pressed
+            title={IMPLANT_ARMOR_HINT}
+            className="border-2 border-red px-2 py-0.5 text-xs text-red"
           >
-            <option value="body">corpo</option>
-            <option value="head">cabeça</option>
-          </select>
+            vestida
+          </button>
+        ) : (
+          <button
+            aria-pressed={!!it.equipped}
+            onClick={() => onPatch({ equipped: !it.equipped })}
+            className={`border-2 px-2 py-0.5 text-xs ${it.equipped ? "border-red text-red" : "border-line text-dim hover:text-fg"}`}
+          >
+            {def.kind === "armor" ? (it.equipped ? "vestida" : "guardada") : it.equipped ? "em mãos" : "guardado"}
+          </button>
         )}
-        <button
-          aria-pressed={!!it.equipped}
-          onClick={() => onPatch({ equipped: !it.equipped })}
-          className={`border-2 px-2 py-0.5 text-xs ${it.equipped ? "border-red text-red" : "border-line text-dim hover:text-fg"}`}
-        >
-          {def.kind === "armor" ? (it.equipped ? "vestida" : "guardada") : it.equipped ? "em mãos" : "guardado"}
-        </button>
         <span className="flex items-center">
           <button
             className="btn btn-bare !px-1.5 !py-0"
@@ -287,9 +318,11 @@ function ArmorRow({
         <button className="btn !px-2 !py-0 text-xs" disabled={cur >= max} onClick={() => onPatch({ current: max })}>
           reparar
         </button>
-        <button className="btn btn-danger btn-bare !px-1.5 !py-0" aria-label={`remover ${itemName(it)}`} onClick={onRemove}>
-          x
-        </button>
+        {!it.implant && (
+          <button className="btn btn-danger btn-bare !px-1.5 !py-0" aria-label={`remover ${itemName(it)}`} onClick={onRemove}>
+            x
+          </button>
+        )}
       </div>
     </li>
   );
@@ -309,8 +342,11 @@ function StackRow({
   return (
     <li className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
       <div className="min-w-0 flex-1 basis-40">
-        {def ? (
-          <div className="font-bold">{itemName(it)}</div>
+        {def || it.implant ? (
+          <div className="flex flex-wrap items-baseline gap-x-2">
+            <span className="font-bold">{itemName(it)}</span>
+            {it.implant && <ImplantTag />}
+          </div>
         ) : (
           <input
             className="field !py-0.5"
@@ -322,23 +358,31 @@ function StackRow({
         {sub && <div className="text-xs text-dim">{sub}</div>}
       </div>
       <div className="ml-auto flex shrink-0 items-center gap-2">
-        <span className="flex items-center" aria-label={`quantidade de ${itemName(it)}`}>
-          <button
-            className="btn btn-bare !px-1.5 !py-0"
-            aria-label="menos um"
-            disabled={it.qty <= 0}
-            onClick={() => onPatch({ qty: it.qty - 1 })}
-          >
-            -
-          </button>
-          <span className="w-10 text-center font-bold">{it.qty}</span>
-          <button className="btn btn-bare !px-1.5 !py-0" aria-label="mais um" onClick={() => onPatch({ qty: it.qty + 1 })}>
-            +
-          </button>
-        </span>
-        <button className="btn btn-danger btn-bare !px-1.5 !py-0" aria-label={`remover ${itemName(it)}`} onClick={onRemove}>
-          x
-        </button>
+        {it.implant ? (
+          <span className="w-10 text-center font-bold" aria-label={`quantidade de ${itemName(it)}`}>
+            {it.qty}
+          </span>
+        ) : (
+          <>
+            <span className="flex items-center" aria-label={`quantidade de ${itemName(it)}`}>
+              <button
+                className="btn btn-bare !px-1.5 !py-0"
+                aria-label="menos um"
+                disabled={it.qty <= 0}
+                onClick={() => onPatch({ qty: it.qty - 1 })}
+              >
+                -
+              </button>
+              <span className="w-10 text-center font-bold">{it.qty}</span>
+              <button className="btn btn-bare !px-1.5 !py-0" aria-label="mais um" onClick={() => onPatch({ qty: it.qty + 1 })}>
+                +
+              </button>
+            </span>
+            <button className="btn btn-danger btn-bare !px-1.5 !py-0" aria-label={`remover ${itemName(it)}`} onClick={onRemove}>
+              x
+            </button>
+          </>
+        )}
       </div>
     </li>
   );

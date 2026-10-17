@@ -1,7 +1,7 @@
 import { STARTING_RANK } from "./ability";
 
 /** Passos de criação que já existem no app. */
-export type CreationStepId = "name" | "role" | "lifepath" | "stats" | "skills" | "gear";
+export type CreationStepId = "name" | "role" | "lifepath" | "stats" | "skills" | "gear" | "cyberware";
 
 export const CREATION_STEPS: Record<CreationStepId, { label: string; title: string; hint: string }> = {
   name: { label: "nome", title: "quem é você?", hint: "o nome e, se tiver, o handle que a rua te deu." },
@@ -26,6 +26,11 @@ export const CREATION_STEPS: Record<CreationStepId, { label: string; title: stri
     title: "equipamento",
     hint: "o kit do role vem pronto: escolha onde o livro dá opção. e ainda sobram 500eb pra gastar agora ou guardar.",
   },
+  cyberware: {
+    label: "cyberware",
+    title: "cyberware",
+    hint: "o cyberware inicial do role, com a perda de humanidade fixa do livro. escolha onde tiver opção.",
+  },
 };
 
 export interface CreationMethod {
@@ -45,8 +50,8 @@ export const CREATION_METHODS: CreationMethod[] = [
     id: "streetrat",
     name: "streetrat",
     summary: "o caminho rápido do livro: os stats saem de uma linha inteira da tabela do role.",
-    steps: ["name", "role", "lifepath", "stats", "skills", "gear"],
-    upcoming: ["moradia e estilo de vida", "cyberware"],
+    steps: ["name", "role", "lifepath", "stats", "skills", "gear", "cyberware"],
+    upcoming: ["moradia e estilo de vida"],
   },
   {
     id: "edgerunner",

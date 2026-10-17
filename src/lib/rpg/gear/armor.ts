@@ -26,6 +26,19 @@ export const ARMORS: ArmorDef[] = [
   armor("metalgear", "Metalgear", "metalgear", 18, -4, 5000, "para quase tudo, mas você vira alvo fácil."),
 ];
 
+/**
+ * Armadura implantada (cyberware externo, pág. 364): vale na cabeça e no corpo, não pesa e não sai.
+ * Entra como armadura vestida com `implant`, então a regra de sempre já serve: vale a maior SP do
+ * local e tudo que está no local abla junto.
+ */
+export const IMPLANT_ARMORS: ArmorDef[] = [
+  { ...armor("skinWeave", "Skin Weave", "pele tecida", 7, 0, 0, "trama sob a pele. SP7 na cabeça e no corpo."), implant: true },
+  {
+    ...armor("subdermalArmor", "Subdermal Armor", "armadura subdérmica", 11, 0, 0, "placas sob a pele. SP11 na cabeça e no corpo."),
+    implant: true,
+  },
+];
+
 export const SHIELDS: ShieldDef[] = [
   {
     id: "bulletproofShield",

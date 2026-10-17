@@ -9,6 +9,7 @@ import {
   addGear,
   emptyLifepath,
   gearFromKit,
+  installKit,
   loadAll,
   streetratSkills,
   templateRow,
@@ -17,6 +18,7 @@ import {
 } from "@/lib/rpg";
 import { emptyStats, newCharacter } from "@/lib/rules";
 import type { Character, Lifepath, Role, SkillEntry } from "@/lib/types";
+import { CyberKitPicker } from "./cyber/CyberKitPicker";
 import { LifepathEditor } from "./LifepathEditor";
 import { RolePicker } from "./RolePicker";
 import { SkillSheet } from "./SkillSheet";
@@ -38,6 +40,8 @@ interface Draft {
   kitPicks: Record<string, number>;
   /** Compras com os 500eb iniciais. */
   bought: Purchase[];
+  /** Opção escolhida em cada linha "isto ou aquilo" do cyberware inicial (c0, c1...). */
+  cyberPicks: Record<string, number>;
 }
 
 const METHOD_STEP = { label: "método", title: "como criar", hint: "escolha o método de criação." };
@@ -61,6 +65,7 @@ export function CreationWizard({
     skills: null,
     kitPicks: {},
     bought: [],
+    cyberPicks: {},
   });
 
   const steps: Step[] = ["method", ...(method ?? CREATION_METHODS[0]).steps];
@@ -88,7 +93,7 @@ export function CreationWizard({
   function finish() {
     if (!draft.role) return setStep("role");
     const base = newCharacter(draft.role, stats);
-    onDone({
+    let ch: Character = {
       ...base,
       name: draft.name.trim() || base.name,
       notes: { ...base.notes, alias: draft.handle.trim() },
@@ -104,7 +109,10 @@ export function CreationWizard({
         ),
         money: STARTING_MONEY - spentOn(draft.bought),
       }),
-    });
+    };
+    // a perda de humanidade do kit é a fixa do livro
+    if (method?.steps.includes("cyberware")) ch = installKit(ch, draft.role, draft.cyberPicks);
+    onDone(ch);
   }
 
   return (
@@ -200,7 +208,9 @@ export function CreationWizard({
           selected={draft.role}
           onPick={(role) => {
             // linha de stats e perícias são do role: trocou de role, refaz
-            if (role !== draft.role) setDraft({ ...draft, role, statsRow: null, skills: null, kitPicks: {} });
+            if (role !== draft.role) {
+              setDraft({ ...draft, role, statsRow: null, skills: null, kitPicks: {}, cyberPicks: {} });
+            }
           }}
         />
       )}
@@ -245,6 +255,20 @@ export function CreationWizard({
           bought={draft.bought}
           onBought={(bought) => setDraft({ ...draft, bought })}
         />
+      )}
+
+      {step === "cyberware" && draft.role && (
+        <div className="space-y-3">
+          <CyberKitPicker
+            role={draft.role}
+            picks={draft.cyberPicks}
+            onPicks={(cyberPicks) => setDraft({ ...draft, cyberPicks })}
+            emp={stats?.EMP}
+          />
+          <p className="text-xs text-dim">
+            depois da criação, a loja de cyberware fica na ficha, na aba cyberware (lá a perda de humanidade é rolada)
+          </p>
+        </div>
       )}
 
       {step !== "method" && (

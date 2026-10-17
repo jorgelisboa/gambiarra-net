@@ -147,7 +147,7 @@ flowchart TD
   creation[creation<br/>métodos e passos]
 
   net[net<br/>cyberdeck; arquiteturas, ICE, programas a fazer]
-  cyber[cyberware<br/>e perda de humanidade]:::falta
+  cyber[cyberware<br/>e perda de humanidade]
   crit[ferimentos críticos]:::falta
   heal[cura e death save]:::falta
   range[tabela de distância]:::falta
@@ -160,7 +160,7 @@ flowchart TD
   roles --> character
   lifepath --> creation & skills
   character --> damage
-  cyber -.-> derived & character
+  cyber --> derived & character
   crit -.-> damage
   heal -.-> derived
   range -.-> gear
@@ -182,8 +182,8 @@ flowchart TD
 | dano | `damage.ts` | SP do local, ablação, cabeça ×2, mão e perna, crítico +5, mortalmente ferido, desvio do Solo | feito | combate |
 | ações | `actions.ts` | ações de combate e regras do turno, resumidas | feito | combate |
 | criação | `creation.ts` | métodos e passos (Streetrat completo) | Edgerunner e Complete Package faltam | criação |
-| **net** | `net/` | cyberdeck (3 tipos, slots, conectar um por vez, instalar programas), o que precisa pra fazer netrun arquiteturas montadas pelo mestre (andares, galhos, DV por dificuldade, o que foi revelado, onde o netrunner está) e infraestrutura de segurança com custo (`security.ts`: arquitetura, senhas, arquivos e nós pela DV, demons, defesas, limites) | começou (pág. 196); infraestrutura feita sem Black ICE (pág. 217); programas (pág. 201), hardware (pág. 208), fichas de Black ICE e ações de net a fazer | ficha (aba netrun), console (abas netrunner e infra), telão (`/tela`) |
-| **cyberware** | — | implantes, slots, perda de humanidade | falta | ficha, criação |
+| **net** | `net/` | cyberdeck (3 tipos, slots, conectar um por vez, instalar programas), o que precisa pra fazer netrun, arquiteturas montadas pelo mestre (andares, galhos, DV por dificuldade, o que foi revelado, onde o netrunner está) e infraestrutura de segurança com custo (`security.ts`: arquitetura, senhas, arquivos e nós pela DV, demons, defesas, limites) | começou (pág. 196); infraestrutura feita sem Black ICE (pág. 217); programas (pág. 201), hardware (pág. 208), fichas de Black ICE e ações de net a fazer | ficha (aba netrun), console (abas netrunner e infra), telão (`/tela`) |
+| cyberware | `cyber/` | catálogo (págs. 358-367), kit inicial por role, slots por lugar do corpo, peça em par, perda de humanidade (fixa na criação, rolada depois), teto, ciberpsicose e terapia; efeitos na iniciativa, perícias, BODY, armadura, armas, ferimento e netrun | feito; cyberdeck no braço (+1 slot) e quick change mount só no texto | ficha, criação |
 | **ferimentos críticos** | — | tabelas de corpo e cabeça, efeitos | falta | combate, ficha |
 | **cura e death save** | — | rolagem de death save, cura natural, estabilização | falta (só as DVs) | combate, ficha |
 | **distância** | — | DV do tiro único por arma e distância | falta | ficha (arma), combate |
@@ -212,7 +212,7 @@ Cada fase entrega algo jogável.
 2. **Telão.** Rota `/mesa/<código>/tela` em tela cheia: QR pra entrar, fila de iniciativa grande, estado de todo mundo, cena (imagem/handout) escolhida no console. *Pronto quando:* dá pra jogar um combate inteiro olhando só pra TV e falando.
 3. **Celular do jogador.** A ficha pensada pra uma mão: aba "combate" com armas, munição, HP e "é a tua vez" em destaque. *Pronto quando:* o jogador não precisa do livro nem de papel durante o combate.
 4. **Net.** Construtor de arquitetura no console, net revelada no telão, ações de net do netrunner no celular.
-5. **Regras que faltam.** Ferimentos críticos, death save, distância, cyberware, cura; depois o resto do livro.
+5. **Regras que faltam.** Ferimentos críticos, death save, distância, cura; depois o resto do livro.
 
 ## Decisões em aberto
 

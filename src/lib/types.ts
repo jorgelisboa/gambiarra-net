@@ -121,6 +121,36 @@ export interface GearItem {
   loadedRef?: string;
   /** Programa (e hardware): id do cyberdeck onde está instalado. Regras em `src/lib/rpg/net`. */
   deck?: string;
+  /**
+   * Vem de um implante: id do CyberwareItem que segura este item (arma implantada, skin weave,
+   * escudo do braço). Não sai do inventário nem é despida; some junto quando o implante é removido.
+   */
+  implant?: string;
+}
+
+/**
+ * Uma peça de cyberware no corpo (ou um chip guardado, fora do soquete). Regras e catálogo em
+ * `src/lib/rpg/cyber`.
+ */
+export interface CyberwareItem {
+  id: string;
+  /** Id no catálogo de cyberware. Chave salva: não renomeie. */
+  ref: string;
+  /**
+   * Onde está: "body" (peça de base e borgware), "fashion", "internal" ou "external" (os 7 slots de
+   * cada), "meatArm" ou "meatLeg" (braço ou perna de carne), ou o id da peça que a segura (neural
+   * link, cybereye, cyberaudio suite, cyberarm, cyberleg, chipware socket). null = chip guardado, sem efeito.
+   */
+  host: string | null;
+  /** Humanidade perdida na instalação (já descontada da ficha). */
+  hl: number;
+  /** Apelido; vazio usa o nome do catálogo. */
+  name: string;
+  note: string;
+  /** Sandevistan ligado agora. */
+  active?: boolean;
+  /** Skill chip: id da perícia (src/lib/rpg/skills.ts). */
+  skill?: string;
 }
 
 export interface Character {
@@ -137,6 +167,8 @@ export interface Character {
   ability: AbilityState;
   skills: SkillEntry[];
   gear: GearItem[];
+  /** Implantes. Os itens que eles põem no inventário (armas, armadura) ficam em `gear` com `implant`. */
+  cyberware: CyberwareItem[];
   /** Eurobucks. */
   money: number;
   /** +1 a cada dano de ataque levado já mortalmente ferido. */

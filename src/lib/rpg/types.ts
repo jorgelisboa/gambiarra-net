@@ -104,6 +104,11 @@ export interface SkillBonus {
   value: number;
   /** De onde vem, ex.: "campo (maker)". */
   source: string;
+  /**
+   * Só vale em parte dos testes ("envolver visão"): aparece na perícia, mas não soma sozinho na
+   * rolagem. Sem valor = sempre soma.
+   */
+  when?: string;
 }
 
 /** Perícia que só existe pelo role (Surgery e Medical Tech do Medtech). */

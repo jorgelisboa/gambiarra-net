@@ -56,7 +56,7 @@ export function NetSheet({ ch, save }: { ch: Character; save: Save }) {
       <section>
         <h3 className="label mb-2">pra fazer netrun</h3>
         <ul className="space-y-1.5">
-          {netrunNeeds(gear).map((n) => (
+          {netrunNeeds(gear, ch.cyberware).map((n) => (
             <Need key={n.id} need={n} />
           ))}
         </ul>

@@ -49,6 +49,7 @@ export function Shop({
   const q = query.trim().toLowerCase();
   const kinds: readonly string[] = TABS.find((t) => t.id === tab)!.kinds;
   const visible = (d: CatalogItem) =>
+    !(d.kind === "armor" && d.implant) && // skin weave e subdermal só vêm do cyberware, nunca da loja
     (luxury || d.cost === null || !isLuxury(d.cost)) &&
     (!q || d.name.toLowerCase().includes(q) || d.namePt.includes(q) || d.desc.includes(q));
   const items = CATALOG.filter((d) => (q || kinds.includes(d.kind)) && visible(d));

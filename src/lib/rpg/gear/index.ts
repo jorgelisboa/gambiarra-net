@@ -2,7 +2,7 @@ import { uid } from "../../id";
 import type { ArmorSlot, GearItem } from "../../types";
 import { CYBERDECKS } from "../net/decks";
 import { AMMO } from "./ammo";
-import { ARMORS, SHIELDS } from "./armor";
+import { ARMORS, IMPLANT_ARMORS, SHIELDS } from "./armor";
 import { FASHION } from "./fashion";
 import { ITEMS, PROGRAMS } from "./items";
 import { kitItems, type RoleKit } from "./kits";
@@ -24,6 +24,7 @@ export const CATALOG: CatalogItem[] = [
   ...RANGED_WEAPONS,
   ...EXOTIC_WEAPONS,
   ...ARMORS,
+  ...IMPLANT_ARMORS,
   ...SHIELDS,
   ...AMMO,
   ...ITEMS,

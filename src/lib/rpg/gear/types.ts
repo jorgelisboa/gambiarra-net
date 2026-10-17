@@ -47,6 +47,8 @@ export interface ArmorDef extends CatalogBase {
   sp: number;
   /** Em REF, DEX e MOVE (0, −2 ou −4). */
   penalty: number;
+  /** Só existe como implante (skin weave, subdermal armor): fora da loja de equipamento. */
+  implant?: boolean;
 }
 
 export interface ShieldDef extends CatalogBase {

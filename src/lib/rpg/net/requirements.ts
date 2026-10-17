@@ -1,19 +1,30 @@
-import type { GearItem } from "../../types";
+import type { CyberwareItem, GearItem } from "../../types";
+import { netrunCyber } from "../cyber";
 import { itemName } from "../gear";
 import { pluggedDeck } from "./cyberdeck";
 
 export interface NetNeed {
   id: string;
   label: string;
-  /** null: a ficha ainda não sabe dizer (cyberware não entrou). */
+  /**
+   * true: tem; false: falta e bloqueia; null: falta, mas não bloqueia (óculos: sem eles entra do
+   * jeito antigo). Os interface plugs sempre dizem true ou false, porque a ficha guarda o cyberware.
+   */
   ok: boolean | null;
   note: string;
 }
 
 /** O que precisa pra fazer netrun (pág. 196). */
-export function netrunNeeds(gear: GearItem[]): NetNeed[] {
+export function netrunNeeds(gear: GearItem[], cyberware: CyberwareItem[]): NetNeed[] {
   const deck = pluggedDeck(gear);
+  const cyber = netrunCyber({ cyberware });
   const goggles = gear.some((g) => g.ref === "virtualityGoggles" && g.qty > 0);
+  const plugsOk = cyber.neuralLink && cyber.plugs;
+  const plugsMissing = !cyber.neuralLink
+    ? cyber.plugs
+      ? "falta neural link"
+      : "falta neural link e interface plugs"
+    : "falta interface plugs (no neural link)";
   return [
     {
       id: "deck",
@@ -24,16 +35,18 @@ export function netrunNeeds(gear: GearItem[]): NetNeed[] {
     {
       id: "plugs",
       label: "neural link + interface plugs",
-      ok: null,
-      note: "cyberware: o deck liga nos interface plugs, que pedem um neural link (pág. 359). a ficha ainda não guarda cyberware",
+      ok: plugsOk,
+      note: plugsOk ? "neural link e interface plugs instalados" : `${plugsMissing}: instale na aba cyberware`,
     },
     {
       id: "goggles",
       label: "óculos de virtualidade",
-      ok: goggles ? true : null,
+      ok: goggles || cyber.virtuality ? true : null,
       note: goggles
         ? "você vê o ICE por cima do mundo real e continua andando nele"
-        : "sem óculos na ficha: precisa deles ou de cybereyes com virtuality, senão entra do jeito antigo e fica cego pro mundo real",
+        : cyber.virtuality
+          ? "virtuality nos cybereyes: o ICE aparece por cima do mundo real"
+          : "sem óculos na ficha: precisa deles ou de cybereyes com virtuality, senão entra do jeito antigo e fica cego pro mundo real",
     },
   ];
 }

@@ -45,12 +45,18 @@ export function SkillSheet({
   /** Ferimento: −2 grave, −4 mortal. */
   penalty?: number;
   canRoll?: boolean;
-  /** Bônus da habilidade de role (Tech: campo; Nomad: moto; Solo: detectar ameaça). */
+  /**
+   * Bônus da habilidade de role (Tech: campo; Nomad: moto; Solo: detectar ameaça) e do cyberware.
+   * Os com `when` só valem em parte dos testes: aparecem como dica e não entram na base nem na rolagem.
+   */
   bonuses?: SkillBonus[];
   /** Perícias que só existem pelo role (Medtech). */
   roleSkills?: RoleSkill[];
 }) {
-  const bonusOf = (skill: string) => bonuses.filter((b) => b.skill === skill);
+  /** Bônus que somam sempre. */
+  const bonusOf = (skill: string) => bonuses.filter((b) => b.skill === skill && !b.when);
+  /** Bônus condicionais: só viram dica ao lado da perícia. */
+  const hintsOf = (skill: string) => bonuses.filter((b) => b.skill === skill && b.when);
   const [filter, setFilter] = useState<Filter>(skills.length > 0 ? "trained" : "all");
   const [query, setQuery] = useState("");
   const [last, setLast] = useState<{ id: string; n: number; r: RollResult } | null>(null);
@@ -67,7 +73,9 @@ export function SkillSheet({
     const own = skills.filter((e) => e.skill === def.id);
     const rows = def.spec || own.length > 0 ? own : [{ id: def.id, skill: def.id, spec: "", level: 0 }];
     if (q) return matches(def) ? rows : rows.filter((e) => matches(def, e));
-    return filter === "all" ? rows : own.filter((e) => def.spec || e.level > 0);
+    // perícia sem treino mas com bônus (skill chip) também aparece, senão o bônus ficaria invisível
+    if (filter === "all" || bonuses.some((b) => b.skill === def.id)) return rows;
+    return own.filter((e) => def.spec || e.level > 0);
   }
 
   const patch = (id: string, p: Partial<SkillEntry>) =>
@@ -221,6 +229,7 @@ export function SkillSheet({
                         entry={e}
                         stat={stats[def.stat]}
                         bonus={bonusOf(def.id)}
+                        hints={hintsOf(def.id)}
                         canRoll={canRoll}
                         onLevel={(lvl) => setLevel(def, e, lvl)}
                         onSpec={def.spec ? (spec) => patch(e.id, { spec }) : undefined}
@@ -254,6 +263,7 @@ function SkillRow({
   stat,
   canRoll,
   bonus,
+  hints,
   onLevel,
   onSpec,
   onRemove,
@@ -265,6 +275,8 @@ function SkillRow({
   stat: number;
   canRoll: boolean;
   bonus: SkillBonus[];
+  /** Bônus condicionais (`when`): só texto, não somam. */
+  hints: SkillBonus[];
   onLevel: (level: number) => void;
   onSpec?: (spec: string) => void;
   onRemove?: () => void;
@@ -293,6 +305,11 @@ function SkillRow({
             </span>
             <span className="truncate">{def.namePt}</span>
           </div>
+          {hints.map((h, i) => (
+            <div key={i} className="text-xs text-dim">
+              +{h.value} se {h.when} ({h.source})
+            </div>
+          ))}
           {onSpec && (
             <input
               className="field mt-1 !py-0.5 text-xs"
