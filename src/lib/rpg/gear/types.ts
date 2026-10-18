@@ -28,8 +28,15 @@ export interface WeaponStats {
   features: string[];
   /** BODY mínimo pra disparar. */
   requiresBody?: number;
-  /** Autofire: multiplicador máximo do dano (3 SMG, 4 fuzil) e a tabela de DV por distância. */
-  autofire?: { max: number; table: "smg" | "rifle" };
+  /**
+   * Autofire: multiplicador máximo do dano (3 SMG, 4 fuzil) e a tabela de DV por distância.
+   * rounds: balas por rajada quando não são 10; only: a arma só dispara em autofire (Helix).
+   */
+  autofire?: { max: number; table: "smg" | "rifle"; rounds?: number; only?: boolean };
+  /** Exótica que perde o autofire da arma de base (Railgun). */
+  noAutofire?: boolean;
+  /** Não faz tiro mirado (Hurricane, Railgun, Flamethrower). */
+  noAimed?: boolean;
 }
 
 export type WeaponClass = "melee" | "ranged" | "exotic";

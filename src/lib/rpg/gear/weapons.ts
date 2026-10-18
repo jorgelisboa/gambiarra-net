@@ -121,9 +121,11 @@ export const EXOTIC_WEAPONS: WeaponDef[] = [
     concealable: false,
     features: ["3 slots de opção de cyberarm"],
   }),
-  exotic("hurricane", "Constitution Arms Hurricane Assault Weapon", "escopeta com ROF 2. precisa de BODY 11+.", 5000, {
+  exotic("hurricane", "Constitution Arms Hurricane Assault Weapon", "escopeta com ROF 2 e tambor de 16. precisa de BODY 11+.", 5000, {
     base: "shotgun",
     rof: 2,
+    magazine: 16,
+    noAimed: true,
     requiresBody: 11,
   }),
   exotic("dartgun", "Dartgun", "pistola muito pesada que dispara flechas não básicas.", 100, { base: "vhPistol", ammo: "arrow" }),
@@ -131,6 +133,7 @@ export const EXOTIC_WEAPONS: WeaponDef[] = [
     base: "shotgun",
     skill: "heavyWeapons",
     ammo: "shell",
+    noAimed: true,
     features: ["só cartucho incendiário"],
   }),
   exotic("kendachiMonoThree", "Kendachi Mono-Three", "arma branca muito pesada de duas mãos. ignora armadura abaixo de SP11.", 5000, {
@@ -147,14 +150,18 @@ export const EXOTIC_WEAPONS: WeaponDef[] = [
     base: "vhPistol",
     features: ["desliga cyberware e eletrônicos"],
   }),
-  exotic("cowboyU56", 'Militech "Cowboy" U-56 Grenade Launcher', "lança-granadas com ROF 2. precisa de BODY 11+.", 5000, {
+  exotic("cowboyU56", 'Militech "Cowboy" U-56 Grenade Launcher', "lança-granadas com ROF 2 e pente de 4. precisa de BODY 11+.", 5000, {
     base: "grenadeLauncher",
     rof: 2,
+    magazine: 4,
     requiresBody: 11,
   }),
-  exotic("railgun", "Rhinemetall EMG-86 Railgun", "fuzil de assalto que ignora armadura abaixo de SP11, com Heavy Weapons. precisa de BODY 11+.", 5000, {
+  exotic("railgun", "Rhinemetall EMG-86 Railgun", "fuzil de assalto que ignora armadura abaixo de SP11, com Heavy Weapons. sem autofire nem mirado. precisa de BODY 11+.", 5000, {
     base: "assaultRifle",
     skill: "heavyWeapons",
+    magazine: 4,
+    noAutofire: true,
+    noAimed: true,
     requiresBody: 11,
     features: [ignoresArmor],
   }),
@@ -164,9 +171,11 @@ export const EXOTIC_WEAPONS: WeaponDef[] = [
   }),
   exotic("stunBaton", "Stun Baton", 'arma branca média "menos letal".', 100, { base: "mediumMelee", features: ["menos letal"] }),
   exotic("stunGun", "Stun Gun", 'pistola pesada "menos letal".', 100, { base: "heavyPistol", features: ["menos letal"] }),
-  exotic("helix", "Tsunami Arms Helix", "fuzil de assalto que só dispara em autofire, com multiplicador maior. precisa de BODY 11+.", 5000, {
+  exotic("helix", "Tsunami Arms Helix", "fuzil de assalto que só dispara em autofire: 20 balas por rajada, até ×5. precisa de BODY 11+.", 5000, {
     base: "assaultRifle",
+    magazine: 40,
     requiresBody: 11,
+    autofire: { max: 5, table: "rifle", rounds: 20, only: true },
     features: ["só autofire, multiplicador maior"],
   }),
 ];
@@ -186,7 +195,8 @@ export function weaponStats(w: WeaponDef): WeaponStats {
     concealable: w.concealable ?? base?.concealable ?? false,
     features: [...(base?.features ?? []), ...(w.features ?? [])],
     requiresBody: w.requiresBody ?? base?.requiresBody,
-    autofire: w.autofire ?? base?.autofire,
+    autofire: w.noAutofire ? undefined : (w.autofire ?? base?.autofire),
+    noAimed: w.noAimed,
   };
 }
 

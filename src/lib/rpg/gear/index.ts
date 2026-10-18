@@ -11,6 +11,7 @@ import type { AmmoDef, ArmorDef, CatalogItem, WeaponDef } from "./types";
 
 export * from "./ammo";
 export * from "./armor";
+export * from "./categories";
 export * from "./fashion";
 export * from "./items";
 export * from "./kits";

@@ -5,35 +5,31 @@ import {
   AIMED_PENALTY,
   AIM_TARGETS,
   AMMO_LABELS,
-  AUTOFIRE_DV,
   AUTOFIRE_RANGES,
-  AUTOFIRE_ROUNDS,
-  CRITICAL_INJURY_BONUS,
-  catalogItem,
-  check,
+  RANGE_BANDS,
+  attack,
   combatModsOf,
-  compatibleAmmo,
   effectiveStats,
-  fire,
   itemName,
   magazineOf,
+  modeBlocked,
   reload,
-  rollDamage,
   skillDef,
   skillLevel,
-  weaponStats,
-  woundPenaltyOf,
+  weaponDamage,
+  weaponInfo,
   type AimTarget,
-  type RollResult,
-  type WeaponDef,
+  type FireMode,
+  type LabeledRoll,
 } from "@/lib/rpg";
 import type { Character, GearItem } from "@/lib/types";
 import { specsOf } from "./gearText";
 import { RollLine } from "./RoleAbility";
 
 /**
- * Arma na ficha: ataque ligado à perícia e à stat, tiro mirado, pente e recarga, autofire
- * e dano. Os bônus do Solo (ataque preciso, recuperar falha, ponto fraco) já entram.
+ * Arma na ficha: ataque ligado à perícia e à stat, tiro mirado, 2 ataques, pente e recarga, autofire,
+ * supressão, cartucho de escopeta e dano. As regras vêm de `attack.ts`; aqui só o desenho e os botões.
+ * Os bônus do Solo (ataque preciso, recuperar falha, ponto fraco) já entram.
  */
 export function WeaponCard({
   it,
@@ -53,81 +49,46 @@ export function WeaponCard({
 }) {
   const [aim, setAim] = useState<AimTarget | "">("");
   const [range, setRange] = useState(2);
+  const [shotRange, setShotRange] = useState("");
   const [ammoPick, setAmmoPick] = useState(0);
-  const [last, setLast] = useState<{ n: number; r: RollResult } | null>(null);
+  const [last, setLast] = useState<{
+    n: number;
+    rolls: LabeledRoll[];
+    blocked?: string;
+  } | null>(null);
 
-  const def = catalogItem(it.ref) as WeaponDef;
-  const w = weaponStats(def);
+  const info = weaponInfo(ch, it.id);
+  if (!info) return null;
+  const { def, stats: w, mag, compatible: ammo, modes, rounds, singleDvs, autofireDvs } = info;
   const sd = skillDef(w.skill);
-  const stats = effectiveStats(ch);
+  const eff = effectiveStats(ch);
   const mods = combatModsOf(ch);
-  const wound = woundPenaltyOf(ch);
   const lvl = skillLevel(ch.skills, w.skill);
-  const mag = magazineOf(it);
-  const loaded = it.loaded ?? 0;
-  const ammo = compatibleAmmo(ch.gear, it);
+  const loaded = mag?.loaded ?? 0;
   const pick = ammo[Math.min(ammoPick, ammo.length - 1)];
-  const tooWeak = w.requiresBody && stats.BODY < w.requiresBody;
-  const base = sd ? stats[sd.stat] + lvl + mods.attack : 0;
-  const show = (r: RollResult) => setLast({ n: (last?.n ?? 0) + 1, r });
   const aimed = `−${Math.abs(AIMED_PENALTY)}`;
+  const has = (m: FireMode) => modes.includes(m);
+  const why = (m: FireMode) => modeBlocked(ch, it.id, m) ?? undefined;
 
-  const extras = (parts: string[]) => {
-    if (mods.attack) parts.push(`ataque preciso ${mods.attack}`);
-    if (wound) parts.push(`ferimento ${wound}`);
-    return parts;
-  };
-
-  function attack() {
-    if (!sd || (mag && loaded < 1)) return;
-    const target = AIM_TARGETS.find((t) => t.id === aim);
-    const res = check(base + wound + (target ? AIMED_PENALTY : 0), { ignoreFumble: mods.ignoreFumble });
-    const parts = extras([`${sd.name} ${lvl}`, `${sd.stat.toLowerCase()} ${stats[sd.stat]}`]);
-    if (target) parts.push(`mirado ${aimed}`);
-    if (mag) onGear(fire(ch.gear, it.id, 1));
-    const notes = [
-      `ataque: ${parts.join(" + ")} + 1d10`,
-      "fumbleIgnored" in res && "falha crítica ignorada (recuperar falha)",
-      target && `mirando em ${target.label}: ${target.effect}`,
-      mag && `pente ${loaded - 1}/${mag.size}`,
-    ].filter(Boolean);
-    show({ dice: res.dice, total: res.total, crit: res.crit, text: notes.join(" · ") });
+  /** Ataca no modo, guarda o pente novo e mostra as rolagens. */
+  function run(mode: FireMode) {
+    const res = attack(ch, it.id, mode, {
+      aim: aim || undefined,
+      range: mode === "autofire" ? range : shotRange === "" ? undefined : Number(shotRange),
+    });
+    if (res.gear) onGear(res.gear);
+    setLast({ n: (last?.n ?? 0) + 1, rolls: res.rolls, blocked: res.blocked });
   }
 
   function damage() {
-    const res = rollDamage(w.damage);
-    const weak = mods.firstHitDamage
-      ? ` · se for o 1º acerto do round: +${mods.firstHitDamage} ponto fraco = ${res.total + mods.firstHitDamage}`
-      : "";
-    const crit = res.critical ? ` · ferimento crítico! +${CRITICAL_INJURY_BONUS} direto no HP` : "";
-    show({ dice: res.dice, total: res.total, text: `dano ${w.damage}${weak}${crit}` });
+    const roll = weaponDamage(ch, it.id, {
+      aim: has("aimed") && aim ? aim : undefined,
+    });
+    setLast({ n: (last?.n ?? 0) + 1, rolls: [{ label: "dano", roll }] });
   }
 
-  function autofire() {
-    const af = w.autofire;
-    if (!af || loaded < AUTOFIRE_ROUNDS) return;
-    const aLvl = skillLevel(ch.skills, "autofire");
-    const dv = AUTOFIRE_DV[af.table][range];
-    const res = check(stats.REF + aLvl + mods.attack + wound, { ignoreFumble: mods.ignoreFumble });
-    onGear(fire(ch.gear, it.id, AUTOFIRE_ROUNDS));
-    const head = `autofire a ${AUTOFIRE_RANGES[range]} (DV${dv}): ${extras([`Autofire ${aLvl}`, `ref ${stats.REF}`]).join(" + ")} + 1d10`;
-    const left = `pente ${loaded - AUTOFIRE_ROUNDS}`;
-    if (res.total <= dv) {
-      show({ dice: res.dice, total: res.total, crit: res.crit, ok: false, text: `${head} · errou (precisava passar de ${dv}) · ${left}` });
-      return;
-    }
-    const by = res.total - dv;
-    const times = Math.min(by, af.max);
-    const dmg = rollDamage(`2d6x${times}`);
-    const crit = dmg.critical ? ` · dois 6: ferimento crítico! +${CRITICAL_INJURY_BONUS} direto no HP` : "";
-    show({
-      dice: res.dice,
-      total: res.total,
-      crit: res.crit,
-      ok: true,
-      text: `${head} · passou por ${by} → ×${times}${by > af.max ? " (máximo)" : ""} · dano 2d6 [${dmg.dice.join(" ")}] × ${times} = ${dmg.total}${crit} · alvo com REF 8+ pode tentar esquivar · ${left}`,
-    });
-  }
+  const shell = has("shell");
+  const main: FireMode = shell ? "shell" : aim && has("aimed") ? "aimed" : "single";
 
   return (
     <div className="box bg-raise flex min-w-0 flex-col gap-1 p-3">
@@ -151,26 +112,25 @@ export function WeaponCard({
       {sd && (
         <div className="text-xs">
           ataque: <span className="text-dim">{sd.name.toLowerCase()}</span> {lvl} +{" "}
-          <span className="text-dim">{sd.stat.toLowerCase()}</span> {stats[sd.stat]}
+          <span className="text-dim">{sd.stat.toLowerCase()}</span> {eff[sd.stat]}
           {mods.attack > 0 && (
             <>
-              {" "}+ <span className="text-net">preciso {mods.attack}</span>
+              {" "}
+              + <span className="text-net">preciso {mods.attack}</span>
             </>
           )}{" "}
-          = <span className="text-base font-bold text-red">{base}</span>
+          = <span className="text-base font-bold text-red">{info.attackBase}</span>
           {lvl === 0 && <span className="text-dim"> · sem a perícia</span>}
         </div>
       )}
-      {tooWeak && <div className="text-xs text-red">precisa de BODY {w.requiresBody}+ pra disparar.</div>}
+      {info.blocked && <div className="text-xs text-red">{info.blocked}.</div>}
 
       {mag && (
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <span>
             pente <span className={`font-bold ${loaded ? "text-fg" : "text-red"}`}>{loaded}</span>
             <span className="text-dim">/{mag.size}</span>
-            {it.loadedRef && loaded > 0 && (
-              <span className="text-dim"> · {catalogItem(it.loadedRef)?.name}</span>
-            )}
+            {mag.ammo && loaded > 0 && <span className="text-dim"> · {mag.ammo.name}</span>}
           </span>
           {ammo.length > 0 ? (
             <>
@@ -197,43 +157,77 @@ export function WeaponCard({
             </>
           ) : (
             <span className="text-dim">
-              sem munição de {mag.types.map((t) => AMMO_LABELS[t]).join(" ou ")} no inventário
+              sem munição de{" "}
+              {magazineOf(it)
+                ?.types.map((t) => AMMO_LABELS[t])
+                .join(" ou ")}{" "}
+              no inventário
             </span>
           )}
         </div>
       )}
 
       <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
-        <button
-          className="btn !px-2 !py-0 text-xs"
-          disabled={!!mag && loaded < 1}
-          title={mag && loaded < 1 ? "pente vazio" : undefined}
-          onClick={attack}
-        >
-          atacar
-        </button>
-        <select
-          className="field !w-auto !py-0 text-xs"
-          aria-label="tiro mirado"
-          title={`tiro mirado: ${aimed}, ataque único, gasta a ação inteira`}
-          value={aim}
-          onChange={(e) => setAim(e.target.value as AimTarget | "")}
-        >
-          <option value="">sem mirar</option>
-          {AIM_TARGETS.map((t) => (
-            <option key={t.id} value={t.id}>
-              mirar: {t.label} ({aimed})
-            </option>
-          ))}
-        </select>
-        {w.damage && (
+        {has(main) && (
+          <button
+            className="btn !px-2 !py-0 text-xs"
+            disabled={!!why(main)}
+            title={why(main) ?? (shell ? "1 cartucho · DV13 · 3d6 em todo alvo à frente a até 6m" : undefined)}
+            onClick={() => run(main)}
+          >
+            {shell ? "atirar cartucho" : "atacar"}
+          </button>
+        )}
+        {has("aimed") && (
+          <select
+            className="field !w-auto !py-0 text-xs"
+            aria-label="tiro mirado"
+            title={`tiro mirado: ${aimed}, ataque único, gasta a ação inteira`}
+            value={aim}
+            onChange={(e) => setAim(e.target.value as AimTarget | "")}
+          >
+            <option value="">sem mirar</option>
+            {AIM_TARGETS.map((t) => (
+              <option key={t.id} value={t.id}>
+                mirar: {t.label} ({aimed})
+              </option>
+            ))}
+          </select>
+        )}
+        {has("double") && (
+          <button
+            className="btn !px-2 !py-0 text-xs"
+            disabled={!!why("double")}
+            title={why("double") ?? `ROF 2: dois ataques rolados separados, ${rounds.double} balas`}
+            onClick={() => run("double")}
+          >
+            2 ataques
+          </button>
+        )}
+        {singleDvs && has("single") && (
+          <select
+            className="field !w-auto !py-0 text-xs"
+            aria-label="distância do tiro"
+            title="com distância o ataque já diz se acertou; sem, o mestre decide a DV"
+            value={shotRange}
+            onChange={(e) => setShotRange(e.target.value)}
+          >
+            <option value="">sem distância</option>
+            {singleDvs.map((dv, i) => (
+              <option key={RANGE_BANDS[i]} value={i}>
+                {RANGE_BANDS[i]} · {dv === null ? "fora do alcance" : `DV${dv}`}
+              </option>
+            ))}
+          </select>
+        )}
+        {w.damage && has("single") && (
           <button className="btn !px-2 !py-0 text-xs" onClick={damage}>
             dano {w.damage}
           </button>
         )}
       </div>
 
-      {w.autofire && (
+      {w.autofire && autofireDvs && has("autofire") && (
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <select
             className="field !w-auto !py-0"
@@ -243,24 +237,33 @@ export function WeaponCard({
           >
             {AUTOFIRE_RANGES.map((r, i) => (
               <option key={r} value={i}>
-                {r} · DV{AUTOFIRE_DV[w.autofire!.table][i]}
+                {r} · DV{autofireDvs[i]}
               </option>
             ))}
           </select>
           <button
             className="btn !px-2 !py-0"
-            disabled={loaded < AUTOFIRE_ROUNDS}
-            title={
-              loaded < AUTOFIRE_ROUNDS
-                ? `precisa de ${AUTOFIRE_ROUNDS} balas no pente`
-                : `1 ação e ${AUTOFIRE_ROUNDS} balas · perícia Autofire · até ×${w.autofire.max}`
-            }
-            onClick={autofire}
+            disabled={!!why("autofire")}
+            title={why("autofire") ?? `1 ação e ${rounds.autofire} balas · perícia Autofire · até ×${w.autofire.max}`}
+            onClick={() => run("autofire")}
           >
             autofire ×{w.autofire.max}
           </button>
+          {has("suppressive") && (
+            <button
+              className="btn !px-2 !py-0"
+              disabled={!!why("suppressive")}
+              title={
+                why("suppressive") ??
+                `1 ação e ${rounds.suppressive} balas · REF + Autofire vira a DV de quem está exposto a até 25m (WILL + Concentration)`
+              }
+              onClick={() => run("suppressive")}
+            >
+              supressão
+            </button>
+          )}
           <span className="text-dim">
-            Autofire {skillLevel(ch.skills, "autofire")} + ref {stats.REF}
+            Autofire {skillLevel(ch.skills, "autofire")} + ref {eff.REF}
           </span>
         </div>
       )}
@@ -274,7 +277,13 @@ export function WeaponCard({
           onChange={(e) => onName(e.target.value)}
         />
       )}
-      {last && <RollLine key={last.n} r={last.r} accent="var(--red)" />}
+      {last?.blocked && <p className="text-xs text-red">{last.blocked}</p>}
+      {last?.rolls.map((l, i) => (
+        <div key={`${last.n}-${i}`}>
+          {last.rolls.length > 1 && <div className="label mt-2">{l.label}</div>}
+          <RollLine r={l.roll} accent="var(--red)" />
+        </div>
+      ))}
     </div>
   );
 }
