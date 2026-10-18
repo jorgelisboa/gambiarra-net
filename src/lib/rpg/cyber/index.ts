@@ -3,5 +3,6 @@
  */
 export * from "./catalog";
 export * from "./kits";
+export * from "./psychosis";
 export * from "./rules";
 export type * from "./types";

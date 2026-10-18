@@ -1,7 +1,7 @@
 "use client";
 
 import { t } from "@/i18n";
-import { cyberDef, cyberName, cyberpsychosis, installedCyber, setCyberActive } from "@/lib/rpg";
+import { cyberDef, cyberName, cyberpsychosis, installedCyber, setCyberActive, traitName } from "@/lib/rpg";
 import type { Character } from "@/lib/types";
 import { psychosisTone } from "../cyber/CyberSheet";
 import type { SheetTabId } from "./SheetView";
@@ -70,6 +70,11 @@ export function CyberPanel({
             )}
           </p>
         </>
+      )}
+      {ch.psychosis.length > 0 && (
+        <p className={`mt-2 text-xs ${psychosisTone(Math.max(psy.level, 1))}`}>
+          {t.cyber.traits.sheetLine(ch.psychosis.map(traitName).join(t.common.sep))}
+        </p>
       )}
     </Section>
   );

@@ -153,6 +153,14 @@ export interface CyberwareItem {
   skill?: string;
 }
 
+/** Traço de ciberpsicose na ficha: um da lista do livro (`ref`) ou escrito pelo mestre (`text`). */
+export interface PsychosisTrait {
+  id: string;
+  /** Id em PSYCHOSIS_TRAITS (src/lib/rpg/cyber/psychosis.ts): não renomeie. */
+  ref?: string;
+  text?: string;
+}
+
 export interface Character {
   id: string;
   name: string;
@@ -169,6 +177,8 @@ export interface Character {
   gear: GearItem[];
   /** Implantes. Os itens que eles põem no inventário (armas, armadura) ficam em `gear` com `implant`. */
   cyberware: CyberwareItem[];
+  /** Traços de ciberpsicose que o mestre pôs (da lista do livro ou escritos à mão). */
+  psychosis: PsychosisTrait[];
   /** Eurobucks. */
   money: number;
   /** +1 a cada dano de ataque levado já mortalmente ferido. */

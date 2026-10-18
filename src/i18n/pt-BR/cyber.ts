@@ -96,6 +96,30 @@ export const cyber = {
     stable: { label: "estável", text: "sem ciberpsicose nem dissociação." },
   },
 
+  /** Traços de ciberpsicose na ficha: escolher da lista do livro, rolar ou escrever. */
+  traits: {
+    title: "traços",
+    none: "nenhum traço ainda.",
+    /** "2 de 3 que o livro pede" */
+    count: (have: number, need: number) => `${have} de ${need} que o livro pede`,
+    kinds: { dissociation: "dissociação", psychopathy: "psicopatia (Hare)" },
+    kindAria: "tabela de traços",
+    open: "pôr traço",
+    close: "fechar",
+    roll: (sides: number) => `rolar 1d${sides}`,
+    rolled: (die: number, sides: number, name: string) => `rolou ${die} no 1d${sides}: ${name}`,
+    allTaken: "a ficha já tem todos dessa tabela.",
+    pickAria: "escolher da lista",
+    pickPlaceholder: "escolher da lista…",
+    put: "pôr",
+    writeAria: "escrever um traço",
+    writePlaceholder: "ou escreva um traço…",
+    written: "escrito pelo mestre",
+    removeAria: (name: string) => `tirar ${name}`,
+    /** Linha curta na aba ficha. */
+    sheetLine: (names: string) => `traços: ${names}`,
+  },
+
   /** Perda de humanidade em texto curto. */
   hl: {
     short: (hl: number) => (hl > 0 ? `−${hl} hum.` : `${hl} hum.`),

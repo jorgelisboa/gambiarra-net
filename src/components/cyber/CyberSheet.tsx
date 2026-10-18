@@ -29,6 +29,7 @@ import type { Character, CyberwareItem } from "@/lib/types";
 import { BookName } from "../BookName";
 import { CyberKitPicker, hlLabel } from "./CyberKitPicker";
 import { CyberShop } from "./CyberShop";
+import { PsychosisTraits } from "./PsychosisTraits";
 
 type Save = (patch: Partial<Character>) => void;
 
@@ -189,6 +190,7 @@ function Humanity({ ch, save }: { ch: Character; save: Save }) {
       <p className="text-xs text-dim">
         {t.cyber.humanity.lostInCyber} <span className="font-mono">{lost}</span>
       </p>
+      <PsychosisTraits ch={ch} save={save} />
 
       {therapy && (
         <div className="space-y-3 border-t-2 border-line pt-3">
