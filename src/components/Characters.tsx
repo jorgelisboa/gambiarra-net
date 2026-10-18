@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import {
   deleteCharacter,
   setSessionCharacter,
@@ -40,9 +40,11 @@ import { PhotoPicker, Portrait } from "./Portrait";
 import { RoleAbility } from "./RoleAbility";
 import { GearSheet } from "./GearSheet";
 import { SkillSheet } from "./SkillSheet";
+import { SheetView } from "./sheet/SheetView";
 
 /** `role`: a aba só aparece pra esse role. */
 const SHEET_TABS = [
+  { id: "sheet", label: "ficha" },
   { id: "stats", label: "stats" },
   { id: "skills", label: "perícias" },
   { id: "gear", label: "equipamento" },
@@ -57,6 +59,16 @@ type SheetTab = (typeof SHEET_TABS)[number]["id"];
 type SheetTabDef = (typeof SHEET_TABS)[number];
 
 const tabsFor = (role: Role): SheetTabDef[] => SHEET_TABS.filter((t) => !("role" in t) || t.role === role);
+
+/** Mesmo corte do `sm:` do Tailwind. No servidor (e na hidratação) vale celular. */
+const WIDE = "(min-width: 640px)";
+function subscribeWide(notify: () => void) {
+  const mq = matchMedia(WIDE);
+  mq.addEventListener("change", notify);
+  return () => mq.removeEventListener("change", notify);
+}
+const useWide = () =>
+  useSyncExternalStore(subscribeWide, () => matchMedia(WIDE).matches, () => false);
 
 const NOTE_FIELDS: { key: keyof CharacterNotes; label: string; area?: boolean }[] = [
   { key: "alias", label: "apelido / handle" },
@@ -76,48 +88,77 @@ export function Characters() {
   );
   const [creating, setCreating] = useState(false);
   // fica aqui (e não no Editor) pra aba não voltar pro início ao trocar de personagem
-  const [tab, setTab] = useState<SheetTab>("stats");
+  const [tab, setTab] = useState<SheetTab>("sheet");
   const selected = characters.find((c) => c.id === selectedId) ?? null;
 
   function create(ch: Character) {
     upsertCharacter(ch);
     setSelectedId(ch.id);
     setCreating(false);
-    setTab("stats");
+    setTab("sheet");
   }
 
   return (
     <div className="mx-auto grid max-w-6xl grid-cols-1 gap-5 md:grid-cols-[260px_minmax(0,1fr)]">
-      <aside className="space-y-2">
-        <button className="btn btn-primary w-full" onClick={() => setCreating(true)}>
-          novo personagem
-        </button>
-        {characters.length === 0 && (
-          <p className="pt-4 text-dim">nenhum personagem ainda.</p>
+      <aside>
+        {selected && (
+          // celular: uma linha só, pra ficha começar logo no topo
+          <div className="flex gap-2 md:hidden">
+            <select
+              className="field min-h-10 min-w-0 flex-1"
+              aria-label="personagem"
+              value={selected.id}
+              onChange={(e) => {
+                setSelectedId(e.target.value);
+                setCreating(false);
+              }}
+            >
+              {characters.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} · {c.role.toLowerCase()}
+                </option>
+              ))}
+            </select>
+            <button
+              className="btn btn-primary min-h-10 shrink-0"
+              aria-label="novo personagem"
+              onClick={() => setCreating(true)}
+            >
+              novo
+            </button>
+          </div>
         )}
-        {characters.map((c) => (
-          <button
-            key={c.id}
-            onClick={() => {
-              setSelectedId(c.id);
-              setCreating(false);
-            }}
-            className={`box flex w-full items-center gap-3 p-3 text-left ${
-              c.id === selectedId ? "box-active" : "hover:border-dim"
-            }`}
-          >
-            <Portrait photo={c.photo} seed={c.id} color={colorFor(c.id)} size={36} />
-            <span className="min-w-0 flex-1">
-              <span className="font-pixel block truncate text-base">{c.name}</span>
-              <span className="block text-xs text-dim">
-                {c.role.toLowerCase()} · rank {c.roleRank}
-              </span>
-            </span>
-            {c.id === sessionCharacterId && (
-              <span className="text-xs text-red">sessão</span>
-            )}
+        <div className={`space-y-2 ${selected ? "max-md:hidden" : ""}`}>
+          <button className="btn btn-primary w-full" onClick={() => setCreating(true)}>
+            novo personagem
           </button>
-        ))}
+          {characters.length === 0 && (
+            <p className="pt-4 text-dim">nenhum personagem ainda.</p>
+          )}
+          {characters.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => {
+                setSelectedId(c.id);
+                setCreating(false);
+              }}
+              className={`box flex w-full items-center gap-3 p-3 text-left ${
+                c.id === selectedId ? "box-active" : "hover:border-dim"
+              }`}
+            >
+              <Portrait photo={c.photo} seed={c.id} color={colorFor(c.id)} size={36} />
+              <span className="min-w-0 flex-1">
+                <span className="font-pixel block truncate text-base">{c.name}</span>
+                <span className="block text-xs text-dim">
+                  {c.role.toLowerCase()} · rank {c.roleRank}
+                </span>
+              </span>
+              {c.id === sessionCharacterId && (
+                <span className="text-xs text-red">sessão</span>
+              )}
+            </button>
+          ))}
+        </div>
       </aside>
 
       {creating ? (
@@ -159,7 +200,7 @@ function Editor({
   const save = (patch: Partial<Character>) => upsertCharacter({ ...ch, ...patch });
   const tabs = tabsFor(ch.role);
   // a aba escolhida pode não existir pra este role (netrun só pro Netrunner)
-  const shown: SheetTab = tabs.some((t) => t.id === tab) ? tab : "stats";
+  const shown: SheetTab = tabs.some((t) => t.id === tab) ? tab : "sheet";
   const changeRole = (role: Role) =>
     save({ role, ability: fitToRank(roleDef(role).ability, ch.ability, ch.roleRank) });
   const hpMax = hpMaxOf(ch);
@@ -170,49 +211,80 @@ function Editor({
   const psy = cyberpsychosis(ch);
   const eff = effectiveStats(ch);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  // role, sessão e apagar ficam atrás de "opções": nada de mexer neles sem querer
+  const [optionsOpen, setOptionsOpen] = useState(false);
+  const wide = useWide();
 
   return (
     <section className="box min-w-0 space-y-5 p-3 sm:p-5">
-      <div className="flex items-start gap-3 sm:gap-4">
-        <PhotoPicker ch={ch} size={72} onFail={setPhotoError} />
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
-          <input
-            className="field font-pixel min-w-0 flex-1 basis-48 text-xl sm:max-w-sm sm:text-2xl"
-            aria-label="nome"
-            value={ch.name}
-            onChange={(e) => save({ name: e.target.value })}
-          />
-          <select
-            className="field !w-auto"
-            value={ch.role}
-            aria-label="role"
-            onChange={(e) => changeRole(e.target.value as Role)}
-          >
-            {ROLES.map((r) => (
-              <option key={r} value={r}>{r.toLowerCase()}</option>
-            ))}
-          </select>
-          <div className="ml-auto flex flex-wrap gap-2">
+      <div className="space-y-3">
+        <div className="flex items-start gap-3 sm:gap-4">
+          {/* o "pôr foto" não quebra em duas linhas sob o avatar de 48px */}
+          <div className="shrink-0 [&_span]:whitespace-nowrap">
+            <PhotoPicker ch={ch} size={wide ? 72 : 48} onFail={setPhotoError} />
+          </div>
+          <div className="min-w-0 flex-1 space-y-1">
+            <div className="flex items-start gap-2">
+              <input
+                className="field font-pixel min-h-10 min-w-0 flex-1 text-xl sm:min-h-0 sm:max-w-sm sm:text-2xl"
+                aria-label="nome"
+                value={ch.name}
+                onChange={(e) => save({ name: e.target.value })}
+              />
+              <button
+                className={`btn ml-auto min-h-10 shrink-0 sm:min-h-0 ${optionsOpen ? "btn-primary" : ""}`}
+                aria-expanded={optionsOpen}
+                aria-controls="ficha-opcoes"
+                onClick={() => setOptionsOpen((o) => !o)}
+              >
+                opções
+              </button>
+            </div>
+            <p className="text-dim">
+              {ch.role.toLowerCase()} · rank {ch.roleRank}
+              {inSession && (
+                <>
+                  {" "}
+                  <span className="whitespace-nowrap text-red">· na sessão</span>
+                </>
+              )}
+            </p>
+            {(shown === "stats" || shown === "ability") && (
+              <p className="hidden text-dim sm:block">{roleDef(ch.role).summary}</p>
+            )}
+          </div>
+        </div>
+        {optionsOpen && (
+          <div id="ficha-opcoes" className="flex flex-wrap items-center gap-2">
+            <select
+              className="field min-h-10 !w-auto sm:min-h-0"
+              value={ch.role}
+              aria-label="role"
+              onChange={(e) => changeRole(e.target.value as Role)}
+            >
+              {ROLES.map((r) => (
+                <option key={r} value={r}>{r.toLowerCase()}</option>
+              ))}
+            </select>
             <button
-              className={`btn ${inSession ? "btn-primary" : ""}`}
+              className={`btn min-h-10 sm:min-h-0 ${inSession ? "btn-primary" : ""}`}
               onClick={() => setSessionCharacter(inSession ? null : ch.id)}
             >
               {inSession ? "na sessão" : "usar na sessão"}
             </button>
             <button
-              className="btn btn-danger"
+              className="btn btn-danger min-h-10 sm:min-h-0"
               onClick={() => confirm(`Apagar ${ch.name}?`) && onDelete()}
             >
               apagar
             </button>
           </div>
-          <p className="w-full text-dim">{roleDef(ch.role).summary}</p>
-          {photoError && (
-            <p role="alert" className="w-full text-red">
-              {photoError}
-            </p>
-          )}
-        </div>
+        )}
+        {photoError && (
+          <p role="alert" className="text-red">
+            {photoError}
+          </p>
+        )}
       </div>
 
       <SheetTabs tabs={tabs} tab={shown} onTab={onTab} />
@@ -223,6 +295,8 @@ function Editor({
         aria-labelledby={`ficha-tab-${shown}`}
         className="space-y-5"
       >
+        {shown === "sheet" && <SheetView ch={ch} save={save} onTab={onTab} />}
+
         {shown === "stats" && (
           <>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
@@ -379,8 +453,20 @@ function SheetTabs({
     onTab(t.id);
     document.getElementById(`ficha-tab-${t.id}`)?.focus();
   }
+  // a faixa rola de lado em vez de quebrar linha: a aba ativa tem que estar à vista
+  useEffect(() => {
+    document
+      .getElementById(`ficha-tab-${tab}`)
+      ?.scrollIntoView({ inline: "nearest", block: "nearest" });
+  }, [tab]);
   return (
-    <div role="tablist" aria-label="ficha" className="flex flex-wrap gap-x-1 border-b-2 border-line">
+    <div
+      role="tablist"
+      aria-label="ficha"
+      // a linha de baixo é sombra interna: a borda ficaria fora da área que rola e cortaria o sublinhado da aba
+      style={{ scrollbarWidth: "none", boxShadow: "inset 0 -2px 0 var(--line)" }}
+      className="flex flex-nowrap gap-x-1 overflow-x-auto [&::-webkit-scrollbar]:hidden"
+    >
       {tabs.map((t, i) => {
         const on = t.id === tab;
         return (
@@ -398,7 +484,7 @@ function SheetTabs({
               else return;
               e.preventDefault();
             }}
-            className={`-mb-[2px] shrink-0 border-b-2 px-2 py-1.5 sm:px-3 ${
+            className={`min-h-10 shrink-0 whitespace-nowrap border-b-2 px-3 py-1.5 focus-visible:!-outline-offset-2 sm:min-h-0 ${
               on ? "border-red text-red" : "border-transparent text-dim hover:text-fg"
             }`}
           >

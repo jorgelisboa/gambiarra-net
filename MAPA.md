@@ -198,6 +198,7 @@ Fora de `rpg/`, a cola da aplicação:
 ## O que já roda hoje
 
 - **Ficha completa** num aparelho só: criação Streetrat, perícias, equipamento, habilidade, lore.
+- **Ficha de jogo no celular** (aba ficha): tudo da mesa numa página, com HP e SP fixos no topo, rolagens tocando na perícia ou na arma e o resultado num painel no rodapé. Ainda sem "é a tua vez", que depende da mesa compartilhada.
 - **Combate num aparelho só**: iniciativa, dano com armadura, PNJs, tela cheia de iniciativa (boa pro telão).
 - **Fichas na nuvem** por conta (Supabase), mas cada conta só vê as próprias; combate fica no navegador.
 - **Construtor de arquiteturas** no console (aba netrunner) e um **telão** em `/tela`: o mestre abre a janela, arrasta pra TV e escolhe qual arquitetura vai pro ar; o telão mostra só os andares revelados e onde o netrunner está. As duas janelas precisam estar no mesmo navegador (se acompanham pelo localStorage) até a mesa compartilhada chegar.

@@ -1,3 +1,4 @@
+import { d10 } from "./dice";
 import type { Stats } from "../types";
 
 /** HP = 10 + 5 × (média de BODY e WILL, arredondada pra cima). Bate com a tabela do livro. */
@@ -7,6 +8,16 @@ export const maxHp = (s: Stats) => 10 + 5 * Math.ceil((s.BODY + s.WILL) / 2);
 export const seriousThreshold = (hpMax: number) => Math.ceil(hpMax / 2);
 
 export const deathSave = (s: Stats) => s.BODY;
+
+/**
+ * Death save (pág. 222): 1d10 + a penalidade acumulada; vive se ficar abaixo do BODY.
+ * 10 natural sempre falha. Cada death save rolado soma +1 na penalidade (quem chama guarda isso).
+ */
+export function rollDeathSave(body: number, penalty: number) {
+  const die = d10();
+  const total = die + penalty;
+  return { die, total, ok: die !== 10 && total < body };
+}
 
 /** Mortalmente ferido: −6 de MOVE, mínimo 1. */
 export const MORTAL_MOVE_PENALTY = -6;
