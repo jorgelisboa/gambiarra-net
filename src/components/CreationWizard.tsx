@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { t } from "@/i18n";
 import {
   CREATION_METHODS,
   CREATION_STEPS,
@@ -44,7 +45,7 @@ interface Draft {
   cyberPicks: Record<string, number>;
 }
 
-const METHOD_STEP = { label: "método", title: "como criar", hint: "escolha o método de criação." };
+const METHOD_STEP = t.creation.steps.method;
 
 /** Criação de personagem em passos. Os passos vêm do método escolhido (`src/lib/rpg/creation.ts`). */
 export function CreationWizard({
@@ -118,7 +119,7 @@ export function CreationWizard({
   return (
     <section className="box space-y-5 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <ol className="flex flex-wrap gap-x-4 gap-y-1 text-xs" aria-label="passos">
+        <ol className="flex flex-wrap gap-x-4 gap-y-1 text-xs" aria-label={t.creation.wizard.stepsAria}>
           {steps.map((s, i) => {
             const label = s === "method" ? METHOD_STEP.label : CREATION_STEPS[s].label;
             return (
@@ -136,7 +137,7 @@ export function CreationWizard({
           })}
         </ol>
         <button className="btn" onClick={onCancel}>
-          cancelar
+          {t.common.actions.cancel}
         </button>
       </div>
 
@@ -159,14 +160,14 @@ export function CreationWizard({
             >
               <span className="flex items-baseline justify-between gap-2">
                 <span className="font-pixel text-xl group-enabled:group-hover:text-red">{m.name}</span>
-                {m.soon && <span className="text-xs text-dim">em breve</span>}
+                {m.soon && <span className="text-xs text-dim">{t.creation.methods.soon}</span>}
               </span>
               <span className="text-xs text-dim">{m.summary}</span>
               <span className="text-xs">
                 {m.steps.map((s) => CREATION_STEPS[s].label).join(" → ")}
               </span>
               {m.upcoming.length > 0 && (
-                <span className="text-xs text-dim">depois: {m.upcoming.join(", ")}</span>
+                <span className="text-xs text-dim">{t.creation.methods.upcomingLine(m.upcoming)}</span>
               )}
             </button>
           ))}
@@ -182,7 +183,7 @@ export function CreationWizard({
           }}
         >
           <label>
-            <span className="label">nome</span>
+            <span className="label">{t.creation.wizard.nameLabel}</span>
             <input
               autoFocus
               className="field font-pixel mt-1 text-xl"
@@ -191,10 +192,10 @@ export function CreationWizard({
             />
           </label>
           <label>
-            <span className="label">handle (opcional)</span>
+            <span className="label">{t.creation.wizard.handleLabel}</span>
             <input
               className="field mt-1"
-              placeholder="como te chamam na rua"
+              placeholder={t.creation.wizard.handlePlaceholder}
               value={draft.handle}
               onChange={(e) => setDraft({ ...draft, handle: e.target.value })}
             />
@@ -266,7 +267,7 @@ export function CreationWizard({
             emp={stats?.EMP}
           />
           <p className="text-xs text-dim">
-            depois da criação, a loja de cyberware fica na ficha, na aba cyberware (lá a perda de humanidade é rolada)
+            {t.creation.wizard.cyberNote}
           </p>
         </div>
       )}
@@ -274,10 +275,10 @@ export function CreationWizard({
       {step !== "method" && (
         <div className="flex items-center justify-between gap-3 border-t-2 border-line pt-4">
           <button className="btn" onClick={() => setStep(steps[at - 1])}>
-            voltar
+            {t.common.actions.back}
           </button>
           <button className="btn btn-primary" disabled={!ready} onClick={next}>
-            {isLast ? "criar personagem" : "próximo"}
+            {isLast ? t.creation.wizard.create : t.common.actions.next}
           </button>
         </div>
       )}

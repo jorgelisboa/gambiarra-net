@@ -22,7 +22,7 @@ const special = (id: string, ammo: AmmoType, name: string, namePt: string, desc:
   cost: null,
 });
 
-const thrown = "arremessada (athletics) ou disparada no lança-granadas. efeito na pág. 344.";
+const thrown = "arremessada (atletismo) ou disparada no lança-granadas. efeito na pág. 344.";
 
 /**
  * Munição. A básica custa 10eb a cada 10 e não tem efeito especial; granadas, foguetes

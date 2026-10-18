@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { gameName, t } from "@/i18n";
 import {
   CATALOG,
   CYBERWARE,
@@ -27,13 +28,13 @@ import {
   type WeaponDef,
 } from "@/lib/rpg";
 import type { Character } from "@/lib/types";
+import { BookName } from "../BookName";
 
 type Save = (patch: Partial<Character>) => void;
 type Pay = "buy" | "have" | "free";
 
 const SKILL_CHIP = "skillChip";
 const MELEE_CHOICES = ["lightMelee", "mediumMelee", "heavyMelee"] as const;
-const FIXER_HINT = "acima de 100eb o livro só vende com fixer ou num night market, pág. 385";
 
 /** Armas que cabem num popup ranged: uma mão, de longo alcance ou exótica, com preço. */
 const POPUP_GUNS = CATALOG.filter(
@@ -43,6 +44,12 @@ const POPUP_GUNS = CATALOG.filter(
     d.cost !== null &&
     weaponStats(d).hands === 1,
 );
+
+/** Nome em pt-BR da arma branca do popup. */
+const meleeName = (id: string) => {
+  const d = catalogItem(id);
+  return d ? gameName(d) : id;
+};
 
 /** Botão de alternar no estilo dos colchetes, com o selecionado em vermelho. */
 function Toggle({ on, onClick, children }: { on: boolean; onClick: () => void; children: ReactNode }) {
@@ -81,23 +88,24 @@ export function CyberShop({ ch, save, onClose }: { ch: Character; save: Save; on
   return (
     <div className="box space-y-3 p-3">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-        <h3 className="font-pixel text-xl">ripperdoc</h3>
+        <h3 className="font-pixel text-xl">{t.cyber.shop.title}</h3>
         <span className="text-dim">
-          na mão <span className="font-bold text-red">{fmtEb(ch.money)}</span>
+          {t.cyber.shop.cash} <span className="font-bold text-red">{fmtEb(ch.money)}</span>
         </span>
         <span className="text-dim">
-          humanidade <span className="text-fg">{ch.humanity}</span> · emp em uso{" "}
-          <span className="text-fg">{currentEmp(ch.stats, ch.humanity)}</span>
+          {t.cyber.humanity.label} <span className="text-fg">{ch.humanity}</span>
+          {t.common.sep}
+          {t.cyber.humanity.empInUse} <span className="text-fg">{currentEmp(ch.stats, ch.humanity)}</span>
         </span>
         {onClose && (
           <button type="button" className="btn ml-auto !px-2 !py-0 text-xs" onClick={onClose}>
-            fechar
+            {t.common.actions.close}
           </button>
         )}
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <div role="tablist" aria-label="categorias de cyberware" className="flex min-w-0 flex-wrap gap-x-1 border-b-2 border-line">
+        <div role="tablist" aria-label={t.cyber.shop.categories} className="flex min-w-0 flex-wrap gap-x-1 border-b-2 border-line">
           {CYBER_CATEGORIES.map((c) => (
             <button
               key={c.id}
@@ -119,14 +127,14 @@ export function CyberShop({ ch, save, onClose }: { ch: Character; save: Save; on
         </div>
         <input
           className="field !w-auto min-w-32 flex-1"
-          placeholder="buscar cyberware"
-          aria-label="buscar cyberware"
+          placeholder={t.cyber.shop.search}
+          aria-label={t.cyber.shop.search}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
       </div>
 
-      <p className="text-xs text-dim">{q ? `${items.length} resultado(s) em todas as categorias` : cat.base}</p>
+      <p className="text-xs text-dim">{q ? t.cyber.shop.results(items.length) : t.cyber.shop.categoryHint(cat.en, cat.base)}</p>
 
       {done && (
         <p role="status" className="text-xs text-net">
@@ -136,7 +144,7 @@ export function CyberShop({ ch, save, onClose }: { ch: Character; save: Save; on
 
       <div className="max-h-[32rem] overflow-y-auto pr-1">
         {items.length === 0 ? (
-          <p className="text-dim">nada encontrado.</p>
+          <p className="text-dim">{t.cyber.shop.nothing}</p>
         ) : (
           <ul className="divide-y-2 divide-line">
             {items.map((d) => {
@@ -148,33 +156,33 @@ export function CyberShop({ ch, save, onClose }: { ch: Character; save: Save; on
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <div className="min-w-0 flex-1 basis-56">
                       <div>
-                        <span className="font-bold">{d.name}</span> <span className="text-xs text-dim">{d.namePt}</span>
+                        <span className="font-bold">{gameName(d)}</span>
+                        <BookName def={d} />
                       </div>
                       <div className="text-xs text-dim">{d.summary}</div>
                       <div className="text-xs">
-                        {d.install ? INSTALL_LABELS[d.install] : "chip"} · hl {hlText(d)} · {fmtEb(price)}
-                        {d.paired && " cada · em par"}
+                        {t.cyber.shop.line(d.install ? INSTALL_LABELS[d.install] : t.cyber.chipPlace, hlText(d), fmtEb(price), !!d.paired)}
                         {needsFixer(price) && (
-                          <span className="ml-2 text-dim" title={FIXER_HINT}>
-                            só com fixer
+                          <span className="ml-2 text-dim" title={t.cyber.shop.fixerHint}>
+                            {t.cyber.shop.onlyFixer}
                           </span>
                         )}
                       </div>
-                      {!check.ok && <div className="text-xs text-red">{check.reason ?? "não dá pra instalar"}</div>}
+                      {!check.ok && <div className="text-xs text-red">{check.reason ?? t.cyber.shop.cantInstall}</div>}
                     </div>
                     <div className="ml-auto flex shrink-0 items-center gap-2">
                       <button
                         type="button"
                         className="btn !px-2 !py-0 text-xs"
                         disabled={!check.ok}
-                        title={check.ok ? undefined : (check.reason ?? "não dá pra instalar")}
+                        title={check.ok ? undefined : (check.reason ?? t.cyber.shop.cantInstall)}
                         aria-expanded={open}
                         onClick={() => {
                           setDone(null);
                           setOpenId(open ? null : d.id);
                         }}
                       >
-                        instalar
+                        {t.cyber.shop.install}
                       </button>
                     </div>
                   </div>
@@ -199,9 +207,7 @@ export function CyberShop({ ch, save, onClose }: { ch: Character; save: Save; on
         )}
       </div>
 
-      <p className="text-xs text-dim">
-        preço com a instalação incluída. depois da criação, a perda de humanidade é rolada (o número entre parênteses).
-      </p>
+      <p className="text-xs text-dim">{t.cyber.shop.footnote}</p>
     </div>
   );
 }
@@ -292,7 +298,7 @@ function InstallPanel({
       return;
     }
     save(next);
-    onDone(`instalado: ${def.name} · −${total} de humanidade`);
+    onDone(t.cyber.panel.done(gameName(def), total));
   };
 
   return (
@@ -301,10 +307,10 @@ function InstallPanel({
         <div className="space-y-1">
           {Array.from({ length: n }, (_, i) => (
             <label key={i} className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="label">{n > 1 ? `peça ${i + 1} em` : "vai em"}</span>
+              <span className="label">{n > 1 ? t.cyber.panel.pieceIn(i + 1) : t.cyber.panel.goesIn}</span>
               <select
                 className="field !w-auto min-w-0 max-w-full !py-1"
-                aria-label={n > 1 ? `onde instalar a peça ${i + 1}` : "onde instalar"}
+                aria-label={n > 1 ? t.cyber.panel.wherePiece(i + 1) : t.cyber.panel.whereOne}
                 value={hosts[i]}
                 onChange={(e) => setPicked(hosts.map((h, j) => (j === i ? e.target.value : h)))}
               >
@@ -321,37 +327,36 @@ function InstallPanel({
         </div>
       ) : (
         <p className="text-xs">
-          vai em: <span className="font-bold">{hosts.map(label).join(", ")}</span>
+          {t.cyber.panel.goesInList} <span className="font-bold">{hosts.map(label).join(", ")}</span>
         </p>
       )}
 
       {isChip && (
         <label className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="label">perícia do chip</span>
+          <span className="label">{t.cyber.panel.chipSkill}</span>
           <select
             className="field !w-auto min-w-0 max-w-full !py-1"
-            aria-label="perícia do chip"
+            aria-label={t.cyber.panel.chipSkill}
             value={skill}
             onChange={(e) => setSkill(e.target.value)}
           >
-            <option value="">escolher perícia</option>
+            <option value="">{t.cyber.panel.chooseSkill}</option>
             {SKILLS.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.namePt} · {s.name}
-                {s.x2 ? " · x2" : ""}
+                {t.cyber.panel.skillOption(gameName(s), !!s.x2)}
               </option>
             ))}
           </select>
-          <span className="text-dim">{skill ? fmtEb(price) : "obrigatório"}</span>
+          <span className="text-dim">{skill ? fmtEb(price) : t.cyber.panel.required}</span>
         </label>
       )}
 
       {popup === "popupMelee" && (
-        <div role="group" aria-label="arma branca do braço" className="flex flex-wrap items-center gap-2">
-          <span className="label">arma</span>
+        <div role="group" aria-label={t.cyber.panel.meleeGroup} className="flex flex-wrap items-center gap-2">
+          <span className="label">{t.cyber.panel.weapon}</span>
           {MELEE_CHOICES.map((id) => (
             <Toggle key={id} on={melee === id} onClick={() => setMelee(id)}>
-              {catalogItem(id)?.namePt ?? id}
+              {meleeName(id)}
             </Toggle>
           ))}
         </div>
@@ -360,16 +365,16 @@ function InstallPanel({
       {popup === "popupRanged" && (
         <div className="space-y-1">
           <label className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="label">arma</span>
+            <span className="label">{t.cyber.panel.weapon}</span>
             <select
               className="field !w-auto min-w-0 max-w-full !py-1"
-              aria-label="arma de fogo do braço"
+              aria-label={t.cyber.panel.gunAria}
               value={gun}
               onChange={(e) => setGun(e.target.value)}
             >
-              <option value="">nenhuma, só o espaço no braço</option>
+              <option value="">{t.cyber.panel.noGun}</option>
               {ownedGuns.length > 0 && (
-                <optgroup label="do inventário">
+                <optgroup label={t.cyber.panel.fromGear}>
                   {ownedGuns.map((g) => (
                     <option key={g.id} value={`gear:${g.id}`}>
                       {itemName(g)}
@@ -377,43 +382,41 @@ function InstallPanel({
                   ))}
                 </optgroup>
               )}
-              <optgroup label="comprar junto">
+              <optgroup label={t.cyber.panel.buyWith}>
                 {POPUP_GUNS.map((d) => (
                   <option key={d.id} value={`ref:${d.id}`}>
-                    {d.namePt} · +{fmtEb(d.cost!)}
+                    {t.cyber.panel.gunOption(gameName(d), fmtEb(d.cost!))}
                   </option>
                 ))}
               </optgroup>
             </select>
           </label>
           {boughtGun?.cost != null && (
-            <p className="text-xs text-dim">
-              arma comprada junto: {mode === "free" ? "sem custo" : `+${fmtEb(boughtGun.cost)}`}
-            </p>
+            <p className="text-xs text-dim">{t.cyber.panel.gunBought(mode === "free", fmtEb(boughtGun.cost))}</p>
           )}
         </div>
       )}
 
-      <div role="group" aria-label="pagamento" className="space-y-1">
-        <span className="label">pagamento</span>
+      <div role="group" aria-label={t.cyber.panel.payment} className="space-y-1">
+        <span className="label">{t.cyber.panel.payment}</span>
         <div className="flex flex-wrap gap-2">
           <Toggle on={mode === "buy"} onClick={() => setMode("buy")}>
-            comprar · {times(price)}
+            {t.cyber.panel.buy(times(price))}
           </Toggle>
           <Toggle on={mode === "have"} onClick={() => setMode("have")}>
-            {def.install ? `${n > 1 ? "já tenho as peças" : "já tenho a peça"} · ${times(fee)}` : "já tenho o chip · grátis"}
+            {def.install ? t.cyber.panel.haveParts(n > 1, times(fee)) : t.cyber.panel.haveChip}
           </Toggle>
           <Toggle on={mode === "free"} onClick={() => setMode("free")}>
-            sem custo · o mestre deu
+            {t.cyber.panel.free}
           </Toggle>
         </div>
-        {mode === "buy" && <p className="text-xs text-dim">instalação incluída</p>}
+        {mode === "buy" && <p className="text-xs text-dim">{t.cyber.panel.included}</p>}
       </div>
 
       <div className="space-y-1">
-        <span className="label">humanidade perdida</span>
+        <span className="label">{t.cyber.panel.lossLabel}</span>
         {def.hlDice === "0" ? (
-          <p className="text-xs">sem perda de humanidade</p>
+          <p className="text-xs">{t.cyber.panel.noLoss}</p>
         ) : (
           <>
             {hl.map((value, i) => (
@@ -425,47 +428,48 @@ function InstallPanel({
                   step={1}
                   inputMode="numeric"
                   className="field !w-20 !py-1"
-                  aria-label={n > 1 ? `perda de humanidade da peça ${i + 1}` : "perda de humanidade"}
+                  aria-label={n > 1 ? t.cyber.panel.lossAriaPiece(i + 1) : t.cyber.panel.lossAria}
                   value={value}
                   onChange={(e) => setHl(hl.map((v, j) => (j === i ? e.target.value : v)))}
                 />
                 <button
                   type="button"
                   className="btn !px-2 !py-0 text-xs"
-                  aria-label={n > 1 ? `rolar de novo a peça ${i + 1}` : "rolar de novo"}
+                  aria-label={n > 1 ? t.cyber.panel.rerollPiece(i + 1) : t.cyber.panel.reroll}
                   onClick={() => setHl(hl.map((v, j) => (j === i ? String(rollHl(def.hlDice)) : v)))}
                 >
-                  rolar de novo
+                  {t.cyber.panel.reroll}
                 </button>
               </div>
             ))}
-            <p className="text-xs text-dim">na criação seria {def.hl}</p>
+            <p className="text-xs text-dim">{t.cyber.panel.atCreation(def.hl)}</p>
           </>
         )}
       </div>
 
       <p className="text-xs">
-        total <span className="font-bold">{fmtEb(pay)}</span>
-        {noMoney && <span className="text-red"> (sem grana)</span>} · humanidade {ch.humanity} →{" "}
-        <span className="font-bold">{after}</span> · emp em uso {empNow} → {empAfter}
+        {t.common.words.total} <span className="font-bold">{fmtEb(pay)}</span>
+        {noMoney && <span className="text-red"> ({t.cyber.noMoney})</span>}
+        {t.common.sep}
+        {t.cyber.humanity.label} {ch.humanity} → <span className="font-bold">{after}</span>
+        {t.common.sep}
+        {t.cyber.humanity.empInUse} {empNow} → {empAfter}
       </p>
-      {after < 0 && (
-        <p className="text-xs font-bold text-red">ciberpsicose: a humanidade vai ficar abaixo de zero.</p>
-      )}
-      {failed && <p className="text-xs text-red">não deu pra instalar: confira o lugar e tente de novo.</p>}
+      {after < 0 && <p className="text-xs font-bold text-red">{t.cyber.panel.psychosisWarn}</p>}
+      {failed && <p className="text-xs text-red">{t.cyber.panel.failed}</p>}
 
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
           className="btn btn-primary"
           disabled={noMoney || noSkill}
-          title={noMoney ? "sem grana" : noSkill ? "escolha a perícia do chip" : undefined}
+          title={noMoney ? t.cyber.noMoney : noSkill ? t.cyber.panel.chooseSkillTitle : undefined}
           onClick={confirm}
         >
-          confirmar
+          {t.common.actions.confirm}
         </button>
         <button type="button" className="btn" onClick={onCancel}>
-          cancelar
+          {t.common.actions.cancel}
         </button>
       </div>
     </div>

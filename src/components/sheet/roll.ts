@@ -8,7 +8,7 @@ export interface SheetRoll {
   chId: string;
   label: string;
   r: RollResult;
-  /** Veredito em destaque ao lado do total ("vive", "morre: falhou o death save"). */
+  /** Veredito em destaque ao lado do total ("vive", "morre: falhou o teste de morte"). */
   headline?: string;
 }
 

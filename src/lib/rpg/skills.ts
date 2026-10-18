@@ -1,17 +1,20 @@
+import { t } from "../../i18n";
 import { uid } from "../id";
 import type { Role, SkillEntry, StatKey, Stats } from "../types";
 
-/** As 9 categorias do livro, na ordem da lista de perícias. */
+const C = t.skills.categories;
+
+/** As 9 categorias do livro, na ordem da lista de perícias. `en` é o nome do livro. */
 export const SKILL_CATEGORIES = [
-  { id: "awareness", name: "atenção", en: "awareness", summary: "perceber o ambiente e notar pistas." },
-  { id: "body", name: "corpo", en: "body", summary: "tarefas físicas, força e resistência." },
-  { id: "control", name: "controle", en: "control", summary: "pilotar veículos e montar animais." },
-  { id: "education", name: "educação", en: "education", summary: "conhecimento de estudo formal." },
-  { id: "fighting", name: "luta", en: "fighting", summary: "briga e combate com arma branca." },
-  { id: "performance", name: "performance", en: "performance", summary: "atuação, música e artes de palco." },
-  { id: "ranged", name: "armas à distância", en: "ranged weapon", summary: "armas de fogo, arco e afins." },
-  { id: "social", name: "social", en: "social", summary: "se misturar, ter estilo e convencer os outros." },
-  { id: "technique", name: "técnica", en: "technique", summary: "ofícios aprendidos na prática." },
+  { id: "awareness", name: C.awareness.name, en: "awareness", summary: C.awareness.summary },
+  { id: "body", name: C.body.name, en: "body", summary: C.body.summary },
+  { id: "control", name: C.control.name, en: "control", summary: C.control.summary },
+  { id: "education", name: C.education.name, en: "education", summary: C.education.summary },
+  { id: "fighting", name: C.fighting.name, en: "fighting", summary: C.fighting.summary },
+  { id: "performance", name: C.performance.name, en: "performance", summary: C.performance.summary },
+  { id: "ranged", name: C.ranged.name, en: "ranged weapon", summary: C.ranged.summary },
+  { id: "social", name: C.social.name, en: "social", summary: C.social.summary },
+  { id: "technique", name: C.technique.name, en: "technique", summary: C.technique.summary },
 ] as const;
 
 export type SkillCategoryId = (typeof SKILL_CATEGORIES)[number]["id"];
@@ -229,7 +232,7 @@ export const ORIGIN_LANGUAGE_LEVEL = 4;
  * Idioma começa em Streetslang; região, ciência e instrumento ficam pra preencher.
  */
 export function streetratSkills(role: Role, originLanguage?: string): SkillEntry[] {
-  const t = STREETRAT[role];
+  const tpl = STREETRAT[role];
   const entry = (skill: string, level: number): SkillEntry => {
     if (skill === "language") return { id: "language-streetslang", skill, spec: "Streetslang", level };
     if (skill === "localExpert") return { id: "localExpert-home", skill, spec: "", level };
@@ -237,8 +240,8 @@ export function streetratSkills(role: Role, originLanguage?: string): SkillEntry
     return { id: skill, skill, spec: "", level };
   };
   return [
-    ...BASIC_ORDER.map((skill, i) => entry(skill, t.basic[i])),
-    ...t.role.map(([skill, level]) => entry(skill, level)),
+    ...BASIC_ORDER.map((skill, i) => entry(skill, tpl.basic[i])),
+    ...tpl.role.map(([skill, level]) => entry(skill, level)),
     {
       id: "language-origin",
       skill: "language",

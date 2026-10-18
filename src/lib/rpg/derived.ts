@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 import { d10 } from "./dice";
 import type { Stats } from "../types";
 
@@ -47,33 +48,13 @@ export interface Wound {
   stabilize: string;
 }
 
+const W = t.sheet.wounds;
+
 const WOUNDS: Record<Wound["id"], Wound> = {
-  unhurt: { id: "unhurt", label: "ileso", short: "", effect: "", penalty: 0, stabilize: "" },
-  light: {
-    id: "light",
-    label: "levemente ferido",
-    short: "ferido",
-    effect: "sem penalidade",
-    penalty: 0,
-    stabilize: "DV10",
-  },
-  serious: {
-    id: "serious",
-    label: "gravemente ferido",
-    short: "grave",
-    effect: "−2 em todas as ações",
-    penalty: -2,
-    stabilize: "DV13",
-  },
-  mortal: {
-    id: "mortal",
-    label: "mortalmente ferido",
-    short: "mortal",
-    effect:
-      "−4 em todas as ações, −6 de MOVE (mín. 1), death save no início de cada turno. dano de ataque causa ferimento crítico e +1 na penalidade de death save",
-    penalty: -4,
-    stabilize: "DV15: volta a 1 HP e fica inconsciente por 1 minuto",
-  },
+  unhurt: { id: "unhurt", ...W.unhurt, penalty: 0 },
+  light: { id: "light", ...W.light, penalty: 0 },
+  serious: { id: "serious", ...W.serious, penalty: -2 },
+  mortal: { id: "mortal", ...W.mortal, penalty: -4 },
 };
 
 /**

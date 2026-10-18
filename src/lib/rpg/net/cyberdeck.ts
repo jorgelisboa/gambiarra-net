@@ -1,10 +1,11 @@
+import { t } from "../../../i18n";
 import { uid } from "../../id";
 import type { GearItem } from "../../types";
 import { catalogItem } from "../gear";
 import type { CyberdeckDef } from "./types";
 
 /** Trocar de deck é uma ação de carne (no mundo real), e só dá pra estar ligado a um por vez. */
-export const SWITCH_DECK_COST = "1 ação de carne";
+export const SWITCH_DECK_COST = t.net.switchDeckCost;
 
 export function deckDef(g: GearItem): CyberdeckDef | undefined {
   const d = catalogItem(g.ref);

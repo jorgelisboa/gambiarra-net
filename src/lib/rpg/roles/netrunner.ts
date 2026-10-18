@@ -1,31 +1,25 @@
+import { t } from "../../../i18n";
 import { check, d6 } from "../dice";
 import type { RoleDef, UseDef } from "../types";
 
 export const netActionsFor = (rank: number) =>
   rank >= 10 ? 5 : rank >= 7 ? 4 : rank >= 4 ? 3 : 2;
 
-const INTERFACE: [id: string, name: string, desc: string][] = [
-  ["backdoor", "Backdoor", "passa por senhas e outras barreiras da arquitetura"],
-  ["cloak", "Cloak", "esconde o que você fez na arquitetura antes de sair"],
-  ["control", "Control", "controla o que está ligado à arquitetura"],
-  ["eyedee", "Eye-Dee", "descobre o que é um dado encontrado e quanto ele vale"],
-  ["pathfinder", "Pathfinder", "descobre o mapa da arquitetura"],
-  ["scanner", "Scanner", "acha onde estão os sistemas numa área"],
-  ["slide", "Slide", "escapa de um Black ICE que está te seguindo"],
-  ["virus", "Virus", "deixa um vírus customizado no núcleo da arquitetura"],
-  ["zap", "Zap", "ataque básico de netrunner, contra programas e contra outros netrunners"],
-];
+const N = t.roles.netrunner;
 
-const uses: UseDef[] = INTERFACE.map(([id, name, desc]) => ({
+/** Ações de interface do livro, na ordem da tabela. */
+const INTERFACE = ["backdoor", "cloak", "control", "eyedee", "pathfinder", "scanner", "slide", "virus", "zap"] as const;
+
+const uses: UseDef[] = INTERFACE.map((id) => ({
   id,
-  name,
-  formula: "interface + 1d10",
-  desc,
-  cost: "1 ação de net",
+  name: N.abilities[id].name,
+  formula: N.formula,
+  desc: N.abilities[id].desc,
+  cost: N.cost,
   roll: ({ rank }) => {
     const r = check(rank);
-    if (id !== "zap") return { ...r, text: "compare com a DV (ou a defesa) que o mestre der" };
-    return { ...r, text: `se acertar: ${d6()} de dano (1d6)` };
+    if (id !== "zap") return { ...r, text: N.vsDv };
+    return { ...r, text: N.zapHit(d6()) };
   },
 }));
 

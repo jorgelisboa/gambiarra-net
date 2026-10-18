@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { gameName, t } from "@/i18n";
 import {
   MAX_RANK,
   allocate,
@@ -25,6 +26,7 @@ import {
 } from "@/lib/rpg";
 import { uid } from "@/lib/id";
 import type { AbilityItem, AbilityState, Character } from "@/lib/types";
+import { BookName } from "./BookName";
 import { Bar } from "./Pixel";
 import { TeamPanel } from "./TeamPanel";
 
@@ -50,20 +52,19 @@ export function RoleAbility({
     <section className="space-y-3">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 max-w-xl">
-          <h3 className="label">habilidade de role</h3>
+          <h3 className="label">{t.roles.ability.title}</h3>
           <div className="font-pixel text-2xl leading-tight" style={{ color: accent }}>
-            {ab.name}
+            {gameName(ab)}
           </div>
-          <p className="text-dim">
-            <span className="text-fg">{ab.namePt}</span> · {ab.summary}
-          </p>
+          <BookName def={ab} />
+          <p className="text-dim">{ab.summary}</p>
         </div>
         <RankControl rank={rank} color={accent} onChange={setRank} />
       </div>
 
       {ab.about && (
         <div className="box bg-raise space-y-2 p-3">
-          <span className="label">como funciona</span>
+          <span className="label">{t.roles.ability.howItWorks}</span>
           {ab.about.map((para) => (
             <p key={para.slice(0, 40)} className="max-w-prose">
               {para}
@@ -99,7 +100,7 @@ export function RoleAbility({
       ))}
 
       {/* as ações de interface do Netrunner moram na aba netrun, junto com o cyberdeck */}
-      {ab.uses && ch.role === "Netrunner" && <p className="text-dim">as ações de interface ficam na aba netrun.</p>}
+      {ab.uses && ch.role === "Netrunner" && <p className="text-dim">{t.roles.ability.netNote}</p>}
       {ab.uses && ch.role !== "Netrunner" && (
         <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {ab.uses.map((u) => (
@@ -108,14 +109,14 @@ export function RoleAbility({
         </div>
       )}
 
-      {ab.tables?.map((t) => (
-        <TierBlock key={t.title} table={t} level={t.level?.(rank, ch.ability) ?? rank} accent={accent} />
+      {ab.tables?.map((table) => (
+        <TierBlock key={table.title} table={table} level={table.level?.(rank, ch.ability) ?? rank} accent={accent} />
       ))}
 
       {ab.refs && (
         <div className="grid gap-2 lg:grid-cols-2">
-          {ab.refs.map((t) => (
-            <RefBlock key={t.title} table={t} />
+          {ab.refs.map((table) => (
+            <RefBlock key={table.title} table={table} />
           ))}
         </div>
       )}
@@ -143,11 +144,11 @@ function RankControl({
   return (
     <div className="box bg-raise p-3">
       <div className="flex items-center justify-between gap-4">
-        <span className="label">rank</span>
+        <span className="label">{t.common.words.rank}</span>
         <div className="flex items-center gap-1">
           <button
             className="btn btn-bare !px-2"
-            aria-label="diminuir rank"
+            aria-label={t.roles.ability.rankDown}
             disabled={rank <= 1}
             onClick={() => onChange(rank - 1)}
           >
@@ -158,7 +159,7 @@ function RankControl({
           </span>
           <button
             className="btn btn-bare !px-2"
-            aria-label="aumentar rank"
+            aria-label={t.roles.ability.rankUp}
             disabled={rank >= MAX_RANK}
             onClick={() => onChange(rank + 1)}
           >
@@ -197,7 +198,7 @@ function AllocBlock({
             {used}/{budget}
           </span>{" "}
           <span className="text-dim">
-            {used < budget ? `· sobram ${budget - used}` : "· tudo distribuído"}
+            {used < budget ? t.roles.alloc.left(budget - used) : t.roles.alloc.allSpent}
           </span>
         </span>
       </div>
@@ -219,19 +220,19 @@ function AllocBlock({
               <div className="flex items-center gap-1">
                 <button
                   className="btn btn-bare !px-2"
-                  aria-label={`tirar ${step} de ${o.name}`}
+                  aria-label={t.roles.alloc.take(step, o.name)}
                   disabled={!canLower(o, state)}
                   onClick={() => onChange(allocate(def, state, o.id, -1, rank))}
                 >
                   -
                 </button>
-                <span className="w-14 text-center" title={`teto no rank ${rank}: ${cap}`}>
+                <span className="w-14 text-center" title={t.roles.alloc.capTitle(rank, cap)}>
                   <span className="font-bold">{p}</span>
                   <span className="text-dim">/{cap}</span>
                 </span>
                 <button
                   className="btn btn-bare !px-2"
-                  aria-label={`pôr ${step} em ${o.name}`}
+                  aria-label={t.roles.alloc.put(step, o.name)}
                   disabled={!canRaise(def, o, state, rank)}
                   onClick={() => onChange(allocate(def, state, o.id, 1, rank))}
                 >
@@ -275,7 +276,7 @@ function ListBlock({
         </span>
       </div>
       {max === 0 && items.length === 0 && (
-        <p className="text-xs text-dim">nada liberado ainda.</p>
+        <p className="text-xs text-dim">{t.roles.list.nothingYet}</p>
       )}
       <ul className="space-y-2">
         {items.map((it, i) => (
@@ -283,7 +284,7 @@ function ListBlock({
             {def.tags && (
               <button
                 className="btn btn-bare w-24 shrink-0 !px-1 text-xs"
-                title="trocar tipo"
+                title={t.roles.list.swapType}
                 onClick={() => patch(it.id, { tag: nextTag(it.tag, def.tags!) })}
               >
                 {it.tag ?? def.tags[0]}
@@ -293,12 +294,12 @@ function ListBlock({
               className={`field ${i >= max ? "!border-red" : ""}`}
               value={it.text}
               placeholder={def.placeholder}
-              aria-label={`${def.title} ${i + 1}`}
+              aria-label={t.roles.list.itemAria(def.title, i + 1)}
               onChange={(e) => patch(it.id, { text: e.target.value })}
             />
             <button
               className="btn btn-bare btn-danger"
-              aria-label="remover"
+              aria-label={t.common.actions.remove}
               onClick={() => setItems(items.filter((x) => x.id !== it.id))}
             >
               x
@@ -308,7 +309,7 @@ function ListBlock({
       </ul>
       {items.length > max && (
         <p className="mt-2 text-xs text-red">
-          acima do limite: remova {items.length - max}.
+          {t.roles.list.over(items.length - max)}
         </p>
       )}
       <button
@@ -316,7 +317,7 @@ function ListBlock({
         disabled={!canAddItem(def, state, rank)}
         onClick={() => setItems([...items, { id: uid(), text: "", tag: def.tags?.[0] }])}
       >
-        adicionar
+        {t.common.actions.add}
       </button>
     </div>
   );
@@ -344,7 +345,7 @@ export function UseCard({ use, ch, accent }: { use: UseDef; ch: Character; accen
         {mods && (
           <select
             className="field !w-auto min-w-0 max-w-full !py-1 text-xs"
-            aria-label="modificador"
+            aria-label={t.roles.use.modifierAria}
             value={Math.min(pick, mods.length - 1)}
             onChange={(e) => setPick(Number(e.target.value))}
           >
@@ -360,10 +361,10 @@ export function UseCard({ use, ch, accent }: { use: UseDef; ch: Character; accen
           disabled={lock !== null}
           onClick={() => setLast({ n: (last?.n ?? 0) + 1, r: use.roll(ctx, mod) })}
         >
-          rolar
+          {t.common.actions.roll}
         </button>
       </div>
-      {lock && <p className="text-xs text-dim">bloqueado: {lock}</p>}
+      {lock && <p className="text-xs text-dim">{t.roles.use.locked(lock)}</p>}
       {last && !lock && <RollLine key={last.n} r={last.r} accent={accent} />}
     </div>
   );
@@ -390,7 +391,7 @@ export function RollLine({ r, accent }: { r: RollResult; accent: string }) {
             className="ml-1 text-xs"
             style={{ color: r.crit === "sucesso" ? accent : "var(--dim)" }}
           >
-            {r.crit === "sucesso" ? "crítico!" : "falha crítica"}
+            {r.crit === "sucesso" ? t.roles.use.crit : t.roles.use.fumble}
           </span>
         )}
       </div>
@@ -412,26 +413,26 @@ function TierBlock({
   accent: string;
 }) {
   const [all, setAll] = useState(false);
-  const shown = all ? table.tiers : table.tiers.filter((t) => tierActive(table, t, level));
-  const next = table.tiers.find((t) => t.from > level);
+  const shown = all ? table.tiers : table.tiers.filter((tier) => tierActive(table, tier, level));
+  const next = table.tiers.find((tier) => tier.from > level);
   return (
     <div className="box bg-raise p-3">
       <div className="mb-2 flex items-center justify-between gap-3">
         <span className="label">{table.title}</span>
         <button className="btn !py-0 text-xs" onClick={() => setAll(!all)}>
-          {all ? "só o que vale agora" : "ver tudo"}
+          {all ? t.roles.tier.onlyNow : t.roles.tier.all}
         </button>
       </div>
       <ul className="space-y-2">
-        {shown.map((t) => {
-          const on = tierActive(table, t, level);
+        {shown.map((tier) => {
+          const on = tierActive(table, tier, level);
           return (
-            <li key={t.from} className="flex gap-3" style={{ opacity: on ? 1 : 0.45 }}>
+            <li key={tier.from} className="flex gap-3" style={{ opacity: on ? 1 : 0.45 }}>
               <span className="w-10 shrink-0 font-bold" style={{ color: on ? accent : undefined }}>
-                {rankRange(t)}
+                {rankRange(tier)}
               </span>
               <div className="min-w-0 space-y-0.5">
-                {t.lines.map((l) => (
+                {tier.lines.map((l) => (
                   <TierLine key={l} text={l} />
                 ))}
               </div>
@@ -439,8 +440,8 @@ function TierBlock({
           );
         })}
       </ul>
-      {!all && next && <p className="mt-2 text-xs text-dim">próximo degrau: {next.from}</p>}
-      {!all && shown.length === 0 && <p className="text-xs text-dim">nada liberado ainda.</p>}
+      {!all && next && <p className="mt-2 text-xs text-dim">{t.roles.tier.next(next.from)}</p>}
+      {!all && shown.length === 0 && <p className="text-xs text-dim">{t.roles.list.nothingYet}</p>}
     </div>
   );
 }

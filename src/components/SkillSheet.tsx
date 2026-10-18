@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { bookName, gameName, t } from "@/i18n";
 import {
   MAX_SKILL_LEVEL,
   SKILLS,
@@ -16,6 +17,7 @@ import {
   type SkillDef,
 } from "@/lib/rpg";
 import type { Role, SkillEntry, Stats } from "@/lib/types";
+import { BookName } from "./BookName";
 import { RollLine } from "./RoleAbility";
 
 type Filter = "trained" | "all";
@@ -90,30 +92,30 @@ export function SkillSheet({
     const extra = bonusOf(def.id);
     const base = skillBase(stats, e) + extra.reduce((a, b) => a + b.value, 0);
     const res = check(base + penalty);
-    const name = e.spec ? `${def.name} (${e.spec})` : def.name;
-    const parts = [`${def.stat.toLowerCase()} ${stats[def.stat]}`, `perícia ${e.level}`];
-    for (const b of extra) parts.push(`${b.source} ${b.value}`);
-    if (penalty) parts.push(`ferimento ${penalty}`);
+    const name = e.spec ? `${gameName(def)} (${e.spec})` : gameName(def);
+    const parts = [t.stats.part(def.stat, stats[def.stat]), t.skills.roll.level(e.level)];
+    for (const b of extra) parts.push(t.skills.roll.bonus(b.source, b.value));
+    if (penalty) parts.push(t.skills.roll.wound(penalty));
     setLast({
       id: e.id,
       n: (last?.n ?? 0) + 1,
-      r: { dice: res.dice, total: res.total, crit: res.crit, text: `${name}: ${parts.join(" + ")} + 1d10` },
+      r: { dice: res.dice, total: res.total, crit: res.crit, text: t.skills.roll.line(name, parts) },
     });
   }
 
   function rollRole(rs: RoleSkill) {
     const res = check(stats[rs.stat] + rs.level + penalty);
-    const parts = [`${rs.stat.toLowerCase()} ${stats[rs.stat]}`, `perícia ${rs.level}`];
-    if (penalty) parts.push(`ferimento ${penalty}`);
+    const parts = [t.stats.part(rs.stat, stats[rs.stat]), t.skills.roll.level(rs.level)];
+    if (penalty) parts.push(t.skills.roll.wound(penalty));
     setLast({
       id: `role-${rs.id}`,
       n: (last?.n ?? 0) + 1,
-      r: { dice: res.dice, total: res.total, crit: res.crit, text: `${rs.name}: ${parts.join(" + ")} + 1d10` },
+      r: { dice: res.dice, total: res.total, crit: res.crit, text: t.skills.roll.line(gameName(rs), parts) },
     });
   }
 
   function applyTemplate() {
-    const msg = `trocar as perícias pelo template streetrat do ${role.toLowerCase()}?`;
+    const msg = t.skills.confirmTemplate(role.toLowerCase());
     if (skills.length > 0 && !confirm(msg)) return;
     onChange(streetratSkills(role, originLanguage));
     setFilter("trained");
@@ -129,7 +131,7 @@ export function SkillSheet({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <div role="group" aria-label="mostrar" className="flex">
+        <div role="group" aria-label={t.skills.filter.aria} className="flex">
           {(["trained", "all"] as const).map((f) => (
             <button
               key={f}
@@ -139,52 +141,60 @@ export function SkillSheet({
                 filter === f ? "border-red bg-red text-black" : "border-line text-dim hover:text-fg"
               } ${f === "all" ? "-ml-[2px]" : ""}`}
             >
-              {f === "trained" ? "treinadas" : "todas"}
+              {f === "trained" ? t.skills.filter.trained : t.skills.filter.all}
             </button>
           ))}
         </div>
         <input
           className="field !w-auto min-w-32 flex-1"
-          placeholder="buscar perícia"
-          aria-label="buscar perícia"
+          placeholder={t.skills.search}
+          aria-label={t.skills.search}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
         <button className="btn" onClick={applyTemplate}>
-          template {role.toLowerCase()}
+          {t.skills.template(role.toLowerCase())}
         </button>
       </div>
 
       <p className="text-xs text-dim">
-        <span className="font-bold text-fg">negrito</span> = básica · x2 = custa o dobro · base = stat +
-        nível
-        {penalty < 0 && <span className="text-red"> · ferimento: {penalty} em todo teste</span>}
+        <span className="font-bold text-fg">{t.skills.legend.bold}</span>
+        {t.skills.legend.rest}
+        {penalty < 0 && (
+          <span className="text-red">
+            {t.common.sep}
+            {t.skills.woundAll(penalty)}
+          </span>
+        )}
       </p>
 
       {roleSkills.length > 0 && (
         <section className="box bg-raise p-3" aria-labelledby="cat-role">
           <header className="mb-1">
             <h3 id="cat-role" className="font-pixel text-lg leading-tight">
-              do role <span className="font-mono text-xs text-dim">{role.toLowerCase()}</span>
+              {t.skills.roleBlock.title} <span className="font-mono text-xs text-dim">{role.toLowerCase()}</span>
             </h3>
-            <p className="text-xs text-dim">só existem pela habilidade de role; o nível vem dela.</p>
+            <p className="text-xs text-dim">{t.skills.roleBlock.note}</p>
           </header>
           <ul className="divide-y-2 divide-line">
             {roleSkills.map((rs) => (
               <li key={rs.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
                 <div className="min-w-0 flex-1 basis-40">
-                  <div className="font-bold">{rs.name}</div>
+                  <div className="font-bold">{gameName(rs)}</div>
+                  <BookName def={rs} />
                   <div className="text-xs text-dim">
-                    {rs.stat.toLowerCase()} <span className="text-fg">{stats[rs.stat]}</span> · {rs.namePt} · {rs.desc}
+                    {t.stats.short[rs.stat]} <span className="text-fg">{stats[rs.stat]}</span>
+                    {t.common.sep}
+                    {rs.desc}
                   </div>
                 </div>
                 <div className="ml-auto flex shrink-0 items-center gap-3">
                   <span className="text-dim">
-                    nível <span className="font-bold text-fg">{rs.level}</span>
+                    {t.skills.levelLabel} <span className="font-bold text-fg">{rs.level}</span>
                   </span>
                   <span className="w-8 text-right text-xl font-bold text-red">{stats[rs.stat] + rs.level}</span>
                   {canRoll && (
-                    <button className="btn !px-2 !py-0 text-xs" aria-label={`rolar ${rs.name}`} onClick={() => rollRole(rs)}>
+                    <button className="btn !px-2 !py-0 text-xs" aria-label={t.common.aria.roll(gameName(rs))} onClick={() => rollRole(rs)}>
                       1d10
                     </button>
                   )}
@@ -202,20 +212,25 @@ export function SkillSheet({
 
       {skills.length === 0 && filter === "trained" && !q ? (
         <div className="box space-y-3 p-6 text-center">
-          <p className="text-dim">nenhuma perícia ainda.</p>
+          <p className="text-dim">{t.skills.empty}</p>
           <button className="btn btn-primary" onClick={applyTemplate}>
-            preencher com o streetrat do {role.toLowerCase()}
+            {t.skills.fillTemplate(role.toLowerCase())}
           </button>
         </div>
       ) : groups.length === 0 ? (
-        <p className="text-dim">nada encontrado.</p>
+        <p className="text-dim">{t.skills.notFound}</p>
       ) : (
         <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-2">
           {groups.map(({ cat, defs }) => (
             <section key={cat.id} className="box bg-raise min-w-0 p-3" aria-labelledby={`cat-${cat.id}`}>
               <header className="mb-1">
                 <h3 id={`cat-${cat.id}`} className="font-pixel text-lg leading-tight">
-                  {cat.name} <span className="font-mono text-xs text-dim">{cat.en}</span>
+                  {cat.name}{" "}
+                  {bookName({ name: cat.en, namePt: cat.name }) && (
+                    <span lang="en" className="font-mono text-xs text-dim">
+                      {cat.en}
+                    </span>
+                  )}
                 </h3>
                 <p className="text-xs text-dim">{cat.summary}</p>
               </header>
@@ -243,7 +258,7 @@ export function SkillSheet({
                         className="btn btn-bare !px-0 py-1 text-xs text-dim"
                         onClick={() => onChange([...skills, newSpecEntry(def.id)])}
                       >
-                        + {def.name.toLowerCase()} ({def.spec})
+                        {t.skills.row.add(gameName(def), def.spec)}
                       </button>
                     )}
                   </li>
@@ -283,38 +298,37 @@ function SkillRow({
   onRoll: () => void;
   last: { n: number; r: RollResult } | null;
 }) {
-  const label = entry.spec ? `${def.name} (${entry.spec})` : def.name;
+  const label = entry.spec ? `${gameName(def)} (${entry.spec})` : gameName(def);
   return (
     <div className="py-1">
       {/* no celular os controles descem pra uma segunda linha em vez de cortar o nome */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1" style={{ opacity: entry.level > 0 ? 1 : 0.6 }}>
         <div className="min-w-0 flex-1 basis-40">
           <div className="flex items-baseline gap-2">
-            <span className={`truncate ${def.basic ? "font-bold" : ""}`} title={def.name}>
-              {def.name}
-            </span>
+            <span className={`truncate ${def.basic ? "font-bold" : ""}`}>{gameName(def)}</span>
             {def.x2 && (
-              <span className="shrink-0 text-xs text-dim" title="custa o dobro pra comprar">
+              <span className="shrink-0 text-xs text-dim" title={t.skills.row.x2Title}>
                 x2
               </span>
             )}
           </div>
           <div className="flex gap-1 text-xs text-dim">
-            <span className="shrink-0" title="stat ligada">
-              {def.stat.toLowerCase()} <span className="text-fg">{stat}</span> ·
+            <span className="shrink-0" title={t.stats.long[def.stat]}>
+              {t.stats.short[def.stat]} <span className="text-fg">{stat}</span>
             </span>
-            <span className="truncate">{def.namePt}</span>
+            {bookName(def) && <span aria-hidden>·</span>}
+            <BookName def={def} className="min-w-0 truncate" />
           </div>
           {hints.map((h, i) => (
             <div key={i} className="text-xs text-dim">
-              +{h.value} se {h.when} ({h.source})
+              {t.skills.bonusHint(h.value, h.when ?? "", h.source)}
             </div>
           ))}
           {onSpec && (
             <input
               className="field mt-1 !py-0.5 text-xs"
               placeholder={def.spec}
-              aria-label={`${def.name}: ${def.spec}`}
+              aria-label={t.skills.row.specAria(gameName(def), def.spec ?? "")}
               value={entry.spec}
               onChange={(e) => onSpec(e.target.value)}
             />
@@ -322,10 +336,10 @@ function SkillRow({
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
-          <div className="flex items-center" aria-label={`nível de ${label}`}>
+          <div className="flex items-center" aria-label={t.skills.row.levelAria(label)}>
             <button
               className="btn btn-bare !px-1.5 !py-0"
-              aria-label={`diminuir ${label}`}
+              aria-label={t.skills.row.down(label)}
               disabled={entry.level <= 0}
               onClick={() => onLevel(entry.level - 1)}
             >
@@ -334,7 +348,7 @@ function SkillRow({
             <span className="w-6 text-center font-bold">{entry.level}</span>
             <button
               className="btn btn-bare !px-1.5 !py-0"
-              aria-label={`aumentar ${label}`}
+              aria-label={t.skills.row.up(label)}
               disabled={entry.level >= MAX_SKILL_LEVEL}
               onClick={() => onLevel(entry.level + 1)}
             >
@@ -343,27 +357,31 @@ function SkillRow({
           </div>
 
           {bonus.length > 0 && (
-            <span className="text-xs text-net" title={bonus.map((b) => `${b.source} +${b.value}`).join(", ")}>
+            <span className="text-xs text-net" title={bonus.map((b) => t.skills.row.bonusTitle(b.source, b.value)).join(", ")}>
               +{bonus.reduce((a, b) => a + b.value, 0)}
             </span>
           )}
           <span
             className="w-8 shrink-0 text-right text-xl font-bold text-red"
-            title={`base: ${def.stat.toLowerCase()} ${stat} + ${entry.level}${bonus.map((b) => ` + ${b.source} ${b.value}`).join("")}`}
+            title={t.skills.row.baseTitle(
+              t.stats.part(def.stat, stat),
+              entry.level,
+              bonus.map((b) => t.skills.roll.bonus(b.source, b.value)),
+            )}
           >
             {stat + entry.level + bonus.reduce((a, b) => a + b.value, 0)}
           </span>
 
           {canRoll && (
-            <button className="btn !px-2 !py-0 text-xs" aria-label={`rolar ${label}`} onClick={onRoll}>
+            <button className="btn !px-2 !py-0 text-xs" aria-label={t.common.aria.roll(label)} onClick={onRoll}>
               1d10
             </button>
           )}
           {onRemove && (
             <button
               className="btn btn-danger btn-bare !px-1.5 !py-0"
-              title="remover"
-              aria-label={`remover ${label}`}
+              title={t.common.actions.remove}
+              aria-label={t.common.aria.remove(label)}
               onClick={onRemove}
             >
               x

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useRef, useState } from "react";
+import { t } from "@/i18n";
 import { setCharacterPhoto } from "@/lib/store";
 import { colorFor } from "@/lib/rules";
 import type { Character } from "@/lib/types";
@@ -112,7 +113,7 @@ export function PhotoPicker({
         type="button"
         className={`group flex flex-col items-center gap-1 ${over ? "outline-2 outline-offset-2 outline-red" : ""}`}
         disabled={busy}
-        title="clique ou solte uma imagem aqui"
+        title={t.shell.photo.dropHint}
         onClick={() => input.current?.click()}
         onDragOver={(e) => {
           e.preventDefault();
@@ -128,14 +129,14 @@ export function PhotoPicker({
       >
         <Portrait photo={ch.photo} seed={ch.id} color={colorFor(ch.id)} size={size} dim={busy} />
         {busy ? (
-          <span className="cursor text-dim">enviando</span>
+          <span className="cursor text-dim">{t.shell.photo.sending}</span>
         ) : (
-          <span className="text-dim group-hover:text-red">{ch.photo ? "trocar" : "pôr foto"}</span>
+          <span className="text-dim group-hover:text-red">{ch.photo ? t.shell.photo.change : t.shell.photo.add}</span>
         )}
       </button>
       {ch.photo && !busy && (
         <button type="button" className="text-dim hover:text-red" onClick={() => void change(null)}>
-          tirar
+          {t.shell.photo.remove}
         </button>
       )}
       <input

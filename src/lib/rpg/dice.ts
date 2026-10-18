@@ -1,3 +1,5 @@
+import { t } from "../../i18n";
+
 export const d6 = () => Math.floor(Math.random() * 6) + 1;
 export const d10 = () => Math.floor(Math.random() * 10) + 1;
 
@@ -31,10 +33,10 @@ export const beats = (total: number, dv: number) => total > dv;
 
 /** "passa: 1 fã (DV8) · não passa: multidão (DV12)" */
 export function vsDvs(total: number, dvs: Dv[]) {
-  const fmt = (l: Dv[]) => l.map((d) => `${d.label} (DV${d.dv})`).join(", ");
+  const fmt = (l: Dv[]) => l.map((d) => t.sheet.vsDv.entry(d.label, d.dv)).join(", ");
   const pass = dvs.filter((d) => beats(total, d.dv));
   const fail = dvs.filter((d) => !beats(total, d.dv));
-  return [pass.length > 0 && `passa: ${fmt(pass)}`, fail.length > 0 && `não passa: ${fmt(fail)}`]
+  return [pass.length > 0 && t.sheet.vsDv.pass(fmt(pass)), fail.length > 0 && t.sheet.vsDv.fail(fmt(fail))]
     .filter(Boolean)
     .join(" · ");
 }

@@ -1,3 +1,4 @@
+import { t } from "../../../i18n";
 import { beats, check, d10, vsDvs } from "../dice";
 import type { RoleDef } from "../types";
 import { sheetSkills } from "./shared";
@@ -5,6 +6,10 @@ import { sheetSkills } from "./shared";
 /** Chance em 10 de o público acreditar na matéria. */
 const believability = (rank: number) =>
   rank >= 10 ? 7 : rank >= 9 ? 6 : rank >= 7 ? 5 : rank >= 5 ? 4 : rank >= 3 ? 3 : 2;
+
+const P = t.roles.media.publish;
+const R = t.roles.media.rumor;
+const A = t.roles.media.rumorActive;
 
 const RUMORS: { label: string; desc: string; passive: number; active: number }[] = [
   { label: "vago", desc: "nebuloso: só o mínimo pra começar a caçar a verdade por trás dele", passive: 7, active: 13 },
@@ -24,7 +29,7 @@ export const media: RoleDef = {
       "Faz o público acreditar no que você publica, alcança mais gente e traz rumores sem precisar sair procurando.",
     about: [
       "O Media convence o público do que publica e, quanto mais crível, maior o público. Também tem mais acesso a fontes e informação, e fica sabendo de rumores sem procurar.",
-      "Rumores: pelo menos 2 vezes por semana (se você não estiver totalmente fora da rede), o mestre rola em segredo credibilidade + 1d10. Se passar de alguma DV passiva da tabela, ele te conta o rumor de maior DV que você passou. São os mesmos rumores que dá pra achar na rua com Library Search, Conversation ou Interrogation: procurando ativamente, você rola stat + perícia + 1d10 contra a DV ativa que o mestre der pelo nível de detalhe.",
+      "Rumores: pelo menos 2 vezes por semana (se você não estiver totalmente fora da rede), o mestre rola em segredo credibilidade + 1d10. Se passar de alguma DV passiva da tabela, ele te conta o rumor de maior DV que você passou. São os mesmos rumores que dá pra achar na rua com pesquisa, conversação ou interrogatório: procurando ativamente, você rola stat + perícia + 1d10 contra a DV ativa que o mestre der pelo nível de detalhe.",
       "Publicar: acesso/fontes é com quem você consegue falar ou entrevistar; público é quantas pessoas a matéria alcança; credibilidade é a chance em 10 de acreditarem, rolada em 1d10 quando você publica (ou quando quer saber se alguém acreditou). Uma prova verificável fácil de entender dá +1; mais de 4 provas concretas e distintas dão +2; os dois somam. Sorte (LUCK) nunca vale nesse teste.",
       "Impacto é quanto a matéria muda as coisas; quem cuida disso é o mestre. Depois de publicar, não dá pra publicar de novo sobre o mesmo assunto sem informação nova.",
       "Rumores raramente são verdade inteira, e nunca são a história toda. Achar o resto é teu trabalho. E alguns fios são perigosos de puxar.",
@@ -33,47 +38,42 @@ export const media: RoleDef = {
     uses: [
       {
         id: "publish",
-        name: "publicar matéria",
-        formula: "1d10 ≤ chance",
-        desc: "sorte não vale aqui. não dá pra republicar o mesmo assunto sem novidade.",
+        name: P.name,
+        formula: P.formula,
+        desc: P.desc,
         mods: [
-          { label: "sem provas", value: 0 },
-          { label: "1 prova fácil de entender (+1)", value: 1 },
-          { label: "mais de 4 provas concretas (+2)", value: 2 },
-          { label: "as duas coisas (+3)", value: 3 },
+          { label: P.proofs.none, value: 0 },
+          { label: P.proofs.one, value: 1 },
+          { label: P.proofs.many, value: 2 },
+          { label: P.proofs.both, value: 3 },
         ],
         roll: ({ rank }, bonus) => {
           const d = d10();
           const chance = Math.min(10, believability(rank) + bonus);
           const ok = d <= chance;
-          return {
-            dice: [d],
-            total: d,
-            ok,
-            text: ok ? `o público comprou (${d} ≤ ${chance})` : `não colou (${d} > ${chance})`,
-          };
+          return { dice: [d], total: d, ok, text: ok ? P.ok(d, chance) : P.fail(d, chance) };
         },
       },
       {
         id: "rumor",
-        name: "rumor passivo",
-        formula: "credibilidade + 1d10",
-        desc: "o mestre rola em segredo pelo menos 2× por semana.",
+        name: R.name,
+        formula: R.formula,
+        desc: R.desc,
         roll: ({ rank }) => {
           const r = check(rank);
           const best = RUMORS.filter((x) => beats(r.total, x.passive)).at(-1);
           return {
             ...r,
             ok: Boolean(best),
-            text: best ? `chega um rumor ${best.label} (DV${best.passive})` : "nada chegou",
+            text: best ? R.arrives(best.label, best.passive) : R.nothing,
           };
         },
       },
       {
         id: "rumorActive",
-        name: "caçar rumor",
-        formula: "stat + perícia + 1d10",
-        desc: "procurando ativamente. o mestre diz a DV pelo detalhe do rumor.",
+        name: A.name,
+        formula: A.formula,
+        desc: A.desc,
         mods: sheetSkills(["librarySearch", "conversation", "interrogation", "humanPerception"], true),
         roll: (_ctx, base) => {
           const r = check(base);

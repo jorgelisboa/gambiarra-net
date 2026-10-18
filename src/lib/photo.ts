@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 import { uid } from "./id";
 import { supabase } from "./supabase";
 
@@ -59,13 +60,13 @@ const toDataUrl = (blob: Blob) =>
  */
 export async function storePhoto(owner: string | null, characterId: string, file: File): Promise<string> {
   if (file.size > MAX_INPUT_MB * 1024 * 1024) {
-    throw new Error(`imagem grande demais (máx. ${MAX_INPUT_MB} MB).`);
+    throw new Error(t.shell.photo.tooBig(MAX_INPUT_MB));
   }
   let blob: Blob;
   try {
     blob = await portraitImage(file);
   } catch {
-    throw new Error("não deu pra ler essa imagem. use png, jpg ou webp.");
+    throw new Error(t.shell.photo.unreadable);
   }
   if (!owner || !supabase) return toDataUrl(blob);
 
@@ -73,7 +74,7 @@ export async function storePhoto(owner: string | null, characterId: string, file
   const path = `${owner}/${characterId}/${uid()}.${ext}`;
   const bucket = supabase.storage.from(BUCKET);
   const { error } = await bucket.upload(path, blob, { contentType: blob.type, cacheControl: "31536000" });
-  if (error) throw new Error(`a foto não subiu: ${error.message}`);
+  if (error) throw new Error(t.shell.photo.uploadFailed(error.message));
   return bucket.getPublicUrl(path).data.publicUrl;
 }
 

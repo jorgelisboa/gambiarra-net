@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { t } from "@/i18n";
 import { deletePlan, saveArchitecture, savePlan, useApp } from "@/lib/store";
 import {
   DEFENSES,
@@ -15,8 +16,10 @@ import {
   WHERE_TO_BUY,
   addSecurityFloor,
   defenseCost,
+  defenseCounter,
   defenseOf,
   demonOf,
+  demonStats,
   fmtEb,
   floorCost,
   moveSecurityFloor,
@@ -34,6 +37,9 @@ import type { NetArchitecture, SecurityFloor, SecurityFloorKind, SecurityPlan } 
 import { Icon } from "../Pixel";
 import type { IconName } from "../Pixel";
 
+const F = t.infra.floor;
+const SUMMARY = t.infra.summary;
+
 /** O âmbar do app (ferimento leve), pra aviso. */
 const AMBER = "text-[#ffb000]";
 
@@ -44,12 +50,6 @@ const KIND_ICON: Record<SecurityFloorKind, IconName> = {
   demon: "ice",
 };
 
-const LABEL_PLACEHOLDER: Record<SecurityFloorKind, string> = {
-  password: "portaria",
-  file: "folha de pagamento",
-  control: "câmeras do saguão",
-  demon: "segurança do prédio",
-};
 
 /** Aba de infraestrutura do mestre: compra a arquitetura, enche os andares, pendura as defesas e vê o custo. */
 export function InfraTab({ onOpenArchitecture }: { onOpenArchitecture: (id: string) => void }) {
@@ -63,7 +63,7 @@ export function InfraTab({ onOpenArchitecture }: { onOpenArchitecture: (id: stri
       <aside className="space-y-4">
         <div className="flex items-center gap-2 text-net">
           <Icon name="control" size={24} />
-          <h2 className="font-pixel text-xl">infraestrutura</h2>
+          <h2 className="font-pixel text-xl">{t.infra.list.heading}</h2>
         </div>
         {plans.length > 0 && (
           <ul className="space-y-1">
@@ -78,9 +78,7 @@ export function InfraTab({ onOpenArchitecture }: { onOpenArchitecture: (id: stri
                 >
                   <span className="min-w-0">
                     <span className="block truncate">{p.name}</span>
-                    <span className="text-xs text-dim">
-                      {p.floors.length} andares · {fmtEb(planCost(p).total)}
-                    </span>
+                    <span className="text-xs text-dim">{t.infra.list.summary(p.floors.length, fmtEb(planCost(p).total))}</span>
                   </span>
                 </button>
               </li>
@@ -94,11 +92,8 @@ export function InfraTab({ onOpenArchitecture }: { onOpenArchitecture: (id: stri
         <PlanEditor key={plan.id} plan={plan} architectures={architectures} onOpenArchitecture={onOpenArchitecture} />
       ) : (
         <div className="box p-8">
-          <p className="font-pixel text-xl text-net">nenhuma infraestrutura</p>
-          <p className="mt-2 max-w-prose text-dim">
-            compre uma arquitetura, encha os andares com senha, arquivo, nó de controle e demon, e pendure as defesas do
-            mundo real nos nós. os custos seguem as regras de Home Security 2045 do livro (pág. 217); black ICE fica de fora.
-          </p>
+          <p className="font-pixel text-xl text-net">{t.infra.list.emptyTitle}</p>
+          <p className="mt-2 max-w-prose text-dim">{t.infra.list.emptyHelp}</p>
         </div>
       )}
     </div>
@@ -108,7 +103,7 @@ export function InfraTab({ onOpenArchitecture }: { onOpenArchitecture: (id: stri
 function NewPlan({ onCreate }: { onCreate: (id: string) => void }) {
   const [name, setName] = useState("");
   const [templateId, setTemplateId] = useState("");
-  const template = PLAN_TEMPLATES.find((t) => t.id === templateId);
+  const template = PLAN_TEMPLATES.find((tpl) => tpl.id === templateId);
   return (
     <form
       className="box space-y-2 p-3"
@@ -120,27 +115,32 @@ function NewPlan({ onCreate }: { onCreate: (id: string) => void }) {
         setName("");
       }}
     >
-      <div className="label">nova infraestrutura</div>
+      <div className="label">{t.infra.create.title}</div>
       <input
         className="field"
-        placeholder="depósito da tlb"
+        placeholder={t.infra.create.namePlaceholder}
         value={name}
         onChange={(e) => setName(e.target.value)}
-        aria-label="nome da infraestrutura"
+        aria-label={t.infra.editor.nameAria}
       />
       <label className="block">
-        <span className="label">começar de</span>
-        <select className="field mt-1" value={templateId} onChange={(e) => setTemplateId(e.target.value)} aria-label="começar de">
-          <option value="">em branco · 3 andares</option>
-          {PLAN_TEMPLATES.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.label}
+        <span className="label">{t.infra.create.startFrom}</span>
+        <select
+          className="field mt-1"
+          value={templateId}
+          onChange={(e) => setTemplateId(e.target.value)}
+          aria-label={t.infra.create.startFrom}
+        >
+          <option value="">{t.infra.create.blank}</option>
+          {PLAN_TEMPLATES.map((tpl) => (
+            <option key={tpl.id} value={tpl.id}>
+              {tpl.label}
             </option>
           ))}
         </select>
       </label>
       {template && <p className="text-xs text-dim">{template.description}</p>}
-      <button className="btn btn-primary w-full">criar</button>
+      <button className="btn btn-primary w-full">{t.common.actions.create}</button>
     </form>
   );
 }
@@ -174,29 +174,26 @@ function PlanEditor({
           className="field font-pixel max-w-xs text-lg"
           value={plan.name}
           onChange={(e) => save({ ...plan, name: e.target.value })}
-          aria-label="nome da infraestrutura"
+          aria-label={t.infra.editor.nameAria}
         />
         <input
           className="field max-w-xs"
-          placeholder="onde fica no mundo real"
+          placeholder={t.infra.editor.locationHint}
           value={plan.location}
           onChange={(e) => save({ ...plan, location: e.target.value })}
-          aria-label="onde fica no mundo real"
+          aria-label={t.infra.editor.locationHint}
         />
         {tier ? (
           <span className="text-xs text-dim">
-            {plan.floors.length} andares · {fmtEb(tier.perFloor)}/andar · {tier.portable ? "portátil" : "fixo"} ·{" "}
-            {tier.maxControlNodes === null ? "nós sem limite" : `até ${tier.maxControlNodes} nós de controle`}
+            {t.infra.editor.tier(plan.floors.length, fmtEb(tier.perFloor), tier.portable, tier.maxControlNodes)}
             {/* no celular o resumo fica lá embaixo; o total aparece aqui também */}
             <span className="xl:hidden">
-              {" "}
-              · total <span className="font-mono text-fg">{fmtEb(cost.total)}</span>
+              {t.common.sep}
+              {t.common.words.total} <span className="font-mono text-fg">{fmtEb(cost.total)}</span>
             </span>
           </span>
         ) : (
-          <span className="text-xs text-red">
-            uma arquitetura tem de {MIN_SECURITY_FLOORS} a {MAX_FLOORS} andares
-          </span>
+          <span className="text-xs text-red">{t.infra.editor.outOfRange(MIN_SECURITY_FLOORS, MAX_FLOORS)}</span>
         )}
       </div>
 
@@ -213,7 +210,7 @@ function PlanEditor({
             />
           ))}
           <button className="btn btn-primary" disabled={atMax} onClick={() => save(addSecurityFloor(plan, null))}>
-            + andar no fim
+            {t.infra.editor.addAtEnd}
           </button>
         </div>
 
@@ -266,7 +263,7 @@ function FloorCard({
         <div className="flex w-full flex-wrap gap-1 sm:w-auto">
           <button
             className="btn"
-            aria-label="subir andar"
+            aria-label={F.up}
             disabled={index === 0}
             onClick={() => save(moveSecurityFloor(plan, floor.id, -1))}
           >
@@ -274,7 +271,7 @@ function FloorCard({
           </button>
           <button
             className="btn"
-            aria-label="descer andar"
+            aria-label={F.down}
             disabled={index === count - 1}
             onClick={() => save(moveSecurityFloor(plan, floor.id, 1))}
           >
@@ -282,8 +279,8 @@ function FloorCard({
           </button>
           <button
             className="btn"
-            aria-label="andar novo abaixo"
-            title={atMax ? `uma arquitetura tem no máximo ${MAX_FLOORS} andares` : "andar novo abaixo"}
+            aria-label={F.addBelow}
+            title={atMax ? t.infra.issues.maxFloors(MAX_FLOORS) : F.addBelow}
             disabled={atMax}
             onClick={() => save(addSecurityFloor(plan, floor.id))}
           >
@@ -292,10 +289,10 @@ function FloorCard({
           <button
             className="btn btn-danger"
             disabled={atMin}
-            title={atMin ? `uma arquitetura tem no mínimo ${MIN_SECURITY_FLOORS} andares` : undefined}
+            title={atMin ? t.infra.issues.minFloors(MIN_SECURITY_FLOORS) : undefined}
             onClick={() => save(removeSecurityFloor(plan, floor.id))}
           >
-            apagar
+            {F.remove}
           </button>
         </div>
       </div>
@@ -324,7 +321,7 @@ function FloorCard({
 
       {isDemon ? (
         <div>
-          <div className="label mb-1">demon</div>
+          <div className="label mb-1">{F.demon}</div>
           <div className="flex flex-wrap gap-1">
             {DEMONS.map((d) => (
               <button
@@ -335,18 +332,15 @@ function FloorCard({
                   floor.demon === d.id ? "border-red text-red" : "border-line hover:border-fg"
                 }`}
               >
-                {d.name} · {fmtEb(d.cost)}
+                {F.demonButton(d.name, fmtEb(d.cost))}
               </button>
             ))}
           </div>
-          <p className="mt-1 text-xs text-dim">
-            REZ {demon.rez} · Interface {demon.interface} · {demon.netActions} NET actions · Combat Number{" "}
-            {demon.combatNumber}
-          </p>
+          <p className="mt-1 text-xs text-dim">{demonStats(demon)}</p>
         </div>
       ) : (
         <div>
-          <div className="label mb-1">DV</div>
+          <div className="label mb-1">{F.dv}</div>
           <div className="flex flex-wrap gap-1">
             {FEATURE_DVS.map((dv) => (
               <button
@@ -357,7 +351,7 @@ function FloorCard({
                   floor.dv === dv ? "border-net text-net" : "border-line hover:border-fg"
                 }`}
               >
-                DV{dv} · {fmtEb(FEATURE_COST[dv])}
+                {F.dvButton(dv, fmtEb(FEATURE_COST[dv]))}
               </button>
             ))}
           </div>
@@ -366,19 +360,19 @@ function FloorCard({
 
       {floor.kind === "control" && (
         <div>
-          <div className="label mb-1">defesa</div>
+          <div className="label mb-1">{F.defense}</div>
           <select
             className="field"
             value={defense ? defense.id : ""}
             onChange={(e) => patch({ defense: e.target.value || null })}
-            aria-label="defesa do nó de controle"
+            aria-label={F.defenseAria}
           >
-            <option value="">outra coisa · sem defesa, sem custo</option>
+            <option value="">{F.noDefense}</option>
             {DEFENSE_CATEGORIES.map((c) => (
               <optgroup key={c.id} label={c.label}>
                 {DEFENSES.filter((d) => d.category === c.id).map((d) => (
                   <option key={d.id} value={d.id}>
-                    {d.name} · DV{d.counterDv} · {fmtEb(defenseCost(d))}
+                    {F.defenseOption(d.name, d.counterDv, fmtEb(defenseCost(d)))}
                   </option>
                 ))}
               </optgroup>
@@ -388,37 +382,33 @@ function FloorCard({
             <div className="mt-1 space-y-0.5 text-xs">
               <p className="text-dim">{defense.data}</p>
               <p>{defense.summary}</p>
-              <p className="text-dim">
-                desarmar: Electronics/Security Tech DV{defense.counterDv}, {defense.counterTime}
-              </p>
+              <p className="text-dim">{F.disarm(defenseCounter(defense))}</p>
             </div>
           ) : (
-            <p className="mt-1 text-xs text-dim">
-              porta, sprinkler, sirene, telão, ar-condicionado: escreva no nome o que o nó controla
-            </p>
+            <p className="mt-1 text-xs text-dim">{F.otherThing}</p>
           )}
         </div>
       )}
 
       <div className="grid gap-2 sm:grid-cols-2">
         <label className="block min-w-0">
-          <span className="label">nome no telão</span>
+          <span className="label">{F.screenName}</span>
           <input
             className="field mt-1"
-            placeholder={LABEL_PLACEHOLDER[floor.kind]}
+            placeholder={F.screenNameHint[floor.kind]}
             value={floor.label}
             onChange={(e) => patch({ label: e.target.value })}
-            aria-label="nome no telão"
+            aria-label={F.screenName}
           />
         </label>
         <label className="block min-w-0">
-          <span className="label">nota do mestre</span>
+          <span className="label">{F.masterNote}</span>
           <textarea
             className="field mt-1 min-h-16"
-            placeholder="quem sabe a senha, o que tem no arquivo..."
+            placeholder={F.masterNoteHint}
             value={floor.note}
             onChange={(e) => patch({ note: e.target.value })}
-            aria-label="nota do mestre"
+            aria-label={F.masterNote}
           />
         </label>
       </div>
@@ -457,7 +447,7 @@ function Limit({ label, used, max }: { label: string; used: number; max: number 
     <div className={`flex items-baseline justify-between gap-2 text-sm ${over ? "text-red" : ""}`}>
       <span className="min-w-0">{label}</span>
       <span className="shrink-0 font-mono">
-        {used}/{max ?? "sem limite"}
+        {used}/{max ?? SUMMARY.noLimit}
       </span>
     </div>
   );
@@ -489,15 +479,8 @@ function Summary({
   const floorWarnings = floorIssues.length - floorErrors;
   const hasErrors = issues.some((x) => x.level === "erro");
 
-  const floorCount = [
-    floorErrors > 0 ? `${floorErrors} ${floorErrors === 1 ? "erro" : "erros"}` : null,
-    floorWarnings > 0 ? `${floorWarnings} ${floorWarnings === 1 ? "aviso" : "avisos"}` : null,
-  ]
-    .filter(Boolean)
-    .join(" e ");
-
   const send = () => {
-    if (linked && !confirm(`substituir os andares de "${linked.name}"? o que estava revelado no telão zera.`)) return;
+    if (linked && !confirm(SUMMARY.confirmReplace(linked.name))) return;
     const arch = planToArchitecture(plan, linked);
     saveArchitecture(arch);
     savePlan({ ...plan, architectureId: arch.id });
@@ -506,18 +489,18 @@ function Summary({
 
   return (
     <div className="box min-w-0 space-y-3 self-start p-3 xl:sticky xl:top-3">
-      <h3 className="font-pixel text-lg">custo</h3>
+      <h3 className="font-pixel text-lg">{SUMMARY.title}</h3>
 
       <div className="space-y-1">
         <Row
-          label={cost.tier ? `arquitetura · ${cost.floors} × ${fmtEb(cost.tier.perFloor)}` : "arquitetura"}
+          label={cost.tier ? SUMMARY.rows.architectureTier(cost.floors, fmtEb(cost.tier.perFloor)) : SUMMARY.rows.architecture}
           value={cost.base}
         />
-        <Row label="senhas" value={cost.passwords} />
-        <Row label="arquivos" value={cost.files} />
-        <Row label="nós de controle" value={cost.controlNodes} />
-        <Row label="demons" value={cost.demons} />
-        <Row label="defesas" value={cost.defenses} />
+        <Row label={SUMMARY.rows.passwords} value={cost.passwords} />
+        <Row label={SUMMARY.rows.files} value={cost.files} />
+        <Row label={SUMMARY.rows.controlNodes} value={cost.controlNodes} />
+        <Row label={SUMMARY.rows.demons} value={cost.demons} />
+        <Row label={SUMMARY.rows.defenses} value={cost.defenses} />
       </div>
 
       <div className="border-t-2 border-line pt-3">
@@ -526,8 +509,8 @@ function Summary({
       </div>
 
       <div className="space-y-1 border-t-2 border-line pt-3">
-        <Limit label="nós de controle" used={limits.controlNodes.used} max={limits.controlNodes.max} />
-        <Limit label="demons" used={limits.demons.used} max={limits.demons.max} />
+        <Limit label={SUMMARY.rows.controlNodes} used={limits.controlNodes.used} max={limits.controlNodes.max} />
+        <Limit label={SUMMARY.rows.demons} used={limits.demons.used} max={limits.demons.max} />
       </div>
 
       {(planIssuesOnly.length > 0 || floorIssues.length > 0) && (
@@ -537,36 +520,36 @@ function Summary({
           ))}
           {floorIssues.length > 0 && (
             <li className={`text-xs ${floorErrors > 0 ? "text-red" : AMBER}`}>
-              {floorCount} {floorIssues.length === 1 ? "no andar" : "nos andares"}
+              {SUMMARY.floorIssues(floorErrors, floorWarnings)}
             </li>
           )}
         </ul>
       )}
 
-      <p className="text-xs text-dim">onde comprar: {WHERE_TO_BUY}</p>
+      <p className="text-xs text-dim">{SUMMARY.whereToBuy(WHERE_TO_BUY)}</p>
 
       <div className="space-y-2 border-t-2 border-line pt-3">
         <button
           className="btn btn-primary w-full"
           disabled={hasErrors}
-          title={hasErrors ? "resolva os erros primeiro" : undefined}
+          title={hasErrors ? SUMMARY.fixErrors : undefined}
           onClick={send}
         >
-          {linked ? "atualizar no construtor" : "mandar pro construtor"}
+          {linked ? SUMMARY.update : SUMMARY.send}
         </button>
         {sent ? (
           <div className="space-y-1">
-            <p className="text-xs text-net">pronto: está na aba netrunner</p>
+            <p className="text-xs text-net">{SUMMARY.sent}</p>
             <button className="btn w-full" onClick={() => onOpenArchitecture(sent)}>
-              abrir no construtor
+              {SUMMARY.openBuilder}
             </button>
           </div>
         ) : (
           linked && (
             <div className="flex items-center justify-between gap-2">
-              <span className="min-w-0 truncate text-xs text-dim">ligada a: {linked.name}</span>
+              <span className="min-w-0 truncate text-xs text-dim">{SUMMARY.linkedTo(linked.name)}</span>
               <button className="btn shrink-0 text-xs" onClick={() => onOpenArchitecture(linked.id)}>
-                abrir
+                {SUMMARY.open}
               </button>
             </div>
           )
@@ -576,10 +559,10 @@ function Summary({
       <button
         className="btn btn-danger w-full"
         onClick={() => {
-          if (confirm(`apagar a infraestrutura "${plan.name}"? a arquitetura no construtor fica.`)) deletePlan(plan.id);
+          if (confirm(SUMMARY.confirmDelete(plan.name))) deletePlan(plan.id);
         }}
       >
-        apagar infraestrutura
+        {SUMMARY.delete}
       </button>
     </div>
   );

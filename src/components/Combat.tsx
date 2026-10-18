@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { t } from "@/i18n";
 import {
   addCombatant,
   endCombat,
@@ -31,6 +32,7 @@ import { vitalsOf, type Vitals } from "@/lib/rules";
 import type { ArmorSlot, Combatant } from "@/lib/types";
 import { TurnPulse, WOUND_COLORS } from "./TurnPulse";
 import { InitiativeStage } from "./InitiativeStage";
+import { BookName } from "./BookName";
 import { RefBlock } from "./RoleAbility";
 import { Bar } from "./Pixel";
 import { Portrait } from "./Portrait";
@@ -39,7 +41,7 @@ import { TurnActions } from "./TurnActions";
 const blank = (p: Partial<Combatant>): Combatant => ({
   id: uid(),
   characterId: null,
-  name: "PNJ",
+  name: t.combat.npc.defaultName,
   ref: 5,
   initiative: 0,
   hp: 20,
@@ -104,16 +106,16 @@ export function Combat() {
         {combat.active ? (
           <>
             <span className="font-pixel mr-2 text-xl">
-              round <span className="font-mono font-bold text-red">{String(combat.round).padStart(2, "0")}</span>
+              {t.combat.round} <span className="font-mono font-bold text-red">{String(combat.round).padStart(2, "0")}</span>
             </span>
             <button className="btn btn-primary" onClick={nextTurn}>
-              próximo turno
+              {t.combat.nextTurn}
             </button>
             <button className="btn" onClick={() => setStage(true)}>
-              tela cheia
+              {t.combat.fullscreen}
             </button>
             <button className="btn btn-danger" onClick={endCombat}>
-              encerrar
+              {t.combat.end}
             </button>
           </>
         ) : (
@@ -126,14 +128,14 @@ export function Combat() {
                 setStage(true);
               }}
             >
-              iniciar combate
+              {t.combat.start}
             </button>
             <button
               className="btn"
               disabled={combat.combatants.length === 0}
               onClick={rerollAll}
             >
-              rolar iniciativa (1d10 + ref)
+              {t.combat.rollInitiative}
             </button>
           </>
         )}
@@ -141,22 +143,20 @@ export function Combat() {
 
       <details className="box p-3">
         <summary className="select-none">
-          <span className="label">ações e regras do turno</span>
+          <span className="label">{t.combat.reference.summary}</span>
         </summary>
         <div className="mt-3 grid grid-cols-1 items-start gap-3 lg:grid-cols-2">
-          <RefBlock table={{ title: "ações (1 de movimento + 1 ação por turno)", rows: COMBAT_ACTIONS.map(([n, en, d]) => [n, en, d]) }} />
-          <RefBlock table={{ title: "regras", rows: COMBAT_RULES }} />
+          <ActionsRef />
+          <RefBlock table={{ title: t.combat.reference.rulesTitle, rows: COMBAT_RULES }} />
         </div>
       </details>
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="box p-4">
-          <h3 className="label mb-3">adicionar personagem</h3>
+          <h3 className="label mb-3">{t.combat.addCharacter.title}</h3>
           {available.length === 0 ? (
             <p className="text-dim">
-              {characters.length === 0
-                ? "crie personagens na aba personagens."
-                : "todos já estão no combate."}
+              {characters.length === 0 ? t.combat.addCharacter.noCharacters : t.combat.addCharacter.allIn}
             </p>
           ) : (
             <div className="flex flex-wrap gap-2">
@@ -177,27 +177,27 @@ export function Combat() {
             addNpc();
           }}
         >
-          <h3 className="label mb-3">adicionar pnj</h3>
+          <h3 className="label mb-3">{t.combat.npc.addTitle}</h3>
           <div className="flex flex-wrap items-end gap-2">
             <input
               className="field min-w-32 flex-1"
-              placeholder="nome"
-              aria-label="nome do pnj"
+              placeholder={t.combat.npc.namePlaceholder}
+              aria-label={t.combat.npc.nameAria}
               value={npc.name}
               onChange={(e) => setNpc({ ...npc, name: e.target.value })}
             />
-            <Mini label="hp" value={npc.hp} onChange={(v) => setNpc({ ...npc, hp: v })} />
-            <Mini label="ref" value={npc.ref} onChange={(v) => setNpc({ ...npc, ref: v })} />
-            <Mini label="sp" value={npc.sp} onChange={(v) => setNpc({ ...npc, sp: v })} />
-            <Mini label="net" value={npc.net} onChange={(v) => setNpc({ ...npc, net: v })} />
-            <button className="btn">adicionar</button>
+            <Mini label={t.combat.hp} value={npc.hp} onChange={(v) => setNpc({ ...npc, hp: v })} />
+            <Mini label={t.stats.short.REF} value={npc.ref} onChange={(v) => setNpc({ ...npc, ref: v })} />
+            <Mini label={t.combat.sp} value={npc.sp} onChange={(v) => setNpc({ ...npc, sp: v })} />
+            <Mini label={t.combat.npc.net} value={npc.net} onChange={(v) => setNpc({ ...npc, net: v })} />
+            <button className="btn">{t.common.actions.add}</button>
           </div>
         </form>
       </div>
 
       <ul className="space-y-3">
         {combat.combatants.length === 0 && (
-          <li className="box p-8 text-center text-dim">ninguém no combate ainda.</li>
+          <li className="box p-8 text-center text-dim">{t.combat.nobody}</li>
         )}
         {combat.combatants.map((c) => (
           <CombatRow key={c.id} c={c} />
@@ -225,8 +225,8 @@ function CombatRow({ c }: { c: Combatant }) {
     >
       <input
         type="number"
-        title="iniciativa"
-        aria-label={`iniciativa de ${v.name}`}
+        title={t.combat.initiative}
+        aria-label={t.combat.row.initiativeOf(v.name)}
         className="field !w-16 text-center text-xl font-bold text-red"
         value={c.initiative}
         onChange={(e) =>
@@ -240,7 +240,7 @@ function CombatRow({ c }: { c: Combatant }) {
       <div className="min-w-0 flex-1 basis-40">
         <div className="font-pixel text-lg leading-tight">
           {v.name}
-          {!v.linked && <span className="ml-2 text-xs text-dim">pnj</span>}
+          {!v.linked && <span className="ml-2 text-xs text-dim">{t.combat.npc.tag}</span>}
         </div>
         <div className="mt-2">
           <Bar value={v.hp} max={v.maxHp} color={woundColor} />
@@ -251,12 +251,12 @@ function CombatRow({ c }: { c: Combatant }) {
             aria-expanded={hitting}
             onClick={() => setHitting(!hitting)}
           >
-            dano
+            {t.common.words.damage}
           </button>
           <button
             className="btn btn-bare !px-2 !py-0"
-            aria-label="tirar HP direto, sem armadura"
-            title="tirar HP direto, sem armadura"
+            aria-label={t.combat.row.loseHp}
+            title={t.combat.row.loseHp}
             onClick={() => setCombatantHp(c.id, v.hp - delta)}
           >
             -
@@ -266,8 +266,8 @@ function CombatRow({ c }: { c: Combatant }) {
           </span>
           <button
             className="btn btn-bare !px-2 !py-0"
-            aria-label="curar"
-            title="curar"
+            aria-label={t.combat.row.heal}
+            title={t.combat.row.heal}
             onClick={() => setCombatantHp(c.id, v.hp + delta)}
           >
             +
@@ -275,7 +275,7 @@ function CombatRow({ c }: { c: Combatant }) {
           <input
             type="number"
             min={1}
-            aria-label="valor de ajuste ou cura"
+            aria-label={t.combat.row.adjustValue}
             className="field !w-14 !py-0 text-center"
             value={delta}
             onChange={(e) => setDelta(Math.max(1, Number(e.target.value) || 1))}
@@ -283,29 +283,30 @@ function CombatRow({ c }: { c: Combatant }) {
           <span
             className="uppercase"
             style={{ color: woundColor }}
-            title={wound.effect ? `${wound.effect} · estabilizar ${wound.stabilize}` : undefined}
+            title={wound.effect ? t.combat.row.woundTitle(wound.effect, wound.stabilize) : undefined}
           >
-            {wound.short || "ileso"}
+            {wound.short || t.combat.unhurt}
           </span>
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 text-xs text-dim">
           <span>
-            SP cabeça <span className="text-fg">{v.sp.head}</span> · corpo{" "}
-            <span className="text-fg">{v.sp.body}</span>
+            {t.combat.sp} {SLOT_LABELS.head} <span className="text-fg">{v.sp.head}</span>
+            {t.common.sep}
+            {SLOT_LABELS.body} <span className="text-fg">{v.sp.body}</span>
           </span>
           {v.move !== null && (
-            <span title="ação de movimento: MOVE × 2 m/yd (ou MOVE quadrados no grid)">
-              anda <span className="text-fg">{v.move * 2}m</span>
+            <span title={t.combat.row.walksTitle}>
+              {t.combat.row.walks} <span className="text-fg">{v.move * 2}m</span>
             </span>
           )}
           {v.deathSavePenalty > 0 && (
             <span className="text-red">
-              death save +{v.deathSavePenalty}{" "}
+              {t.combat.deathSave} +{v.deathSavePenalty}{" "}
               <button
                 className="btn btn-bare !p-0 text-dim underline"
                 onClick={() => resetDeathSavePenalty(c.id)}
               >
-                zerar
+                {t.combat.row.resetDeathSave}
               </button>
             </span>
           )}
@@ -314,8 +315,8 @@ function CombatRow({ c }: { c: Combatant }) {
       <TurnActions c={c} netMax={v.netMax} size={20} />
       <button
         className="btn btn-danger btn-bare"
-        title="remover do combate"
-        aria-label="remover do combate"
+        title={t.combat.row.remove}
+        aria-label={t.combat.row.remove}
         onClick={() => removeCombatant(c.id)}
       >
         x
@@ -334,17 +335,17 @@ const DAMAGE_DICE = ["1d6", "2d6", "3d6", "4d6", "5d6", "6d6", "8d6", "2d6x2", "
 
 /** Onde o golpe pegou. Cabeça, mão e perna só com tiro mirado. */
 const TARGETS: { id: string; label: string; location: ArmorSlot; aim?: "hand" | "leg"; title?: string }[] = [
-  { id: "body", label: "corpo", location: "body" },
-  { id: "head", label: "cabeça · mirado ×2", location: "head", title: "tiro mirado: o que passa da armadura da cabeça dobra" },
-  { id: "hand", label: "mão · mirado", location: "body", aim: "hand", title: "tiro mirado: se passar 1 ponto da armadura do corpo, larga um item da mão" },
-  { id: "leg", label: "perna · mirado", location: "body", aim: "leg", title: "tiro mirado: se passar 1 ponto da armadura do corpo, perna quebrada (ferimento crítico)" },
+  { id: "body", label: t.combat.hit.targets.body.label, location: "body" },
+  { id: "head", location: "head", ...t.combat.hit.targets.head },
+  { id: "hand", location: "body", aim: "hand", ...t.combat.hit.targets.hand },
+  { id: "leg", location: "body", aim: "leg", ...t.combat.hit.targets.leg },
 ];
 
 /** Golpe que acertou: dano, local e o que passa da armadura (regra em src/lib/rpg/damage.ts). */
 function HitPanel({ c, v, onApplied }: { c: Combatant; v: Vitals; onApplied: (msg: string) => void }) {
   const [damage, setDamage] = useState(0);
   const [targetId, setTargetId] = useState("body");
-  const target = TARGETS.find((t) => t.id === targetId)!;
+  const target = TARGETS.find((x) => x.id === targetId)!;
   const location = target.location;
   const [bypassArmor, setBypassArmor] = useState(false);
   const [critical, setCritical] = useState(false);
@@ -369,13 +370,13 @@ function HitPanel({ c, v, onApplied }: { c: Combatant; v: Vitals; onApplied: (ms
     const after = woundOf(Math.max(0, v.hp - r.hpLoss), v.maxHp);
     const notes = [
       describeHit(hit, r),
-      r.ablate && `SP ${SLOT_LABELS[location]} ${r.sp}→${r.sp - 1}`,
+      r.ablate && t.combat.hit.notes.armor(SLOT_LABELS[location], r.sp, r.sp - 1),
       r.aimEffect,
-      r.critical && "role na tabela de ferimento crítico",
-      r.mortalHit && "+1 na penalidade de death save",
+      r.critical && t.combat.hit.notes.critical,
+      r.mortalHit && t.combat.hit.notes.mortalHit,
       after.label,
     ].filter(Boolean);
-    onApplied(`${v.name}: ${notes.join(" · ")}`);
+    onApplied(t.combat.hit.notes.result(v.name, notes.join(t.common.sep)));
     setDamage(0);
     setCritical(false);
     setRolled(null);
@@ -394,7 +395,7 @@ function HitPanel({ c, v, onApplied }: { c: Combatant; v: Vitals; onApplied: (ms
     >
       <div className="flex flex-wrap items-center gap-2">
         <label className="flex items-center gap-1">
-          <span className="text-dim">dano</span>
+          <span className="text-dim">{t.common.words.damage}</span>
           <input
             type="number"
             min={0}
@@ -407,24 +408,24 @@ function HitPanel({ c, v, onApplied }: { c: Combatant; v: Vitals; onApplied: (ms
             }}
           />
         </label>
-        <span className="text-dim">ou</span>
+        <span className="text-dim">{t.common.words.or}</span>
         <select
           className="field !w-auto !py-0"
-          aria-label="dados de dano"
+          aria-label={t.combat.hit.diceAria}
           value={dice}
           onChange={(e) => setDice(e.target.value)}
         >
           {DAMAGE_DICE.map((d) => (
             <option key={d} value={d}>
-              {d.includes("x") ? `autofire 2d6 × ${d.split("x")[1]}` : d}
+              {d.includes("x") ? t.combat.hit.autofireDice(d.split("x")[1]) : d}
             </option>
           ))}
         </select>
         <button type="button" className="btn !px-2 !py-0" onClick={roll}>
-          rolar
+          {t.common.actions.roll}
         </button>
         {rolled && (
-          <span className="flex gap-1" aria-label="dados rolados">
+          <span className="flex gap-1" aria-label={t.combat.hit.rolledAria}>
             {rolled.dice.map((d, i) => (
               <span key={i} className={`animate-hop border-2 px-1 font-bold ${d === 6 ? "border-red text-red" : "border-line"}`}>
                 {d}
@@ -436,45 +437,45 @@ function HitPanel({ c, v, onApplied }: { c: Combatant; v: Vitals; onApplied: (ms
       </div>
 
       <div className="flex flex-wrap items-center gap-1">
-        {TARGETS.map((t) => (
+        {TARGETS.map((x) => (
           <button
-            key={t.id}
+            key={x.id}
             type="button"
-            aria-pressed={targetId === t.id}
-            className={toggle(targetId === t.id)}
-            title={t.title}
-            onClick={() => setTargetId(t.id)}
+            aria-pressed={targetId === x.id}
+            className={toggle(targetId === x.id)}
+            title={x.title}
+            onClick={() => setTargetId(x.id)}
           >
-            {t.label} · SP{v.sp[t.location]}
+            {t.combat.hit.targetButton(x.label, v.sp[x.location])}
           </button>
         ))}
         <button
           type="button"
           aria-pressed={bypassArmor}
           className={toggle(bypassArmor)}
-          title="veneno, fogo e afins passam direto"
+          title={t.combat.hit.bypassArmorTitle}
           onClick={() => setBypassArmor(!bypassArmor)}
         >
-          ignora armadura
+          {t.combat.hit.bypassArmor}
         </button>
         <button
           type="button"
           aria-pressed={critical}
           className={toggle(critical)}
-          title="dois ou mais 6 no dano: ferimento crítico, +5 direto no HP"
+          title={t.combat.hit.criticalTitle}
           onClick={() => setCritical(!critical)}
         >
-          crítico +5
+          {t.combat.hit.critical}
         </button>
         {mortal && (
           <button
             type="button"
             aria-pressed={attack}
             className={toggle(attack)}
-            title="mortalmente ferido levando dano de ataque: ferimento crítico e +1 na penalidade de death save"
+            title={t.combat.hit.wasAttackTitle}
             onClick={() => setAttack(!attack)}
           >
-            foi ataque
+            {t.combat.hit.wasAttack}
           </button>
         )}
       </div>
@@ -482,18 +483,54 @@ function HitPanel({ c, v, onApplied }: { c: Combatant; v: Vitals; onApplied: (ms
       <div className="flex flex-wrap items-center gap-3">
         <span>
           {describeHit(hit, r)}
-          {r.ablate && <span className="text-dim"> · a armadura {location === "head" ? "da cabeça" : "do corpo"} perde 1 SP</span>}
-          {r.mortalHit && <span className="text-red"> · mortal: crítico e +1 death save</span>}
-          {r.aimEffect && <span className="text-red"> · {r.aimEffect}</span>}
+          {r.ablate && (
+            <span className="text-dim">
+              {t.common.sep}
+              {t.combat.hit.armorLoses(location)}
+            </span>
+          )}
+          {r.mortalHit && (
+            <span className="text-red">
+              {t.common.sep}
+              {t.combat.hit.mortalHit}
+            </span>
+          )}
+          {r.aimEffect && (
+            <span className="text-red">
+              {t.common.sep}
+              {r.aimEffect}
+            </span>
+          )}
           {v.deflection > 0 && !r.deflected && (
-            <span className="text-net"> · desvio de dano −{v.deflection} pronto pro 1º dano do round</span>
+            <span className="text-net">
+              {t.common.sep}
+              {t.combat.hit.deflection(v.deflection)}
+            </span>
           )}
         </span>
         <button className="btn btn-primary !py-0" disabled={damage <= 0 && !critical}>
-          aplicar
+          {t.combat.hit.apply}
         </button>
       </div>
     </form>
+  );
+}
+
+/** Ações do turno, como o RefBlock, mas com o nome da ação no livro pequeno embaixo (<BookName />). */
+function ActionsRef() {
+  return (
+    <div className="box bg-raise min-w-0 p-3">
+      <span className="label">{t.combat.reference.actionsTitle}</span>
+      <ul className="mt-2 space-y-1.5">
+        {COMBAT_ACTIONS.map(([name, en, desc]) => (
+          <li key={name}>
+            <span className="font-bold">{name}</span>
+            <BookName def={{ name: en, namePt: name }} />
+            {desc}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

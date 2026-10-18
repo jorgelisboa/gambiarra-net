@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { gameName, t } from "@/i18n";
 import {
   HIRING_FEE,
   LOYALTY_CAP,
@@ -20,15 +21,12 @@ import {
   type TeamClass,
 } from "@/lib/rpg";
 import type { Character, Stats, TeamMember } from "@/lib/types";
+import { BookName } from "./BookName";
 import { Bar } from "./Pixel";
 
 const EVENTS = [...LOYALTY_GAIN, ...LOYALTY_LOSS];
 
-const SPECIAL_SKILLS: Record<string, string> = {
-  interface: "Interface",
-  language: "Language (Streetslang)",
-  localExpert: "Local Expert (Your Home)",
-};
+const SPECIAL_SKILLS: Record<string, string> = t.characters.team.specialSkills;
 
 /** Equipe do Exec: contratar pela tabela da classe, HP, perícias e lealdade. */
 export function TeamPanel({
@@ -51,14 +49,14 @@ export function TeamPanel({
   return (
     <div className="box bg-raise space-y-3 p-3">
       <div className="flex items-center justify-between gap-3">
-        <span className="label">equipe</span>
+        <span className="label">{t.characters.team.title}</span>
         <span className={team.length > max ? "font-bold text-red" : "text-dim"}>
           {team.length}/{max}
         </span>
       </div>
-      {max === 0 && <p className="text-xs text-dim">o 1º membro chega no rank 3.</p>}
+      {max === 0 && <p className="text-xs text-dim">{t.characters.team.firstAtRank}</p>}
       {team.length > max && (
-        <p className="text-xs text-red">acima do limite do rank: dispense {team.length - max}.</p>
+        <p className="text-xs text-red">{t.characters.team.overLimit(team.length - max)}</p>
       )}
 
       {team.length < max && (
@@ -73,25 +71,25 @@ export function TeamPanel({
         >
           <select
             className="field !w-auto min-w-0 max-w-full"
-            aria-label="classe"
+            aria-label={t.characters.team.classAria}
             value={job}
             onChange={(e) => setJob(e.target.value)}
           >
             {TEAM_CLASSES.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.namePt} ({c.name})
+                {c.namePt}
               </option>
             ))}
           </select>
           <input
             className="field !w-auto min-w-32 flex-1"
-            placeholder="nome (opcional)"
-            aria-label="nome do membro"
+            placeholder={t.characters.team.namePlaceholder}
+            aria-label={t.characters.team.memberNameAria}
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
-          <button className="btn btn-primary">contratar (1d6 nas stats)</button>
-          <p className="w-full text-xs text-dim">função: {teamClass(job)!.job}.</p>
+          <button className="btn btn-primary">{t.characters.team.hire}</button>
+          <p className="w-full text-xs text-dim">{t.characters.team.job(teamClass(job)!.job)}</p>
         </form>
       )}
 
@@ -102,7 +100,7 @@ export function TeamPanel({
               key={m.id}
               m={m}
               onPatch={(p) => patch(m.id, p)}
-              onRemove={() => confirm("dispensar esse membro?") && setTeam(team.filter((x) => x.id !== m.id))}
+              onRemove={() => confirm(t.characters.team.confirmDismiss) && setTeam(team.filter((x) => x.id !== m.id))}
               canReplace={ch.money >= HIRING_FEE}
               onReplace={() =>
                 setTeam(
@@ -117,14 +115,14 @@ export function TeamPanel({
 
       {legacy.length > 0 && (
         <div className="text-xs">
-          <span className="text-dim">anotações antigas da equipe:</span>
+          <span className="text-dim">{t.characters.team.legacyTitle}</span>
           <ul className="mt-1 space-y-1">
             {legacy.map((it) => (
               <li key={it.id} className="flex items-center gap-2">
-                <span className="min-w-0 flex-1">{it.text || "(vazio)"}</span>
+                <span className="min-w-0 flex-1">{it.text || `(${t.common.words.empty})`}</span>
                 <button
                   className="btn btn-bare btn-danger !px-1.5 !py-0"
-                  aria-label="apagar anotação"
+                  aria-label={t.characters.team.deleteNoteAria}
                   onClick={() =>
                     save({
                       ability: {
@@ -148,7 +146,7 @@ export function TeamPanel({
 function skillLine(cls: TeamClass, stats: Stats, level: number, ids: string[]) {
   return ids.map((id) => {
     const d = skillDef(id);
-    const name = SPECIAL_SKILLS[id] ?? d?.name ?? id;
+    const name = SPECIAL_SKILLS[id] ?? (d ? gameName(d) : id);
     return d ? `${name} ${stats[d.stat] + level}` : `${name} ${level}`;
   });
 }
@@ -181,31 +179,32 @@ function MemberCard({
         <div className="min-w-0 flex-1">
           <input
             className="field font-pixel !py-0.5 text-lg"
-            placeholder="novo contratado"
-            aria-label="nome do membro"
+            placeholder={t.characters.team.newHire}
+            aria-label={t.characters.team.memberNameAria}
             value={m.name}
             onChange={(e) => onPatch({ name: e.target.value })}
           />
           <div className="mt-1 text-xs text-dim">
-            {cls.namePt} · {cls.name} · de verdade: {cls.job}
+            {cls.namePt} · {t.characters.team.realJob(cls.job)}
           </div>
+          <BookName def={cls} />
         </div>
-        <button className="btn btn-bare btn-danger !px-1.5 !py-0" aria-label="dispensar" onClick={onRemove}>
+        <button className="btn btn-bare btn-danger !px-1.5 !py-0" aria-label={t.characters.team.dismiss} onClick={onRemove}>
           x
         </button>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <label className="flex items-center gap-1">
-          <span className="text-dim">fachada</span>
+          <span className="text-dim">{t.characters.team.cover}</span>
           <select className="field !w-auto !py-0" value={m.cover} onChange={(e) => onPatch({ cover: e.target.value })}>
             {[...new Set([...cls.covers, m.cover])].map((c) => (
               <option key={c}>{c}</option>
             ))}
           </select>
         </label>
-        <label className="flex items-center gap-1" title="linha do 1d6 na tabela da classe">
-          <span className="text-dim">linha</span>
+        <label className="flex items-center gap-1" title={t.characters.team.rowTitle}>
+          <span className="text-dim">{t.characters.team.row}</span>
           <select
             className="field !w-auto !py-0"
             value={m.row}
@@ -224,21 +223,21 @@ function MemberCard({
       <div className="flex flex-wrap gap-x-3 text-xs">
         {TEAM_STATS.map((k) => (
           <span key={k}>
-            <span className="text-dim">{k.toLowerCase()}</span> <span className="font-bold">{stats[k]}</span>
+            <span className="text-dim" title={t.stats.long[k]}>{t.stats.short[k]}</span> <span className="font-bold">{stats[k]}</span>
           </span>
         ))}
       </div>
 
       <div>
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="label">hp</span>
-          <button className="btn btn-bare !px-1.5 !py-0" aria-label="−1 hp" onClick={() => setHp(m.hp - 1)}>
+          <span className="label">{t.characters.team.hp}</span>
+          <button className="btn btn-bare !px-1.5 !py-0" aria-label={t.characters.team.hpDownAria} onClick={() => setHp(m.hp - 1)}>
             -
           </button>
           <span className="font-bold">
             {m.hp}/{hpMax}
           </span>
-          <button className="btn btn-bare !px-1.5 !py-0" aria-label="+1 hp" onClick={() => setHp(m.hp + 1)}>
+          <button className="btn btn-bare !px-1.5 !py-0" aria-label={t.characters.team.hpUpAria} onClick={() => setHp(m.hp + 1)}>
             +
           </button>
           {wound.short && (
@@ -246,7 +245,7 @@ function MemberCard({
               {wound.short}
             </span>
           )}
-          <span className="text-dim">death save {stats.BODY}</span>
+          <span className="text-dim">{t.characters.team.deathSave(stats.BODY)}</span>
         </div>
         <div className="mt-1">
           <Bar value={m.hp} max={hpMax} color="var(--red)" cells={10} height={6} />
@@ -260,77 +259,73 @@ function MemberCard({
           </p>
         ))}
         <p>
-          <span className="text-dim">cyberware:</span> {cls.cyberware.join(", ")}
+          <span className="text-dim">{t.characters.team.cyberware}</span> {cls.cyberware.join(", ")}
         </p>
         <p>
-          <span className="text-dim">gear:</span> {cls.gear.join(", ")}
+          <span className="text-dim">{t.characters.team.gear}</span> {cls.gear.join(", ")}
         </p>
       </div>
 
       <div className="space-y-2 border-t-2 border-line pt-2 text-xs">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="label">lealdade</span>
-          <button className="btn btn-bare !px-1.5 !py-0" aria-label="−1 lealdade" onClick={() => onPatch({ loyalty: m.loyalty - 1 })}>
+          <span className="label">{t.characters.team.loyalty}</span>
+          <button className="btn btn-bare !px-1.5 !py-0" aria-label={t.characters.team.loyaltyDownAria} onClick={() => onPatch({ loyalty: m.loyalty - 1 })}>
             -
           </button>
           <span className={`text-xl font-bold ${m.loyalty <= 0 ? "text-red" : "text-net"}`}>{m.loyalty}</span>
-          <button className="btn btn-bare !px-1.5 !py-0" aria-label="+1 lealdade" onClick={() => onPatch({ loyalty: m.loyalty + 1 })}>
+          <button className="btn btn-bare !px-1.5 !py-0" aria-label={t.characters.team.loyaltyUpAria} onClick={() => onPatch({ loyalty: m.loyalty + 1 })}>
             +
           </button>
           <button
             className="btn !px-2 !py-0"
             onClick={() => {
               const r = loyaltySave(m.loyalty);
-              setMsg(
-                r.ok
-                  ? `teste de lealdade: ${r.d} < ${m.loyalty}, cumpre a tarefa`
-                  : `teste de lealdade: ${r.d} não é menor que ${m.loyalty}: recusa, faz mal feito ou se vira contra você`,
-              );
+              setMsg(r.ok ? t.characters.team.loyaltyPass(r.d, m.loyalty) : t.characters.team.loyaltyFail(r.d, m.loyalty));
             }}
           >
-            teste (1d6)
+            {t.characters.team.loyaltyTest}
           </button>
           <button
             className="btn !px-2 !py-0"
-            title={`fim da sessão: lealdade volta pro máximo de ${LOYALTY_CAP}`}
+            title={t.characters.team.endSessionTitle(LOYALTY_CAP)}
             onClick={() => {
               onPatch({ loyalty: Math.min(LOYALTY_CAP, m.loyalty) });
               setMsg(
                 m.loyalty < 0
-                  ? "terminou a sessão abaixo de 0: reclama no RH e é transferido ou se demite"
-                  : `fim da sessão: lealdade ${Math.min(LOYALTY_CAP, m.loyalty)}`,
+                  ? t.characters.team.endSessionBelowZero
+                  : t.characters.team.endSessionResult(Math.min(LOYALTY_CAP, m.loyalty)),
               );
             }}
           >
-            fim da sessão
+            {t.characters.team.endSession}
           </button>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <select
             className="field !w-auto min-w-0 max-w-full !py-0"
-            aria-label="o que aconteceu"
+            aria-label={t.characters.team.eventAria}
             value={event}
             onChange={(e) => setEvent(Number(e.target.value))}
           >
             {EVENTS.map(([label, v], i) => (
               <option key={label} value={i}>
-                {v > 0 ? `+${v}` : v} · {label}
+                {t.characters.team.eventOption(t.common.signed(v), label)}
               </option>
             ))}
           </select>
           <button className="btn !px-2 !py-0" onClick={() => onPatch({ loyalty: m.loyalty + EVENTS[event][1] })}>
-            aplicar
+            {t.characters.team.apply}
           </button>
         </div>
-        {m.loyalty <= 0 && <p className="text-red">lealdade 0 ou menos: tenta te trair pros teus inimigos.</p>}
+        {m.loyalty <= 0 && <p className="text-red">{t.characters.team.betrayal}</p>}
         {msg && <p aria-live="polite">{msg}</p>}
         <button
           className="btn !px-2 !py-0"
           disabled={!canReplace}
-          title={canReplace ? undefined : "sem grana"}
-          onClick={() => confirm(`perdeu esse membro? o RH manda outro com lealdade 1 por ${fmtEb(HIRING_FEE)}.`) && onReplace()}
+          title={canReplace ? undefined : t.characters.team.noMoney}
+          onClick={() => confirm(t.characters.team.confirmReplace(fmtEb(HIRING_FEE))) && onReplace()}
         >
-          substituto do RH (−{fmtEb(HIRING_FEE)})
+          {t.characters.team.replace(fmtEb(HIRING_FEE))}
         </button>
       </div>
     </div>

@@ -1,4 +1,6 @@
+import { gameName, t } from "../../../i18n";
 import { uid } from "../../id";
+import { skillDef } from "../skills";
 import type {
   DemonKey,
   FeatureDv,
@@ -20,7 +22,7 @@ import { BLACK_ICE, MAX_FLOORS, difficultyOf, NET_DIFFICULTIES } from "./archite
  * Os números vêm do livro; os textos são resumos próprios em pt-BR.
  */
 
-export const WHERE_TO_BUY = "Night Market com eletrônicos pessoais, de Fixer rank 4+";
+export const WHERE_TO_BUY = t.infra.whereToBuy;
 
 /* ---------- a arquitetura em si ---------- */
 
@@ -47,10 +49,10 @@ export const MIN_SECURITY_FLOORS = 3;
 /* ---------- o que ocupa um andar ---------- */
 
 export const SECURITY_KINDS: { id: SecurityFloorKind; label: string; hint: string }[] = [
-  { id: "password", label: "senha", hint: "trava a descida até alguém dar Backdoor" },
-  { id: "file", label: "arquivo", hint: "o tesouro: dados que alguém quer" },
-  { id: "control", label: "nó de controle", hint: "liga uma defesa (ou outra coisa) do mundo real" },
-  { id: "demon", label: "demon", hint: "opera os nós de controle sozinho" },
+  { id: "password", ...t.infra.kinds.password, hint: t.infra.passwordHint(t.roles.netrunner.abilities.backdoor.name) },
+  { id: "file", ...t.infra.kinds.file },
+  { id: "control", ...t.infra.kinds.control },
+  { id: "demon", ...t.infra.kinds.demon },
 ];
 
 export const FEATURE_DVS: FeatureDv[] = [6, 8, 10, 12];
@@ -76,6 +78,12 @@ export const DEMONS: DemonDef[] = [
 
 export const demonOf = (id: DemonKey): DemonDef => DEMONS.find((d) => d.id === id) ?? DEMONS[0];
 
+/** Ações de interface do Netrunner (os nomes ficam com a habilidade dele). */
+const ABILITIES = t.roles.netrunner.abilities;
+
+/** A ficha do demon numa linha: "REZ 15 · interface 3 · 2 ações de net · número de combate 14". */
+export const demonStats = (d: DemonDef) => t.infra.demon.stats(d.rez, d.interface, d.netActions, d.combatNumber);
+
 /**
  * O livro diz "um demon a cada seis andares". Lido com arredondamento pra cima: de 3 a 6 andares cabe 1,
  * de 7 a 12 cabem 2, de 13 a 18 cabem 3. Senão uma arquitetura pequena nunca teria defesa ativa.
@@ -87,21 +95,9 @@ export const FLOORS_PER_DEMON = 6;
 export type DefenseCategory = "active" | "emplaced" | "environmental";
 
 export const DEFENSE_CATEGORIES: { id: DefenseCategory; label: string; rule: string }[] = [
-  {
-    id: "active",
-    label: "ativa",
-    rule: "robôs que perseguem até o perímetro; só funcionam com um demon (ou netrunner) segurando o nó",
-  },
-  {
-    id: "emplaced",
-    label: "fixa",
-    rule: "presa no lugar, dispara sozinha no gatilho com Combat Number + 1d10; não precisa de demon e não esquiva",
-  },
-  {
-    id: "environmental",
-    label: "ambiente",
-    rule: "parte do piso, parede ou teto; mesmo controlada só liga e desliga, e sem demon alguém liga na mão",
-  },
+  { id: "active", ...t.infra.defenseCategories.active },
+  { id: "emplaced", ...t.infra.defenseCategories.emplaced },
+  { id: "environmental", ...t.infra.defenseCategories.environmental },
 ];
 
 /** DV de Electronics/Security Tech pra desarmar a defesa. É ela que define o preço. */
@@ -116,11 +112,18 @@ export interface DefenseDef {
   counterDv: CounterDv;
   /** Quanto tempo leva pra desarmar. */
   counterTime: "1 min" | "5 min";
-  /** MOVE, HP, Combat Number, percepção pra notar. */
+  /** MOVE, HP, número de combate, percepção pra notar. */
   data: string;
   /** O que faz, em uma linha. */
   summary: string;
 }
+
+/** Nome em pt-BR de uma perícia citada nos resumos das defesas (acompanha a lista de perícias). */
+const skillName = (id: string) => gameName(skillDef(id)!);
+
+/** Como desarmar: "eletrônica/segurança DV17, 5 min". */
+export const defenseCounter = (d: DefenseDef): string =>
+  t.infra.counter(skillName("electronicsSecurityTech"), d.counterDv, d.counterTime);
 
 /** Gatilho padrão de quase todas: alguém entra na área sem o passe ou crachá certo. */
 export const DEFENSES: DefenseDef[] = [
@@ -141,7 +144,7 @@ export const DEFENSES: DefenseDef[] = [
     counterDv: 21,
     counterTime: "5 min",
     data: "MOVE 4 · 30 HP",
-    summary: "bola, esteira, rodas ou cobra; leva 2 entre pistola muito pesada (8 balas perfurantes), SMG (30 balas) e câmera",
+    summary: "bola, esteira, rodas ou cobra; leva 2 entre pistola muito pesada (8 balas perfurantes), submetralhadora (30 balas) e câmera",
   },
   {
     id: "large-air-drone",
@@ -168,7 +171,7 @@ export const DEFENSES: DefenseDef[] = [
     counterDv: 21,
     counterTime: "5 min",
     data: "MOVE 4 · 40 HP",
-    summary: "anda pelas paredes; leva 2 entre lança-granadas (2 de gás lacrimogêneo), arma branca muito pesada, SMG pesada (40 balas) e câmera",
+    summary: "anda pelas paredes; leva 2 entre lança-granadas (2 de gás lacrimogêneo), arma branca muito pesada, submetralhadora pesada (40 balas) e câmera",
   },
   // fixas (pág. 214)
   {
@@ -178,7 +181,7 @@ export const DEFENSES: DefenseDef[] = [
     counterDv: 21,
     counterTime: "5 min",
     data: "um ataque em todos da área",
-    summary: "névoa vermelha que coagula o sangue: Resist Torture/Drugs DV15 ou 3d6 direto no HP, sem ablar; filtro de gás bloqueia",
+    summary: `névoa vermelha que coagula o sangue: ${skillName("resistTortureDrugs")} DV15 ou 3d6 direto no HP, sem ablar; filtro de gás bloqueia`,
   },
   {
     id: "auto-melee",
@@ -186,7 +189,7 @@ export const DEFENSES: DefenseDef[] = [
     category: "emplaced",
     counterDv: 17,
     counterTime: "5 min",
-    data: "Combat Number 14 · 25 HP",
+    data: "número de combate 14 · 25 HP",
     summary: "arma branca muito pesada num canto da sala (jato d'água industrial, monofio girando); bate até não sobrar alvo ou aparecer o crachá",
   },
   {
@@ -195,8 +198,8 @@ export const DEFENSES: DefenseDef[] = [
     category: "emplaced",
     counterDv: 17,
     counterTime: "5 min",
-    data: "Combat Number 14 · 25 HP",
-    summary: "no teto; leva 1 entre fuzil de assalto, lança-chamas (4 cartuchos incendiários), lança-dardos, pistola muito pesada e SMG pesada",
+    data: "número de combate 14 · 25 HP",
+    summary: "no teto; leva 1 entre fuzil de assalto, lança-chamas (4 cartuchos incendiários), lança-dardos, pistola muito pesada e submetralhadora pesada",
   },
   // ambiente (págs. 215-216)
   {
@@ -210,7 +213,7 @@ export const DEFENSES: DefenseDef[] = [
   },
   {
     id: "tanglefoot",
-    name: "carpete tanglefoot",
+    name: "carpete prende-pés",
     category: "environmental",
     counterDv: 13,
     counterTime: "1 min",
@@ -233,7 +236,7 @@ export const DEFENSES: DefenseDef[] = [
     counterDv: 17,
     counterTime: "5 min",
     data: "Percepção DV17 pra notar",
-    summary: "encostar num laser é levar arma branca muito pesada no corpo; Contortionist DV17 atravessa se ela foi notada",
+    summary: `encostar num laser é levar arma branca muito pesada no corpo; ${skillName("contortionist")} DV17 atravessa se ela foi notada`,
   },
   {
     id: "tip-floor",
@@ -242,7 +245,7 @@ export const DEFENSES: DefenseDef[] = [
     counterDv: 13,
     counterTime: "1 min",
     data: "Percepção DV17 pra notar",
-    summary: "o piso tomba num poço: Athletics DV15 pra não cair; o fundo pode ter nanofio ou estacas de 6d6",
+    summary: `o piso tomba num poço: ${skillName("athletics")} DV15 pra não cair; o fundo pode ter nanofio ou estacas de 6d6`,
   },
   {
     id: "goop",
@@ -269,7 +272,7 @@ export const DEFENSES: DefenseDef[] = [
     counterDv: 13,
     counterTime: "1 min",
     data: "10 HP · Percepção DV17 pra notar",
-    summary: "líquido liso no chão: quem se mover na área faz Athletics DV15 ou cai",
+    summary: `líquido liso no chão: quem se mover na área faz ${skillName("athletics")} DV15 ou cai`,
   },
   {
     id: "stun-panels",
@@ -278,7 +281,7 @@ export const DEFENSES: DefenseDef[] = [
     counterDv: 13,
     counterTime: "1 min",
     data: "5 HP · Percepção DV17 pra notar",
-    summary: "disfarçados de quadro; clarão e estrondo numa área de 10×10m: Resist Torture/Drugs DV15 ou olho e ouvido danificados por 1 minuto",
+    summary: `disfarçados de quadro; clarão e estrondo numa área de 10×10m: ${skillName("resistTortureDrugs")} DV15 ou olho e ouvido danificados por 1 minuto`,
   },
   {
     id: "sleep-gas-elevator",
@@ -287,7 +290,7 @@ export const DEFENSES: DefenseDef[] = [
     counterDv: 17,
     counterTime: "5 min",
     data: "60 HP · Percepção DV17 pra notar",
-    summary: "lacra o espaço e entra no topo da iniciativa; no turno dele, Resist Torture/Drugs DV13 ou inconsciente",
+    summary: `lacra o espaço e entra no topo da iniciativa; no turno dele, ${skillName("resistTortureDrugs")} DV13 ou inconsciente`,
   },
 ];
 
@@ -314,8 +317,7 @@ const f = (
 export const PLAN_TEMPLATES: PlanTemplate[] = [
   {
     id: "loja",
-    label: "loja pequena",
-    description: "4 andares num servidor portátil: câmera, livro-caixa e uma torreta no estoque",
+    ...t.infra.templates.loja,
     floors: [
       f("password", { dv: 6, label: "caixa" }),
       f("control", { dv: 6, defense: "cameras", label: "câmeras da loja" }),
@@ -325,8 +327,7 @@ export const PLAN_TEMPLATES: PlanTemplate[] = [
   },
   {
     id: "boate",
-    label: "boate",
-    description: "6 andares com um Imp cuidando das câmeras e de um drone no camarote",
+    ...t.infra.templates.boate,
     floors: [
       f("password", { dv: 6, label: "portaria" }),
       f("control", { dv: 6, defense: "cameras", label: "câmeras da pista" }),
@@ -338,8 +339,7 @@ export const PLAN_TEMPLATES: PlanTemplate[] = [
   },
   {
     id: "corporativo",
-    label: "andar corporativo",
-    description: "9 andares com um Efreet, grade laser no corredor do cofre e drone de patrulha",
+    ...t.infra.templates.corporativo,
     floors: [
       f("password", { dv: 8, label: "recepção" }),
       f("control", { dv: 8, defense: "cameras", label: "câmeras do saguão" }),
@@ -393,7 +393,7 @@ export interface PlanIssue {
 
 /** Faixa de preço pelo número de andares; null fora de 3 a 18. */
 export function tierFor(floors: number): ArchitectureTier | null {
-  return ARCHITECTURE_TIERS.find((t) => floors >= t.min && floors <= t.max) ?? null;
+  return ARCHITECTURE_TIERS.find((tier) => floors >= tier.min && floors <= tier.max) ?? null;
 }
 
 /** Quantos demons cabem: um a cada 6 andares, arredondado pra cima (0 andares = 0). */
@@ -411,13 +411,13 @@ export function newSecurityFloor(kind: SecurityFloorKind = "password"): Security
  * sem defesa. Com modelo: cópia dos andares do modelo, cada um com id novo. Nome vazio vira "infraestrutura".
  */
 export function newPlan(name: string, templateId?: string): SecurityPlan {
-  const template = PLAN_TEMPLATES.find((t) => t.id === templateId);
+  const template = PLAN_TEMPLATES.find((tpl) => tpl.id === templateId);
   const floors: SecurityFloor[] = template
     ? template.floors.map((fl) => ({ ...fl, id: uid() }))
     : (["password", "file", "control"] as const).map((kind) => ({ ...newSecurityFloor(kind), dv: 8 as const }));
   return {
     id: uid(),
-    name: name.trim() || "infraestrutura",
+    name: name.trim() || t.infra.defaultName,
     location: "",
     floors,
     architectureId: null,
@@ -475,28 +475,23 @@ export function planIssues(plan: SecurityPlan): PlanIssue[] {
   const errors: PlanIssue[] = [];
   const warnings: PlanIssue[] = [];
 
-  if (n < MIN_SECURITY_FLOORS) errors.push({ level: "erro", text: "uma arquitetura tem no mínimo 3 andares" });
-  if (n > MAX_FLOORS) errors.push({ level: "erro", text: "uma arquitetura tem no máximo 18 andares" });
+  const I = t.infra.issues;
+  if (n < MIN_SECURITY_FLOORS) errors.push({ level: "erro", text: I.minFloors(MIN_SECURITY_FLOORS) });
+  if (n > MAX_FLOORS) errors.push({ level: "erro", text: I.maxFloors(MAX_FLOORS) });
 
   // o teto de nós só existe nas faixas pequenas (a de 13 a 18 não tem limite)
   if (controlNodes.max !== null && controlNodes.used > controlNodes.max) {
-    const dica =
+    const hint =
       controlNodes.max === 2
-        ? " (de 7 a 12 andares cabem 3; de 13 pra cima, sem limite)"
+        ? I.controlNodesHint.two
         : controlNodes.max === 3
-          ? " (de 13 andares pra cima, sem limite)"
-          : "";
-    errors.push({
-      level: "erro",
-      text: `${controlNodes.used} nós de controle: com ${n} andares cabem ${controlNodes.max}${dica}`,
-    });
+          ? I.controlNodesHint.three
+          : undefined;
+    errors.push({ level: "erro", text: I.controlNodes(controlNodes.used, n, controlNodes.max, hint) });
   }
 
   if (demons.used > demons.max) {
-    errors.push({
-      level: "erro",
-      text: `${demons.used} demons: com ${n} andares ${demons.max === 1 ? "cabe 1" : `cabem ${demons.max}`} (um a cada 6 andares)`,
-    });
+    errors.push({ level: "erro", text: I.demons(demons.used, n, demons.max, FLOORS_PER_DEMON) });
   }
 
   // defesa ativa e de ambiente dependem de alguém operando o nó; sem demon, tem de ser gente
@@ -505,23 +500,15 @@ export function planIssues(plan: SecurityPlan): PlanIssue[] {
       const def = fl.kind === "control" ? defenseOf(fl.defense) : null;
       if (!def) continue;
       if (def.category === "active") {
-        warnings.push({
-          level: "aviso",
-          floorId: fl.id,
-          text: `${def.name} é defesa ativa: sem demon, só funciona com um netrunner segurando o nó`,
-        });
+        warnings.push({ level: "aviso", floorId: fl.id, text: I.activeNeedsRunner(def.name) });
       } else if (def.category === "environmental") {
-        warnings.push({
-          level: "aviso",
-          floorId: fl.id,
-          text: `sem demon, alguém do lugar liga e desliga ${def.name} na mão`,
-        });
+        warnings.push({ level: "aviso", floorId: fl.id, text: I.environmentalByHand(def.name) });
       }
     }
   }
 
   if (demons.used > 0 && controlNodes.used === 0) {
-    warnings.push({ level: "aviso", text: "o demon não tem nó de controle pra operar" });
+    warnings.push({ level: "aviso", text: I.demonWithoutNode });
   }
 
   return [...errors, ...warnings];
@@ -584,19 +571,15 @@ export function planToArchitecture(plan: SecurityPlan, existing?: NetArchitectur
 
     const label =
       fl.label.trim() ||
-      (demon ? `demon ${demon.name}` : fl.kind === "control" ? (def?.name ?? "nó de controle") : "");
+      (demon ? t.infra.send.demonLabel(demon.name) : fl.kind === "control" ? (def?.name ?? t.infra.kinds.control.label) : "");
 
     const parts: string[] = [];
     if (def) {
       const categoria = DEFENSE_CATEGORIES.find((c) => c.id === def.category)?.label ?? def.category;
-      parts.push(
-        `${def.name} (defesa ${categoria}; desarmar: Electronics/Security Tech DV${def.counterDv}, ${def.counterTime}) · ${def.data}. ${def.summary}`,
-      );
+      parts.push(t.infra.send.defenseNote(def.name, categoria, defenseCounter(def), def.data, def.summary));
     }
     if (demon) {
-      parts.push(
-        `REZ ${demon.rez} · Interface ${demon.interface} · ${demon.netActions} NET actions · Combat Number ${demon.combatNumber}. usa só Zap e Control.`,
-      );
+      parts.push(`${demonStats(demon)}. ${t.infra.demon.onlyUses(ABILITIES.zap.name, ABILITIES.control.name)}`);
     }
     if (fl.note.trim()) parts.push(fl.note.trim());
 
@@ -615,7 +598,7 @@ export function planToArchitecture(plan: SecurityPlan, existing?: NetArchitectur
   }
   return {
     id: existing?.id ?? uid(),
-    name: plan.name.trim() || "infraestrutura",
+    name: plan.name.trim() || t.infra.defaultName,
     difficulty,
     floors,
     runnerAt: null,

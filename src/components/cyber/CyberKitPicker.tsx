@@ -1,18 +1,20 @@
 "use client";
 
+import { BookName } from "../BookName";
+import { gameName, t } from "@/i18n";
 import { STREETRAT_CYBERWARE, cyberDef, kitRefs } from "@/lib/rpg";
 import type { Role } from "@/lib/types";
 
 /** Perda de humanidade em texto curto: "−7 hum." (0 fica "0 hum."). */
-export const hlLabel = (hl: number) => (hl > 0 ? `−${hl} hum.` : `${hl} hum.`);
+export const hlLabel = (hl: number) => t.cyber.hl.short(hl);
 
 function Piece({ id }: { id: string }) {
   const def = cyberDef(id);
   if (!def) return <>{id}</>;
   return (
     <>
-      {def.name} <span className="text-dim">{def.namePt}</span>{" "}
-      <span className="font-mono text-xs text-dim">{hlLabel(def.hl)}</span>
+      {gameName(def)} <span className="font-mono text-xs text-dim">{hlLabel(def.hl)}</span>
+      <BookName def={def} />
     </>
   );
 }
@@ -38,7 +40,7 @@ export function CyberKitPicker({
 
   return (
     <section className="box bg-raise min-w-0 p-3">
-      <h3 className="label mb-2">cyberware · {role.toLowerCase()}</h3>
+      <h3 className="label mb-2">{t.cyber.kit.title(role.toLowerCase())}</h3>
       <ul className="space-y-1.5">
         {lines.map((line, i) => {
           const key = `c${i}`;
@@ -53,7 +55,7 @@ export function CyberKitPicker({
           const at = Math.min(picks[key] ?? 0, line.options.length - 1);
           return (
             <li key={key}>
-              <div role="group" aria-label="escolha uma opção" className="flex flex-wrap gap-1">
+              <div role="group" aria-label={t.cyber.kit.chooseOne} className="flex flex-wrap gap-1">
                 {line.options.map((ref, j) => (
                   <button
                     key={ref}
@@ -75,11 +77,11 @@ export function CyberKitPicker({
       </ul>
       <div className="mt-3 space-y-0.5 border-t-2 border-line pt-2 text-xs">
         <p>
-          perda de humanidade do kit <span className="font-mono font-bold text-net">{hl}</span>
+          {t.cyber.kit.hlTotal} <span className="font-mono font-bold text-net">{hl}</span>
         </p>
         {emp !== undefined && (
           <p className="font-mono text-dim">
-            humanidade {emp * 10} − {hl} = {rest} · emp em uso {Math.max(0, Math.min(emp, Math.floor(rest / 10)))}
+            {t.cyber.kit.rest(emp * 10, hl, rest, Math.max(0, Math.min(emp, Math.floor(rest / 10))))}
           </p>
         )}
       </div>

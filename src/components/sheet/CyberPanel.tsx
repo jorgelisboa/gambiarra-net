@@ -1,5 +1,6 @@
 "use client";
 
+import { t } from "@/i18n";
 import { cyberDef, cyberName, cyberpsychosis, installedCyber, setCyberActive } from "@/lib/rpg";
 import type { Character } from "@/lib/types";
 import { psychosisTone } from "../cyber/CyberSheet";
@@ -23,12 +24,14 @@ export function CyberPanel({
 
   return (
     <Section
-      title="cyberware"
+      title={t.sheet.cyber.title}
       className={className}
-      aside={<LinkBtn onClick={() => onTab("cyber")}>{pieces.length > 0 ? "ver cyberware" : "abrir cyberware"}</LinkBtn>}
+      aside={
+        <LinkBtn onClick={() => onTab("cyber")}>{pieces.length > 0 ? t.sheet.cyber.view : t.sheet.cyber.open}</LinkBtn>
+      }
     >
       {pieces.length === 0 ? (
-        <p className="text-dim">sem cyberware</p>
+        <p className="text-dim">{t.sheet.cyber.none}</p>
       ) : (
         <>
           <ul className="flex flex-wrap gap-1">
@@ -45,7 +48,9 @@ export function CyberPanel({
                       p.active ? "border-red bg-red text-black" : "border-line bg-panel hover:border-fg"
                     }`}
                   >
-                    {cyberName(p)} · {p.active ? `ligado, +${boost} iniciativa` : "ligar"}
+                    {cyberName(p)}
+                    {t.common.sep}
+                    {p.active ? t.sheet.cyber.on(boost) : t.sheet.cyber.off}
                   </button>
                 </li>
               ) : (
@@ -56,10 +61,10 @@ export function CyberPanel({
             })}
           </ul>
           <p className="mt-2 text-xs">
-            {pieces.length} {pieces.length === 1 ? "peça" : "peças"}
+            {t.sheet.pieces(pieces.length)}
             {psy.level > 0 && (
               <>
-                <span className="text-dim"> · </span>
+                <span className="text-dim">{t.common.sep}</span>
                 <span className={psychosisTone(psy.level)}>{psy.label}</span>
               </>
             )}

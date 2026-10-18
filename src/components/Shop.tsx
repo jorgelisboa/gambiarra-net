@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { gameName, t } from "@/i18n";
 import {
   CATALOG,
+  SLOT_LABELS,
   FASHION_PIECES,
   FASHION_STYLES,
   catalogItem,
@@ -13,22 +15,23 @@ import {
   type WeaponClass,
 } from "@/lib/rpg";
 import type { ArmorSlot } from "@/lib/types";
-import { priceOf, specsOf } from "./gearText";
+import { BookName } from "./BookName";
+import { priceOf, skillName, specsOf } from "./gearText";
 
 const TABS = [
-  { id: "weapons", label: "armas", kinds: ["weapon"] },
-  { id: "armor", label: "armadura", kinds: ["armor", "shield"] },
-  { id: "ammo", label: "munição", kinds: ["ammo"] },
-  { id: "gear", label: "equipamento", kinds: ["gear", "cyberdeck", "program"] },
-  { id: "fashion", label: "roupas", kinds: ["fashion"] },
+  { id: "weapons", label: t.gear.shop.tabs.weapons, kinds: ["weapon"] },
+  { id: "armor", label: t.gear.shop.tabs.armor, kinds: ["armor", "shield"] },
+  { id: "ammo", label: t.gear.shop.tabs.ammo, kinds: ["ammo"] },
+  { id: "gear", label: t.gear.shop.tabs.gear, kinds: ["gear", "cyberdeck", "program"] },
+  { id: "fashion", label: t.gear.shop.tabs.fashion, kinds: ["fashion"] },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
 
 const WEAPON_GROUPS: { id: WeaponClass; label: string }[] = [
-  { id: "melee", label: "armas brancas · dex + melee weapon" },
-  { id: "ranged", label: "armas de longo alcance · ref + perícia da arma" },
-  { id: "exotic", label: "exóticas · raras e caras" },
+  { id: "melee", label: t.gear.shop.weaponGroups.melee(skillName("meleeWeapon")) },
+  { id: "ranged", label: t.gear.shop.weaponGroups.ranged },
+  { id: "exotic", label: t.gear.shop.weaponGroups.exotic },
 ];
 
 /** Night Market: o catálogo do livro com botão de comprar. */
@@ -47,50 +50,50 @@ export function Shop({
   const [luxury, setLuxury] = useState(!creation);
 
   const q = query.trim().toLowerCase();
-  const kinds: readonly string[] = TABS.find((t) => t.id === tab)!.kinds;
+  const kinds: readonly string[] = TABS.find((x) => x.id === tab)!.kinds;
   const visible = (d: CatalogItem) =>
     !(d.kind === "armor" && d.implant) && // skin weave e subdermal só vêm do cyberware, nunca da loja
     (luxury || d.cost === null || !isLuxury(d.cost)) &&
-    (!q || d.name.toLowerCase().includes(q) || d.namePt.includes(q) || d.desc.includes(q));
+    (!q || d.name.toLowerCase().includes(q) || d.namePt.toLowerCase().includes(q) || d.desc.toLowerCase().includes(q));
   const items = CATALOG.filter((d) => (q || kinds.includes(d.kind)) && visible(d));
 
   return (
     <div className="box space-y-3 p-3">
       <div className="flex flex-wrap items-center gap-2">
-        <div role="tablist" aria-label="loja" className="flex flex-wrap gap-x-1 border-b-2 border-line">
-          {TABS.map((t) => (
+        <div role="tablist" aria-label={t.gear.shop.label} className="flex flex-wrap gap-x-1 border-b-2 border-line">
+          {TABS.map((x) => (
             <button
-              key={t.id}
+              key={x.id}
               role="tab"
-              aria-selected={tab === t.id && !q}
+              aria-selected={tab === x.id && !q}
               onClick={() => {
-                setTab(t.id);
+                setTab(x.id);
                 setQuery("");
               }}
               className={`-mb-[2px] border-b-2 px-2 py-1 ${
-                tab === t.id && !q ? "border-red text-red" : "border-transparent text-dim hover:text-fg"
+                tab === x.id && !q ? "border-red text-red" : "border-transparent text-dim hover:text-fg"
               }`}
             >
-              {t.label}
+              {x.label}
             </button>
           ))}
         </div>
         <input
           className="field !w-auto min-w-32 flex-1"
-          placeholder="buscar na loja"
-          aria-label="buscar na loja"
+          placeholder={t.gear.shop.search}
+          aria-label={t.gear.shop.search}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
         <span className="text-dim">
-          na mão <span className="font-bold text-red">{fmtEb(money)}</span>
+          {t.gear.shop.cash} <span className="font-bold text-red">{fmtEb(money)}</span>
         </span>
       </div>
 
       {creation && (
         <label className="flex items-center gap-2 text-xs text-dim">
           <input type="checkbox" checked={luxury} onChange={(e) => setLuxury(e.target.checked)} />
-          mostrar itens de luxo (o livro recomenda que o mestre não libere na criação)
+          {t.gear.shop.luxury}
         </label>
       )}
 
@@ -108,7 +111,7 @@ export function Shop({
             );
           })
         ) : items.length === 0 ? (
-          <p className="text-dim">nada encontrado.</p>
+          <p className="text-dim">{t.gear.shop.notFound}</p>
         ) : (
           <ShopList items={items} money={money} onBuy={onBuy} />
         )}
@@ -130,14 +133,12 @@ function ShopList({
     <ul className="divide-y-2 divide-line">
       {items.map((d) => {
         const specs = specsOf(d);
-        const blocked = d.cost === null ? "sem preço nestas tabelas" : d.cost > money ? "sem grana" : null;
+        const blocked = d.cost === null ? t.gear.shop.noPrice : d.cost > money ? t.gear.shop.noMoney : null;
         return (
           <li key={d.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
             <div className="min-w-0 flex-1 basis-56">
-              <div>
-                <span className="font-bold">{d.name}</span>{" "}
-                <span className="text-xs text-dim">{d.namePt}</span>
-              </div>
+              <div className="font-bold">{gameName(d)}</div>
+              <BookName def={d} />
               {specs && <div className="text-xs">{specs}</div>}
               {d.desc && <div className="text-xs text-dim">{d.desc}</div>}
             </div>
@@ -152,7 +153,7 @@ function ShopList({
                     title={blocked ?? undefined}
                     onClick={() => onBuy(d, slot)}
                   >
-                    {slot === "body" ? "corpo" : "cabeça"}
+                    {SLOT_LABELS[slot]}
                   </button>
                 ))
               ) : (
@@ -162,7 +163,7 @@ function ShopList({
                   title={blocked ?? undefined}
                   onClick={() => onBuy(d)}
                 >
-                  comprar
+                  {t.common.actions.buy}
                 </button>
               )}
             </div>
@@ -188,7 +189,8 @@ function FashionTable({
       {FASHION_STYLES.map((s) => (
         <li key={s.id} className="py-2">
           <div>
-            <span className="font-bold">{s.name}</span> <span className="text-xs text-dim">{s.vibe}</span>
+            <span className="font-bold">{s.namePt}</span> <span className="text-xs text-dim">{s.vibe}</span>
+            <BookName def={s} />
           </div>
           <div className="mt-1 flex flex-wrap gap-1">
             {FASHION_PIECES.map((p, i) => {
@@ -200,7 +202,7 @@ function FashionTable({
                   key={p.id}
                   className="btn btn-bare !px-2 !py-0 text-xs"
                   disabled={cost > money}
-                  title={cost > money ? "sem grana" : `${p.name} · ${priceOf(def)}`}
+                  title={cost > money ? t.gear.shop.noMoney : `${p.namePt}${t.common.sep}${priceOf(def)}`}
                   onClick={() => onBuy(def)}
                 >
                   {p.namePt} <span className="text-dim">{fmtEb(cost)}</span>

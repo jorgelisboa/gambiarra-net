@@ -19,7 +19,7 @@ export const ARMORS: ArmorDef[] = [
   armor("leathers", "Leathers", "couro", 4, 0, 20, "a preferida de nômades e punks de moto."),
   armor("kevlar", "Kevlar", "kevlar", 7, 0, 50, "vira roupa, colete, jaqueta, terno e até biquíni."),
   armor("lightArmorjack", "Light Armorjack", "armorjack leve", 11, 0, 100, "kevlar com malha plástica no tecido."),
-  armor("bodyweightSuit", "Bodyweight Suit", "traje bodyweight", 11, 0, 1000, "macacão com armorgel. guarda o cyberdeck e liga nos interface plugs (pág. 350)."),
+  armor("bodyweightSuit", "Bodyweight Suit", "traje bodyweight", 11, 0, 1000, "macacão com armorgel. guarda o cyberdeck e liga nos plugues de interface (pág. 350)."),
   armor("mediumArmorjack", "Medium Armorjack", "armorjack médio", 12, -2, 100, "armorjack com placas de plástico sólido e kevlar mais grosso."),
   armor("heavyArmorjack", "Heavy Armorjack", "armorjack pesado", 13, -2, 500, "o armorjack mais grosso: kevlar denso e camadas de plástico e malha."),
   armor("flak", "Flak", "flak", 15, -4, 500, "a versão século 21 do colete e da calça à prova de estilhaço."),

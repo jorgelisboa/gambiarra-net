@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { t } from "@/i18n";
 import { logout, useApp } from "@/lib/store";
 import type { UserRole } from "@/lib/types";
 import { Characters } from "./Characters";
@@ -9,17 +10,17 @@ import { InfraTab } from "./infra/InfraTab";
 import { NetTab } from "./net/NetTab";
 
 const TABS = [
-  { id: "net", label: "netrunner", roles: ["mestre"] },
-  { id: "infra", label: "infra", roles: ["mestre"] },
-  { id: "combat", label: "combate", roles: ["mestre"] },
-  { id: "chars", label: "personagens", roles: ["mestre", "jogador"] },
-] as const satisfies readonly { id: string; label: string; roles: readonly UserRole[] }[];
+  { id: "net", roles: ["mestre"] },
+  { id: "infra", roles: ["mestre"] },
+  { id: "combat", roles: ["mestre"] },
+  { id: "chars", roles: ["mestre", "jogador"] },
+] as const satisfies readonly { id: keyof typeof t.shell.nav.tabs; roles: readonly UserRole[] }[];
 
 type TabId = (typeof TABS)[number]["id"];
 
 export function Shell({ user, role }: { user: string; role: UserRole }) {
   const { syncError } = useApp();
-  const tabs = TABS.filter((t) => (t.roles as readonly UserRole[]).includes(role));
+  const tabs = TABS.filter((x) => (x.roles as readonly UserRole[]).includes(role));
   const [tab, setTab] = useState<TabId>(role === "mestre" ? "combat" : "chars");
   /** Arquitetura que a aba infra pediu pra abrir no construtor da aba netrunner. */
   const [focusArch, setFocusArch] = useState<string | null>(null);
@@ -33,41 +34,41 @@ export function Shell({ user, role }: { user: string; role: UserRole }) {
         {tabs.length > 1 && (
           <nav
             className="order-last -mx-3 flex w-[calc(100%+1.5rem)] gap-1 overflow-x-auto px-3 sm:order-none sm:mx-0 sm:w-auto sm:px-0"
-            aria-label="seções"
+            aria-label={t.shell.nav.aria}
           >
-            {tabs.map((t) => (
+            {tabs.map((x) => (
               <button
-                key={t.id}
+                key={x.id}
                 onClick={() => {
                   // trocar de aba na mão volta o construtor pra primeira arquitetura, como antes
                   setFocusArch(null);
-                  setTab(t.id);
+                  setTab(x.id);
                 }}
-                aria-current={tab === t.id ? "page" : undefined}
+                aria-current={tab === x.id ? "page" : undefined}
                 className={`shrink-0 px-3 py-1 ${
-                  tab === t.id ? "bg-red text-black" : "glitch-hover text-dim hover:text-fg"
+                  tab === x.id ? "bg-red text-black" : "glitch-hover text-dim hover:text-fg"
                 }`}
               >
-                {t.label}
+                {t.shell.nav.tabs[x.id]}
               </button>
             ))}
           </nav>
         )}
         <div className="ml-auto flex items-center gap-3 text-dim">
           <span className="min-w-0 truncate">
-            <span className={role === "mestre" ? "text-red" : "text-net"}>{role}</span>
+            <span className={role === "mestre" ? "text-red" : "text-net"}>{t.auth.roles[role].label}</span>
             <span className="hidden sm:inline"> · </span>
             <span className="hidden sm:inline">
               @<span className="text-fg">{user}</span>
             </span>
           </span>
           {syncError && (
-            <span className="text-red" title={syncError}>
-              offline
+            <span className="text-red" title={t.shell.syncFailed(syncError)}>
+              {t.shell.offline}
             </span>
           )}
           <button className="btn btn-danger" onClick={() => void logout()}>
-            sair
+            {t.shell.logout}
           </button>
         </div>
       </header>

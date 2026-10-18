@@ -1,5 +1,6 @@
 "use client";
 
+import { t } from "@/i18n";
 import { LOBBY_FLOORS, floorKind, floorTitle, hasDv, layoutFloors } from "@/lib/rpg";
 import type { NetArchitecture, NetFloor } from "@/lib/types";
 import { Icon, type IconName } from "../Pixel";
@@ -60,7 +61,7 @@ export function NetMap({
           <span className={mode === "tv" ? "text-lg" : "text-xs"}>
             F<span className="text-fg">{String(i + 1).padStart(2, "0")}</span>
           </span>
-          {i < LOBBY_FLOORS && <span className="text-[10px] uppercase tracking-wider">lobby</span>}
+          {i < LOBBY_FLOORS && <span className="text-[10px] uppercase tracking-wider">{t.net.map.lobby}</span>}
         </div>
       ))}
 
@@ -132,7 +133,7 @@ function FloorNode({
       type={onSelect ? "button" : undefined}
       onClick={onSelect ? () => onSelect(floor.id) : undefined}
       aria-pressed={onSelect ? selected : undefined}
-      aria-label={`andar ${depth}: ${kind.label}${floor.label ? `, ${floor.label}` : ""}`}
+      aria-label={t.net.map.floorAria(depth, kind.label, floor.label)}
       className={`absolute flex flex-col border-2 bg-panel text-left ${border} ${hidden ? "border-dashed" : ""} ${
         onSelect ? "hover:border-fg" : ""
       }`}
@@ -143,11 +144,9 @@ function FloorNode({
           hidden ? "border-dashed" : ""
         } ${ice ? "border-red/40 text-red" : "border-line text-net"}`}
       >
-        <span className="truncate">
-          F{String(depth).padStart(2, "0")} · {kind.tag}
-        </span>
-        {mode === "gm" && hasDv(floor) && <span className="shrink-0 text-fg">DV{floor.dv}</span>}
-        {hidden && <span className="shrink-0 normal-case text-dim">oculto</span>}
+        <span className="truncate">{t.net.map.header(depth, kind.tag)}</span>
+        {mode === "gm" && hasDv(floor) && <span className="shrink-0 text-fg">{t.net.dv(floor.dv)}</span>}
+        {hidden && <span className="shrink-0 normal-case text-dim">{t.net.builder.floor.hidden}</span>}
       </span>
       <span className={`flex min-h-0 flex-1 items-center gap-2 px-2 ${hidden ? "opacity-50" : ""}`}>
         <span className={ice ? "text-red" : "text-net"}>
@@ -161,7 +160,7 @@ function FloorNode({
             mode === "tv" ? "text-sm" : "text-[10px]"
           }`}
         >
-          ◆ netrunner
+          {t.net.map.runner}
         </span>
       )}
     </Tag>

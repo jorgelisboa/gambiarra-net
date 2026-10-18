@@ -1,3 +1,4 @@
+import { t } from "../../../i18n";
 import type { CyberCategory, CyberwareDef, HlDice, HostKind, InstallPlace } from "./types";
 
 const cw = (
@@ -90,40 +91,40 @@ const plus2 = (when: string | undefined, ...skills: string[]) =>
 /** O catálogo de cyberware do livro (Night Market, págs. 358-367). */
 export const CYBERWARE: CyberwareDef[] = [
   /* ---------- fashionware: 7 slots, sem peça de base ---------- */
-  fashion("biomonitor", "Biomonitor", "monitor de sinais vitais", 100, 358, "implante sob a pele que mostra pulso, temperatura, respiração e glicose. liga no agent."),
-  fashion("chemskin", "Chemskin", "pele tingida", 100, 358, "pigmento na pele que muda a cor de vez. com techhair: +2 em Personal Grooming (uma vez só)."),
+  fashion("biomonitor", "Biomonitor", "monitor de sinais vitais", 100, 358, "implante sob a pele que mostra pulso, temperatura, respiração e glicose. liga no agente."),
+  fashion("chemskin", "Chemskin", "pele tingida", 100, 358, "pigmento na pele que muda a cor de vez. com cabelo de luz: +2 em cuidados pessoais (uma vez só)."),
   fashion("empThreading", "EMP Threading", "fios anti-EMP", 10, 358, "linhas prateadas em circuito pelo corpo. dizem que protegem de EMP; não protegem. é moda."),
-  fashion("lightTattoo", "Light Tattoo", "tatuagem de luz", 100, 358, "tatuagem colorida projetada sob a pele. com 3 ou mais: +2 em Wardrobe & Style (uma vez só)."),
+  fashion("lightTattoo", "Light Tattoo", "tatuagem de luz", 100, 358, "tatuagem colorida projetada sob a pele. com 3 ou mais: +2 em moda e estilo (uma vez só)."),
   fashion("shiftTacts", "Shift Tacts", "lentes de cor", 100, 358, "lentes implantadas que mudam de cor. desliga quando quiser, sem ação."),
   fashion("skinwatch", "Skinwatch", "relógio de pele", 100, 359, "relógio de LED sob a pele com hora e data."),
-  fashion("techhair", "Techhair", "cabelo de luz", 100, 359, "cabelo artificial que emite luz e cor. com chemskin: +2 em Personal Grooming (uma vez só)."),
+  fashion("techhair", "Techhair", "cabelo de luz", 100, 359, "cabelo artificial que emite luz e cor. com pele tingida: +2 em cuidados pessoais (uma vez só)."),
 
   /* ---------- neuralware: neural link com 5 slots ---------- */
-  cw("neuralLink", "Neural Link", "neural link", "neuralware", "clinic", 500, 7, "2d6", ["body"], 359, "sistema nervoso artificial. base do neuralware e do subdermal grip, com 5 slots.", {
+  cw("neuralLink", "Neural Link", "link neural", "neuralware", "clinic", 500, 7, "2d6", ["body"], 359, "sistema nervoso artificial. base dos implantes neurais e da placa de smartgun, com 5 slots.", {
     provides: { kind: "neural", slots: 5 },
     unique: "neuralLink",
     effects: { netrun: "neuralLink" },
   }),
-  neural("braindanceRecorder", "Braindance Recorder", "gravador de braindance", 7, "2d6", "grava a tua experiência em braindance num memory chip ou no agent."),
-  neural("chipwareSocket", "Chipware Socket", "soquete de chip", 7, "2d6", "soquete na nuca pra um chip. trocar o chip é uma ação, e o chip não ocupa slot do neural link.", {
+  neural("braindanceRecorder", "Braindance Recorder", "gravador de braindance", 7, "2d6", "grava a tua experiência em braindance num chip de memória ou no agente."),
+  neural("chipwareSocket", "Chipware Socket", "soquete de chip", 7, "2d6", "soquete na nuca pra um chip. trocar o chip é uma ação, e o chip não ocupa slot do link neural.", {
     provides: { kind: "socket", slots: 1 },
   }),
-  neural("interfacePlugs", "Interface Plugs", "interface plugs", 7, "2d6", "plugues no pulso ou na cabeça: smartgun, cyberdeck, máquina pesada e veículo sem usar as mãos.", {
+  neural("interfacePlugs", "Interface Plugs", "plugues de interface", 7, "2d6", "plugues no pulso ou na cabeça: smartgun, cyberdeck, máquina pesada e veículo sem usar as mãos.", {
     effects: { netrun: "plugs" },
   }),
-  neural("kerenzikov", "Kerenzikov", "kerenzikov", 14, "4d6", "speedware sempre ligado: +2 na iniciativa. só um speedware por vez.", {
+  neural("kerenzikov", "Kerenzikov", "kerenzikov", 14, "4d6", "acelerador neural sempre ligado: +2 na iniciativa. só um por vez.", {
     unique: "speedware",
     effects: { initiative: 2 },
   }),
-  neural("sandevistan", "Sandevistan", "sandevistan", 7, "2d6", "speedware: ligar é uma ação e dá +3 nas rolagens de iniciativa por 1 minuto. depois, 1 hora pra ligar de novo. só um speedware por vez.", {
+  neural("sandevistan", "Sandevistan", "sandevistan", 7, "2d6", "acelerador neural: ligar é uma ação e dá +3 nas rolagens de iniciativa por 1 minuto. depois, 1 hora pra ligar de novo. só um por vez.", {
     unique: "speedware",
     effects: { activeInitiative: 3 },
   }),
 
   /* ---------- chipware: vai num chipware socket ---------- */
   chip("chemicalAnalyzer", "Chemical Analyzer", "analisador químico", 500, 3, "1d6", 359, "testa uma substância numa ação e diz a composição exata."),
-  chip("memoryChip", "Memory Chip", "memory chip", 10, 0, "0", 359, "chip de dados padrão: o teu cyberware guarda e lê dados nele."),
-  chip("olfactoryBoost", "Olfactory Boost", "olfato turbinado", 100, 7, "2d6", 359, "olfato turbinado: dá pra rastrear pelo cheiro com Tracking."),
+  chip("memoryChip", "Memory Chip", "chip de memória", 10, 0, "0", 359, "chip de dados padrão: o teu cyberware guarda e lê dados nele."),
+  chip("olfactoryBoost", "Olfactory Boost", "olfato turbinado", 100, 7, "2d6", 359, "olfato turbinado: dá pra seguir rastro pelo cheiro com a perícia rastrear."),
   chip("painEditor", "Pain Editor", "editor de dor", 1000, 14, "4d6", 360, "desliga a dor: ignora a penalidade de gravemente ferido.", {
     effects: { ignoreSerious: true },
   }),
@@ -131,18 +132,18 @@ export const CYBERWARE: CyberwareDef[] = [
   chip("tactileBoost", "Tactile Boost", "tato turbinado", 100, 7, "2d6", 360, "com a mão numa superfície, sente movimento a até 20m. essa mão não faz mais nada."),
 
   /* ---------- cyberoptics: cybereye com 3 slots ---------- */
-  cw("cybereye", "Cybereye", "olho cibernético", "cyberoptics", "clinic", 100, 7, "2d6", ["body"], 360, "olho artificial com 3 slots. algumas opções vão em par: uma em cada olho, com a HL de cada.", {
+  cw("cybereye", "Cybereye", "olho cibernético", "cyberoptics", "clinic", 100, 7, "2d6", ["body"], 360, "olho artificial com 3 slots. algumas opções vão em par: uma em cada olho, com a perda de humanidade de cada.", {
     provides: { kind: "eye", slots: 3 },
     max: { base: 2, plus: { ref: "multiOpticMount", add: 5 } },
   }),
-  eye("antiDazzle", "Anti-Dazzle", "anti-ofuscamento", "mall", 100, 2, "1d6/2", 360, "imune a cegueira por clarão, como o de uma flashbang. vai em par.", { paired: true }),
+  eye("antiDazzle", "Anti-Dazzle", "anti-ofuscamento", "mall", 100, 2, "1d6/2", 360, "imune a cegueira por clarão, como o de uma granada de luz e som. vai em par.", { paired: true }),
   eye("chyron", "Chyron", "chyron", "mall", 100, 2, "1d6/2", 360, "projeta uma telinha no canto da visão com mensagens e vídeo do teu cyberware."),
   eye("colorShift", "Color Shift", "olho de cor", "mall", 100, 2, "1d6/2", 360, "muda a cor e o padrão do olho numa ação."),
   eye("eyeDartgun", "Dartgun", "lança-dardos no olho", "clinic", 500, 2, "1d6/2", 360, "lança-dardos de um tiro só, escondido no olho. ocupa os 3 slots.", {
     slots: 3,
     effects: { weapon: "dartgun" },
   }),
-  eye("imageEnhance", "Image Enhance", "realce de imagem", "mall", 500, 3, "1d6", 360, "+2 em Perception, Lip Reading e Conceal/Reveal Object quando o teste envolve visão. vai em par.", {
+  eye("imageEnhance", "Image Enhance", "realce de imagem", "mall", 500, 3, "1d6", 360, "+2 em percepção, leitura labial e ocultar/revelar objeto quando o teste envolve visão. vai em par.", {
     paired: true,
     effects: { skills: plus2("envolver visão", "perception", "lipReading", "concealRevealObject") },
   }),
@@ -151,40 +152,40 @@ export const CYBERWARE: CyberwareDef[] = [
     slots: 2,
   }),
   eye("microOptics", "MicroOptics", "microscópio", "clinic", 100, 2, "1d6/2", 361, "microscópio no olho, até 400x."),
-  eye("microVideo", "MicroVideo", "câmera no olho", "clinic", 500, 2, "1d6/2", 361, "câmera no olho que grava vídeo e áudio num memory chip ou no agent. ocupa 2 slots.", { slots: 2 }),
+  eye("microVideo", "MicroVideo", "câmera no olho", "clinic", 500, 2, "1d6/2", 361, "câmera no olho que grava vídeo e áudio num chip de memória ou no agente. ocupa 2 slots.", { slots: 2 }),
   eye("radiationDetector", "Radiation Detector", "detector de radiação", "clinic", 1000, 3, "1d6", 361, "mostra a radiação a até 100m como um brilho azul em cima da fonte."),
   eye("targetingScope", "Targeting Scope", "mira no olho", "clinic", 500, 3, "1d6", 361, "+1 no tiro mirado. outra cópia não soma."),
-  eye("teleOptics", "TeleOptics", "teleobjetiva", "clinic", 500, 3, "1d6", 361, "enxerga detalhe a até 800m. +1 no tiro único ou mirado contra alvo a 51m ou mais. não soma com mira de sniper."),
+  eye("teleOptics", "TeleOptics", "teleobjetiva", "clinic", 500, 3, "1d6", 361, "enxerga detalhe a até 800m. +1 no tiro único ou mirado contra alvo a 51m ou mais. não soma com mira de rifle de precisão."),
   eye("virtuality", "Virtuality", "virtualidade no olho", "mall", 100, 2, "1d6/2", 361, "projeta o ciberespaço por cima da visão: os óculos de virtualidade sempre no rosto. vai em par.", {
     paired: true,
     effects: { netrun: "virtuality" },
   }),
 
   /* ---------- cyberaudio: suite com 3 slots ---------- */
-  cw("cyberaudioSuite", "Cyberaudio Suite", "cyberaudio suite", "cyberaudio", "clinic", 500, 7, "2d6", ["body"], 361, "instalada dentro do crânio, sem aparecer. 3 slots (8 com sensor array). só uma.", {
+  cw("cyberaudioSuite", "Cyberaudio Suite", "suíte de áudio cibernético", "cyberaudio", "clinic", 500, 7, "2d6", ["body"], 361, "instalada dentro do crânio, sem aparecer. 3 slots (8 com antenas). só uma.", {
     provides: { kind: "audio", slots: 3 },
     unique: "cyberaudioSuite",
   }),
-  audio("amplifiedHearing", "Amplified Hearing", "audição amplificada", "mall", 100, 3, "1d6", 361, "+2 em Perception quando o teste envolve audição. outra cópia não soma.", {
+  audio("amplifiedHearing", "Amplified Hearing", "audição amplificada", "mall", 100, 3, "1d6", 361, "+2 em percepção quando o teste envolve audição. outra cópia não soma.", {
     effects: { skills: plus2("envolver audição", "perception") },
   }),
-  audio("audioRecorder", "Audio Recorder", "gravador de áudio", "clinic", 100, 2, "1d6/2", 361, "grava áudio num memory chip ou no agent."),
+  audio("audioRecorder", "Audio Recorder", "gravador de áudio", "clinic", 100, 2, "1d6/2", 361, "grava áudio num chip de memória ou no agente."),
   audio("bugDetector", "Bug Detector", "detector de escuta", "mall", 100, 2, "1d6/2", 361, "apita quando você chega a até 2m de grampo ou escuta."),
   audio("homingTracer", "Homing Tracer", "rastreador", "clinic", 100, 2, "1d6/2", 361, "segue um rastreador a até 1 milha. vem com um do tamanho de um botão; reposição 50eb."),
-  audio("internalAgent", "Internal Agent", "agent interno", "mall", 100, 3, "1d6", 362, "agent completo por comando de voz (imagem só com chyron ou numa tela). +2 em Library Search, e em Wardrobe & Style vestindo o que ele sugere.", {
-    effects: { skills: [{ skill: "librarySearch", value: 2 }, ...plus2("vestir o que o agent sugere", "wardrobeStyle")] },
+  audio("internalAgent", "Internal Agent", "agente interno", "mall", 100, 3, "1d6", 362, "agente completo por comando de voz (imagem só com chyron ou numa tela). +2 em pesquisa, e em moda e estilo vestindo o que ele sugere.", {
+    effects: { skills: [{ skill: "librarySearch", value: 2 }, ...plus2("vestir o que o agente sugere", "wardrobeStyle")] },
   }),
-  audio("levelDamper", "Level Damper", "amortecedor de som", "mall", 100, 2, "1d6/2", 362, "imune a surdez por barulho, como o de uma flashbang."),
+  audio("levelDamper", "Level Damper", "amortecedor de som", "mall", 100, 2, "1d6/2", 362, "imune a surdez por barulho, como o de uma granada de luz e som."),
   audio("radioCommunicator", "Radio Communicator", "rádio", "mall", 100, 2, "1d6/2", 362, "rádio com alcance de 1 milha."),
-  audio("radioScanner", "Radio Scanner/Music Player", "scanner de rádio", "clinic", 50, 2, "1d6/2", 362, "numa ação, varre as bandas de rádio em uso a 1 milha. toca música do data pool ou de um memory chip."),
+  audio("radioScanner", "Radio Scanner/Music Player", "scanner de rádio", "clinic", 50, 2, "1d6/2", 362, "numa ação, varre as bandas de rádio em uso a 1 milha. toca música do data pool ou de um chip de memória."),
   audio("radarDetector", "Radar Detector", "detector de radar", "clinic", 500, 2, "1d6/2", 362, "apita com radar ativo a até 100m."),
-  audio("scrambler", "Scrambler/Descrambler", "embaralhador", "mall", 100, 2, "1d6/2", 362, "embaralha o que você transmite; o descrambler vem junto."),
-  audio("voiceStressAnalyzer", "Voice Stress Analyzer", "analisador de voz", "mall", 100, 3, "1d6", 362, "+2 em Human Perception e Interrogation. numa ação liga o detector de mentira por 1 minuto (o mestre rola escondido e ele apita). outra cópia não soma.", {
+  audio("scrambler", "Scrambler/Descrambler", "embaralhador", "mall", 100, 2, "1d6/2", 362, "embaralha o que você transmite; o desembaralhador vem junto."),
+  audio("voiceStressAnalyzer", "Voice Stress Analyzer", "analisador de voz", "mall", 100, 3, "1d6", 362, "+2 em percepção humana e interrogatório. numa ação liga o detector de mentira por 1 minuto (o mestre rola escondido e ele apita). outra cópia não soma.", {
     effects: { skills: plus2(undefined, "humanPerception", "interrogation") },
   }),
 
   /* ---------- internal body: 7 slots ---------- */
-  internal("audioVox", "AudioVox", "sintetizador de voz", "clinic", 500, 3, "1d6", 362, "+2 em Acting, e em Play Instrument cantando. outra cópia não soma.", {
+  internal("audioVox", "AudioVox", "sintetizador de voz", "clinic", 500, 3, "1d6", 362, "+2 em atuação, e em tocar instrumento cantando. outra cópia não soma.", {
     effects: { skills: [{ skill: "acting", value: 2 }, ...plus2("cantar", "playInstrument")] },
   }),
   internal("contraceptiveImplant", "Contraceptive Implant", "implante contraceptivo", "mall", 10, 0, "0", 362, "evita gravidez indesejada."),
@@ -193,7 +194,7 @@ export const CYBERWARE: CyberwareDef[] = [
     effects: { weapon: "veryHeavyMelee" },
   }),
   internal("gills", "Gills", "guelras", "hospital", 1000, 7, "2d6", 363, "respira debaixo d'água."),
-  internal("graftedMuscle", "Grafted Muscle and Bone Lace", "músculo enxertado", "hospital", 1000, 14, "4d6", 363, "BODY +2, até 10. muda o HP e o death save.", {
+  internal("graftedMuscle", "Grafted Muscle and Bone Lace", "músculo enxertado", "hospital", 1000, 14, "4d6", 363, "BODY +2, até 10. muda o HP e o teste de morte.", {
     effects: { body: { add: 2, max: 10 } },
   }),
   internal("independentAirSupply", "Independent Air Supply", "ar independente", "hospital", 1000, 2, "1d6/2", 363, "30 minutos de ar. recarrega em 1 hora no ar ambiente, ou troca o tanque (50eb) numa ação."),
@@ -201,7 +202,7 @@ export const CYBERWARE: CyberwareDef[] = [
   internal("mrStudd", "Mr. Studd Sexual Implant", "implante sexual", "clinic", 100, 7, "2d6", 363, "implante sexual."),
   internal("nasalFilters", "Nasal Filters", "filtros nasais", "clinic", 100, 2, "1d6/2", 363, "imune a gás tóxico, fumaça e tudo que se respira. desliga quando quiser, sem ação."),
   internal("radarSonar", "Radar/Sonar Implant", "radar e sonar", "clinic", 1000, 7, "2d6", 363, "varre 50m em volta, debaixo d'água também, e avisa de cada coisa nova se mexendo. não vê atrás de cobertura."),
-  internal("toxinBinders", "Toxin Binders", "ligantes de toxina", "clinic", 100, 2, "1d6/2", 363, "+2 em Resist Torture/Drugs. outra cópia não soma.", {
+  internal("toxinBinders", "Toxin Binders", "ligantes de toxina", "clinic", 100, 2, "1d6/2", 363, "+2 em resistir a tortura/drogas. outra cópia não soma.", {
     effects: { skills: plus2(undefined, "resistTortureDrugs") },
   }),
   internal("vampyres", "Vampyres", "vampyres", "clinic", 500, 14, "4d6", 363, "presas: arma branca leve de qualidade excelente (1d6, ROF 2), escondida sem teste. guarda um frasco de veneno ou biotoxina no céu da boca.", {
@@ -227,11 +228,11 @@ export const CYBERWARE: CyberwareDef[] = [
   limb("bigKnucks", "Big Knucks", "soco blindado", "clinic", 100, 3, "1d6", ["arm", "meatArm"], 364, "nós dos dedos blindados: arma branca média (2d6, ROF 2), escondida sem teste. pode ir sozinha num braço de carne.", {
     effects: { weapon: "mediumMelee" },
   }),
-  limb("armCyberdeck", "Cyberdeck", "cyberdeck no braço", "clinic", 500, 3, "1d6", ["arm"], 364, "o teu cyberdeck dentro do braço, com +1 slot. o deck é teu, entregue na instalação. ainda pede neural link e interface plugs. ocupa 3 slots.", {
+  limb("armCyberdeck", "Cyberdeck", "cyberdeck no braço", "clinic", 500, 3, "1d6", ["arm"], 364, "o teu cyberdeck dentro do braço, com +1 slot. o deck é teu, entregue na instalação. ainda pede link neural e plugues de interface. ocupa 3 slots.", {
     slots: 3,
   }),
   limb("grappleHand", "Grapple Hand", "mão gancho", "clinic", 100, 3, "1d6", ["arm"], 365, "numa ação, dispara um gancho que prende em cobertura grossa a até 30m. aguenta 2× o teu peso."),
-  limb("armMedscanner", "Medscanner", "medscanner no braço", "clinic", 500, 7, "2d6", ["arm"], 365, "+2 em First Aid e Paramedic. ocupa 2 slots. outra cópia não soma.", {
+  limb("armMedscanner", "Medscanner", "scanner médico no braço", "clinic", 500, 7, "2d6", ["arm"], 365, "+2 em primeiros socorros e paramédico. ocupa 2 slots. outra cópia não soma.", {
     slots: 2,
     effects: { skills: plus2(undefined, "firstAid", "paramedic") },
   }),
@@ -262,17 +263,17 @@ export const CYBERWARE: CyberwareDef[] = [
   limb("sliceNDice", "Slice 'N Dice", "slice 'n dice", "clinic", 500, 3, "1d6", ["arm", "meatArm"], 366, "chicote de monofilamento no polegar: arma branca média (2d6, ROF 2), escondida sem teste. pode ir sozinho num braço de carne.", {
     effects: { weapon: "mediumMelee" },
   }),
-  limb("subdermalGrip", "Subdermal Grip", "placa de smartgun", "clinic", 100, 3, "1d6", ["arm", "meatArm"], 366, "placa na palma pra usar smartgun sem interface plugs. pede neural link e ocupa um slot dele. pode ir sozinha num braço de carne.", {
+  limb("subdermalGrip", "Subdermal Grip", "placa de smartgun", "clinic", 100, 3, "1d6", ["arm", "meatArm"], 366, "placa na palma pra usar smartgun sem plugues de interface. pede link neural e ocupa um slot dele. pode ir sozinha num braço de carne.", {
     requires: ["neuralLink"],
     alsoTakes: "neural",
   }),
-  limb("techscannerArm", "Techscanner", "techscanner no braço", "clinic", 500, 7, "2d6", ["arm"], 366, "+2 em Basic Tech, Cybertech, Electronics/Security Tech, Weaponstech e nas Vehicle Tech. ocupa 2 slots. outra cópia não soma.", {
+  limb("techscannerArm", "Techscanner", "scanner técnico no braço", "clinic", 500, 7, "2d6", ["arm"], 366, "+2 em técnica básica, cibertecnologia, eletrônica/segurança, armeiro e nas mecânicas de veículo. ocupa 2 slots. outra cópia não soma.", {
     slots: 2,
     effects: {
       skills: plus2(undefined, "basicTech", "cybertech", "landVehicleTech", "seaVehicleTech", "airVehicleTech", "electronicsSecurityTech", "weaponstech"),
     },
   }),
-  limb("toolHand", "Tool Hand", "mão de ferramentas", "clinic", 100, 3, "1d6", ["arm", "meatArm"], 366, "dedos com chave de fenda, chave inglesa e furadeira: o techtool sempre na mão. pode ir sozinha num braço de carne."),
+  limb("toolHand", "Tool Hand", "mão de ferramentas", "clinic", 100, 3, "1d6", ["arm", "meatArm"], 366, "dedos com chave de fenda, chave inglesa e furadeira: a multiferramenta sempre na mão. pode ir sozinha num braço de carne."),
   limb("wolvers", "Wolvers", "wolvers", "clinic", 500, 7, "2d6", ["arm", "meatArm"], 366, "garras de carbovidro nos nós dos dedos: arma branca pesada (3d6, ROF 2), escondida sem teste. pode ir sozinha num braço de carne.", {
     effects: { weapon: "heavyMelee" },
   }),
@@ -294,28 +295,28 @@ export const CYBERWARE: CyberwareDef[] = [
   limb("hardenedShielding", "Hardened Shielding", "blindagem", "clinic", 1000, 3, "1d6", ["arm", "leg"], 367, "o membro e as opções dele não caem com EMP nem com programa que não é black ICE."),
   limb("plasticCovering", "Plastic Covering", "capa plástica", "mall", 100, 0, "0", ["arm", "leg"], 367, "capa de plástico pro membro, em várias cores e padrões. não ocupa slot.", { slots: 0 }),
   limb("realskinnCovering", "Realskinn Covering", "capa realskinn", "mall", 500, 0, "0", ["arm", "leg"], 367, "pele artificial por cima do membro. não ocupa slot.", { slots: 0 }),
-  limb("superchromeCovering", "Superchrome Covering", "capa superchrome", "mall", 1000, 0, "0", ["arm", "leg"], 367, "cromado brilhante: +2 em Wardrobe & Style (uma vez só). não ocupa slot.", {
+  limb("superchromeCovering", "Superchrome Covering", "capa superchrome", "mall", 1000, 0, "0", ["arm", "leg"], 367, "cromado brilhante: +2 em moda e estilo (uma vez só). não ocupa slot.", {
     slots: 0,
     effects: { skills: plus2(undefined, "wardrobeStyle") },
   }),
 
   /* ---------- borgware: perde 4 de humanidade máxima em vez de 2 ---------- */
-  borg("artificialShoulderMount", "Artificial Shoulder Mount", "ombro extra", "hospital", 1000, "mais 2 cyberarms embaixo do primeiro par (vendidos à parte)."),
-  borg("linearFrameSigma", "Implanted Linear Frame Sigma", "linear frame σ", "hospital", 1000, "esqueleto reforçado: BODY vira 12, e muda o HP e o death save. pede BODY 6 e um grafted muscle.", {
+  borg("artificialShoulderMount", "Artificial Shoulder Mount", "ombro extra", "hospital", 1000, "mais 2 braços cibernéticos embaixo do primeiro par (vendidos à parte)."),
+  borg("linearFrameSigma", "Implanted Linear Frame Sigma", "estrutura linear σ", "hospital", 1000, "esqueleto reforçado: BODY vira 12, e muda o HP e o teste de morte. pede BODY 6 e um músculo enxertado.", {
     requires: ["graftedMuscle"],
     minBody: 6,
     unique: "linearFrame",
     effects: { body: { set: 12, max: 12 } },
   }),
-  borg("linearFrameBeta", "Implanted Linear Frame Beta", "linear frame β", "hospital", 5000, "esqueleto muito reforçado: BODY vira 14, e muda o HP e o death save. pede BODY 8 e dois grafted muscle.", {
+  borg("linearFrameBeta", "Implanted Linear Frame Beta", "estrutura linear β", "hospital", 5000, "esqueleto muito reforçado: BODY vira 14, e muda o HP e o teste de morte. pede BODY 8 e dois músculos enxertados.", {
     requires: ["graftedMuscle"],
     requiresCount: 2,
     minBody: 8,
     unique: "linearFrame",
     effects: { body: { set: 14, max: 14 } },
   }),
-  borg("multiOpticMount", "MultiOptic Mount", "suporte multióptico", "hospital", 1000, "mais 5 cybereyes (vendidos e instalados à parte)."),
-  borg("sensorArray", "Sensor Array", "antenas", "clinic", 1000, "antenas na cabeça: +5 slots na cyberaudio suite. não ocupa slot dela.", {
+  borg("multiOpticMount", "MultiOptic Mount", "suporte multióptico", "hospital", 1000, "mais 5 olhos cibernéticos (vendidos e instalados à parte)."),
+  borg("sensorArray", "Sensor Array", "antenas", "clinic", 1000, "antenas na cabeça: +5 slots na suíte de áudio cibernético. não ocupa slot dela.", {
     requires: ["cyberaudioSuite"],
   }),
 ];
@@ -324,14 +325,20 @@ const BY_ID = new Map(CYBERWARE.map((c) => [c.id, c]));
 
 export const cyberDef = (id: string | null | undefined) => (id ? BY_ID.get(id) : undefined);
 
-export const CYBER_CATEGORIES: { id: CyberCategory; label: string; base: string }[] = [
-  { id: "fashionware", label: "fashionware", base: "7 slots, sem peça de base" },
-  { id: "neuralware", label: "neuralware", base: "neural link: 5 slots" },
-  { id: "chipware", label: "chipware", base: "um chip por chipware socket" },
-  { id: "cyberoptics", label: "cyberoptics", base: "cybereye: 3 slots cada" },
-  { id: "cyberaudio", label: "cyberaudio", base: "cyberaudio suite: 3 slots" },
-  { id: "internal", label: "corpo · interno", base: "7 slots, sem peça de base" },
-  { id: "external", label: "corpo · externo", base: "7 slots, sem peça de base" },
-  { id: "cyberlimb", label: "cyberlimbs", base: "cyberarm: 4 slots · cyberleg: 3 slots" },
-  { id: "borgware", label: "borgware", base: "substitui boa parte do corpo" },
+/** Os grupos do livro, na ordem das abas da loja. Rótulos e dicas em t.cyber.categories. */
+const CATEGORY_ORDER: CyberCategory[] = [
+  "fashionware",
+  "neuralware",
+  "chipware",
+  "cyberoptics",
+  "cyberaudio",
+  "internal",
+  "external",
+  "cyberlimb",
+  "borgware",
 ];
+
+export const CYBER_CATEGORIES: { id: CyberCategory; label: string; en: string; base: string }[] = CATEGORY_ORDER.map((id) => ({
+  id,
+  ...t.cyber.categories[id],
+}));

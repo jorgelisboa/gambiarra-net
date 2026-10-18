@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { gameName, t } from "@/i18n";
 import {
   THERAPIES,
   applyTherapy,
@@ -25,6 +26,7 @@ import {
   type TherapyDef,
 } from "@/lib/rpg";
 import type { Character, CyberwareItem } from "@/lib/types";
+import { BookName } from "../BookName";
 import { CyberKitPicker, hlLabel } from "./CyberKitPicker";
 import { CyberShop } from "./CyberShop";
 
@@ -77,7 +79,7 @@ export function CyberSheet({ ch, save }: { ch: Character; save: Save }) {
 
       <div className="flex flex-wrap items-center gap-2">
         <button className={`btn ${shop ? "btn-primary" : ""}`} aria-expanded={shop} onClick={() => setShop(!shop)}>
-          loja de cyberware
+          {t.cyber.sheet.shop}
         </button>
       </div>
 
@@ -85,19 +87,19 @@ export function CyberSheet({ ch, save }: { ch: Character; save: Save }) {
 
       {ch.cyberware.length === 0 && (
         <section className="box min-w-0 space-y-3 p-3">
-          <h3 className="font-pixel text-xl">sem cyberware ainda</h3>
+          <h3 className="font-pixel text-xl">{t.cyber.sheet.none}</h3>
           <CyberKitPicker role={ch.role} picks={picks} onPicks={setPicks} emp={ch.stats.EMP} />
           <div className="flex flex-wrap items-center gap-2">
             <button className="btn btn-primary" onClick={() => save(installKit(ch, ch.role, picks))}>
-              instalar o cyberware inicial ({ch.role.toLowerCase()})
+              {t.cyber.sheet.installKit(ch.role.toLowerCase())}
             </button>
           </div>
-          <p className="text-xs text-dim">o kit do livro usa a perda de humanidade fixa, como na criação.</p>
+          <p className="text-xs text-dim">{t.cyber.sheet.kitNote}</p>
         </section>
       )}
 
       {issues.length > 0 && (
-        <ul className={`space-y-0.5 border-l-2 border-[#ffb000] pl-2 text-xs ${AMBER}`} aria-label="avisos do cyberware">
+        <ul className={`space-y-0.5 border-l-2 border-[#ffb000] pl-2 text-xs ${AMBER}`} aria-label={t.cyber.sheet.warnings}>
           {issues.map((msg, i) => (
             <li key={`${i}-${msg}`}>{msg}</li>
           ))}
@@ -110,13 +112,17 @@ export function CyberSheet({ ch, save }: { ch: Character; save: Save }) {
 
       {idle.length > 0 && (
         <p className="text-xs text-dim">
-          livres: {idle.map((s) => `${s.label.replace(/^corpo · /, "")} ${s.slots - s.used}/${s.slots}`).join(" · ")}
+          {t.cyber.sheet.free(
+            idle
+              .map((s) => t.cyber.sheet.freePart(t.cyber.hosts.poolShort[s.kind as keyof typeof t.cyber.hosts.poolShort], s.slots - s.used, s.slots))
+              .join(t.common.sep),
+          )}
         </p>
       )}
 
       {stored.length > 0 && (
         <section className="box min-w-0 space-y-2 p-3">
-          <h3 className="label">chips guardados</h3>
+          <h3 className="label">{t.cyber.sheet.stored}</h3>
           <ul className="space-y-2">
             {stored.map((item) => (
               <PieceRow key={item.id} ch={ch} save={save} item={item} body={body} sockets={freeSockets} />
@@ -141,8 +147,8 @@ function Humanity({ ch, save }: { ch: Character; save: Save }) {
   const psy = cyberpsychosis(ch);
   const lost = ch.cyberware.reduce((a, it) => a + it.hl, 0);
 
-  const t = THERAPIES.find((x) => x.id === tid) ?? THERAPIES[0];
-  const pay = who === "clinic" ? t.cost : who === "medtech" ? t.materials : 0;
+  const th = THERAPIES.find((x) => x.id === tid) ?? THERAPIES[0];
+  const pay = who === "clinic" ? th.cost : who === "medtech" ? th.materials : 0;
   const atCap = ch.humanity >= cap;
   const broke = pay > ch.money;
 
@@ -151,7 +157,7 @@ function Humanity({ ch, save }: { ch: Character; save: Save }) {
     setGain(rollDice(next.dice));
   };
   const toggle = () => {
-    if (!therapy) setGain(rollDice(t.dice));
+    if (!therapy) setGain(rollDice(th.dice));
     setTherapy(!therapy);
   };
   const apply = () => {
@@ -163,30 +169,30 @@ function Humanity({ ch, save }: { ch: Character; save: Save }) {
     <section className="box bg-raise min-w-0 space-y-2 p-3">
       <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1">
         <p>
-          humanidade <span className="font-mono text-lg font-bold text-net">{ch.humanity}</span>
+          {t.cyber.humanity.label} <span className="font-mono text-lg font-bold text-net">{ch.humanity}</span>
           <span className="font-mono text-dim">/{max}</span>
         </p>
         <p>
-          teto <span className="font-mono font-bold">{cap}</span>
+          {t.cyber.humanity.cap} <span className="font-mono font-bold">{cap}</span>
         </p>
         <p>
-          emp em uso <span className="font-mono font-bold">{emp}</span>
+          {t.cyber.humanity.empInUse} <span className="font-mono font-bold">{emp}</span>
           <span className="font-mono text-dim">/{ch.stats.EMP}</span>
         </p>
         <button className="btn ml-auto" aria-expanded={therapy} onClick={toggle}>
-          terapia
+          {t.cyber.humanity.therapy}
         </button>
       </div>
       <p className="text-xs">
         <span className={psychosisTone(psy.level)}>{psy.label}</span> <span className="text-dim">{psy.text}</span>
       </p>
       <p className="text-xs text-dim">
-        perdida no cyberware: <span className="font-mono">{lost}</span>
+        {t.cyber.humanity.lostInCyber} <span className="font-mono">{lost}</span>
       </p>
 
       {therapy && (
         <div className="space-y-3 border-t-2 border-line pt-3">
-          <div role="group" aria-label="tipo de terapia" className="flex flex-wrap gap-1">
+          <div role="group" aria-label={t.cyber.humanity.therapyKind} className="flex flex-wrap gap-1">
             {THERAPIES.map((x) => (
               <button
                 key={x.id}
@@ -196,17 +202,21 @@ function Humanity({ ch, save }: { ch: Character; save: Save }) {
                   x.id === tid ? "border-red text-red" : "border-line text-dim hover:text-fg"
                 }`}
               >
-                {x.name} · <span className="font-mono">{x.dice}</span> · {fmtEb(x.cost)}
+                {x.name}
+                {t.common.sep}
+                <span className="font-mono">{x.dice}</span>
+                {t.common.sep}
+                {fmtEb(x.cost)}
               </button>
             ))}
           </div>
 
-          <div role="group" aria-label="quem faz a terapia" className="flex flex-wrap gap-1">
+          <div role="group" aria-label={t.cyber.humanity.therapyWho} className="flex flex-wrap gap-1">
             {(
               [
-                ["clinic", `clínica · ${fmtEb(t.cost)}`],
-                ["medtech", `medtech da mesa · materiais ${fmtEb(t.materials)} · Medical Tech DV${t.dv}`],
-                ["free", "sem custo"],
+                ["clinic", t.cyber.humanity.whoClinic(fmtEb(th.cost))],
+                ["medtech", t.cyber.humanity.whoMedtech(fmtEb(th.materials), th.dv)],
+                ["free", t.cyber.humanity.whoFree],
               ] as const
             ).map(([id, text]) => (
               <button
@@ -224,26 +234,26 @@ function Humanity({ ch, save }: { ch: Character; save: Save }) {
 
           <div className="flex flex-wrap items-center gap-2">
             <label className="flex items-center gap-2">
-              <span className="label">humanidade recuperada</span>
+              <span className="label">{t.cyber.humanity.gained}</span>
               <input
                 type="number"
                 min={0}
-                aria-label="humanidade recuperada"
+                aria-label={t.cyber.humanity.gained}
                 className="field !w-20 text-center font-mono"
                 value={gain}
                 onChange={(e) => setGain(Math.max(0, Math.floor(Number(e.target.value)) || 0))}
               />
             </label>
-            <button className="btn" title={`rolar ${t.dice}`} onClick={() => setGain(rollDice(t.dice))}>
-              rolar
+            <button className="btn" title={t.common.aria.roll(th.dice)} onClick={() => setGain(rollDice(th.dice))}>
+              {t.common.actions.roll}
             </button>
             <button className="btn btn-primary" disabled={atCap || broke || gain <= 0} onClick={apply}>
-              aplicar
+              {t.cyber.humanity.apply}
             </button>
             {atCap ? (
-              <span className="text-xs text-dim">já está no teto</span>
+              <span className="text-xs text-dim">{t.cyber.humanity.atCap}</span>
             ) : broke ? (
-              <span className="text-xs text-red">sem grana</span>
+              <span className="text-xs text-red">{t.cyber.noMoney}</span>
             ) : (
               gain > 0 && (
                 <span className="font-mono text-xs text-dim">
@@ -252,7 +262,7 @@ function Humanity({ ch, save }: { ch: Character; save: Save }) {
               )
             )}
           </div>
-          <p className="text-xs text-dim">uma semana inteira. sem tirar cyberware, a humanidade não passa do teto.</p>
+          <p className="text-xs text-dim">{t.cyber.humanity.note}</p>
         </div>
       )}
     </section>
@@ -287,7 +297,7 @@ function Spot({ ch, save, spot, body }: { ch: Character; save: Save; spot: HostS
         )}
       </header>
       {spot.items.length === 0 ? (
-        <p className="text-xs text-dim">vazio</p>
+        <p className="text-xs text-dim">{t.common.words.empty}</p>
       ) : (
         <ul className="space-y-2">
           {spot.items.map((item) => (
@@ -304,18 +314,22 @@ function effectTags(item: CyberwareItem, body: number): { key: string; text: str
   const def = cyberDef(item.ref);
   const fx = def?.effects;
   const tags: { key: string; text: string; net?: boolean }[] = [];
-  if (fx?.initiative) tags.push({ key: "init", text: `+${fx.initiative} iniciativa` });
-  if (fx?.body) tags.push({ key: "body", text: `BODY ${body}` });
-  if (fx?.weapon) tags.push({ key: "weapon", text: "arma no inventário" });
-  if (fx?.shield) tags.push({ key: "shield", text: "escudo no inventário" });
-  if (fx?.armor) tags.push({ key: "armor", text: "SP na cabeça e no corpo" });
-  if (fx?.ignoreSerious) tags.push({ key: "serious", text: "ignora gravemente ferido" });
-  if (fx?.netrun) tags.push({ key: "net", text: "netrun", net: true });
+  const tx = t.cyber.sheet.tags;
+  if (fx?.initiative) tags.push({ key: "init", text: tx.initiative(fx.initiative) });
+  if (fx?.body) tags.push({ key: "body", text: t.stats.part("BODY", body) });
+  if (fx?.weapon) tags.push({ key: "weapon", text: tx.weapon });
+  if (fx?.shield) tags.push({ key: "shield", text: tx.shield });
+  if (fx?.armor) tags.push({ key: "armor", text: tx.armor });
+  if (fx?.ignoreSerious) tags.push({ key: "serious", text: tx.serious });
+  if (fx?.netrun) tags.push({ key: "net", text: tx.netrun, net: true });
   fx?.skills?.forEach((s) => {
-    const name = skillDef(s.skill)?.namePt ?? s.skill;
-    tags.push({ key: `skill-${s.skill}`, text: `+${s.value} ${name}${s.when ? ` (${s.when})` : ""}` });
+    const sk = skillDef(s.skill);
+    tags.push({ key: `skill-${s.skill}`, text: tx.skill(s.value, sk ? gameName(sk) : s.skill, s.when) });
   });
-  if (item.skill) tags.push({ key: "chip", text: `perícia: ${skillDef(item.skill)?.namePt ?? item.skill}` });
+  if (item.skill) {
+    const sk = skillDef(item.skill);
+    tags.push({ key: "chip", text: tx.chipSkill(sk ? gameName(sk) : item.skill) });
+  }
   return tags;
 }
 
@@ -341,9 +355,7 @@ function PieceRow({
   const inSocket = def?.category === "chipware" && item.host !== null;
 
   function remove() {
-    const n = hostedIn(ch, item.id);
-    const extra = n > 0 ? ` leva junto ${n} ${n === 1 ? "peça instalada" : "peças instaladas"} nela.` : "";
-    if (confirm(`remover ${name}? a humanidade perdida não volta (só com terapia).${extra}`)) {
+    if (confirm(t.cyber.sheet.confirmRemove(name, hostedIn(ch, item.id)))) {
       save(removeCyberware(ch, item.id));
     }
   }
@@ -353,9 +365,10 @@ function PieceRow({
       <div className="min-w-0 flex-1 basis-60 space-y-1">
         <p className="flex flex-wrap items-baseline gap-x-2">
           <span className="min-w-0 break-words font-bold">{name}</span>
-          {def && <span className="text-dim">{def.namePt}</span>}
+          {def && name !== gameName(def) && <span className="text-dim">{gameName(def)}</span>}
           <span className="font-mono text-xs text-dim">{hlLabel(item.hl)}</span>
         </p>
+        {def && <BookName def={def} />}
         {def && <p className="text-xs text-dim">{def.summary}</p>}
         {(tags.length > 0 || sandevistan) && (
           <div className="flex flex-wrap items-center gap-1 text-xs">
@@ -367,20 +380,20 @@ function PieceRow({
                   item.active ? "border-red text-red" : "border-line text-dim hover:text-fg"
                 }`}
               >
-                {item.active ? `ligado · +${sandevistan} iniciativa` : "ligar"}
+                {item.active ? t.cyber.sheet.isOn(sandevistan) : t.cyber.sheet.turnOn}
               </button>
             ) : null}
-            {tags.map((t) => (
-              <span key={t.key} className={`border-2 px-1 ${t.net ? "border-net text-net" : "border-line text-fg"}`}>
-                {t.text}
+            {tags.map((tag) => (
+              <span key={tag.key} className={`border-2 px-1 ${tag.net ? "border-net text-net" : "border-line text-fg"}`}>
+                {tag.text}
               </span>
             ))}
           </div>
         )}
         <input
           className="field max-w-sm !px-2 !py-0.5 text-xs"
-          placeholder="nota"
-          aria-label={`nota de ${name}`}
+          placeholder={t.cyber.sheet.note}
+          aria-label={t.cyber.sheet.noteOf(name)}
           value={item.note}
           onChange={(e) => save(patchCyber(ch, item.id, { note: e.target.value }))}
         />
@@ -390,11 +403,11 @@ function PieceRow({
         {sockets && <SocketPicker ch={ch} save={save} item={item} name={name} sockets={sockets} />}
         {inSocket && (
           <button className="btn !px-2 !py-0 text-xs" onClick={() => save(moveChip(ch, item.id, null))}>
-            tirar do soquete
+            {t.cyber.sheet.takeOut}
           </button>
         )}
         <button className="btn btn-danger !px-2 !py-0 text-xs" onClick={remove}>
-          remover
+          {t.common.actions.remove}
         </button>
       </div>
     </li>
@@ -416,13 +429,13 @@ function SocketPicker({
   sockets: HostSpot[];
 }) {
   const [sel, setSel] = useState("");
-  if (sockets.length === 0) return <span className="text-xs text-dim">sem soquete livre</span>;
+  if (sockets.length === 0) return <span className="text-xs text-dim">{t.cyber.sheet.noSocket}</span>;
   const target = sockets.find((s) => s.id === sel)?.id ?? sockets[0].id;
   return (
     <>
       <select
         className="field !w-auto min-w-0 max-w-full !px-2 !py-0.5 text-xs"
-        aria-label={`soquete para ${name}`}
+        aria-label={t.cyber.sheet.socketFor(name)}
         value={target}
         onChange={(e) => setSel(e.target.value)}
       >
@@ -433,7 +446,7 @@ function SocketPicker({
         ))}
       </select>
       <button className="btn !px-2 !py-0 text-xs" onClick={() => save(moveChip(ch, item.id, target))}>
-        pôr no soquete
+        {t.cyber.sheet.putIn}
       </button>
     </>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import { t } from "@/i18n";
 import { patchCombatant } from "@/lib/store";
 import type { Combatant } from "@/lib/types";
 import { Icon, type IconName } from "./Pixel";
@@ -17,7 +18,7 @@ export function TurnActions({ c, netMax, size = 24, disabled }: Props) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <ActionIcon
-        label="ação"
+        label={t.combat.turnActions.action}
         icon="action"
         used={c.actionUsed}
         size={size}
@@ -25,7 +26,7 @@ export function TurnActions({ c, netMax, size = 24, disabled }: Props) {
         onClick={() => patchCombatant(c.id, { actionUsed: !c.actionUsed })}
       />
       <ActionIcon
-        label="movimento"
+        label={t.combat.turnActions.move}
         icon="move"
         used={c.moveUsed}
         size={size}
@@ -35,7 +36,7 @@ export function TurnActions({ c, netMax, size = 24, disabled }: Props) {
       {Array.from({ length: netMax }, (_, i) => (
         <ActionIcon
           key={i}
-          label={`ação de net ${i + 1}`}
+          label={t.combat.turnActions.net(i + 1)}
           icon="net"
           used={i < c.netUsed}
           size={size}
@@ -69,7 +70,7 @@ function ActionIcon({
 }) {
   return (
     <button
-      title={`${label}${used ? " (usada)" : ""}`}
+      title={t.combat.turnActions.title(label, used)}
       aria-pressed={used}
       aria-label={label}
       disabled={disabled}

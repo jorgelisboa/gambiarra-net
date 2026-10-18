@@ -1,3 +1,4 @@
+import { gameName, t } from "../../../i18n";
 import { skillDef, skillLevel } from "../skills";
 import type { Mod, RollCtx } from "../types";
 
@@ -10,6 +11,6 @@ export const sheetSkills =
       const lvl = skillLevel(ctx.skills, id);
       const stat = ctx.stats[d.stat];
       return withStat
-        ? { label: `${d.name}: ${d.stat.toLowerCase()} ${stat} + ${lvl}`, value: stat + lvl }
-        : { label: `${d.name} ${lvl}`, value: lvl };
+        ? { label: `${gameName(d)}: ${t.stats.part(d.stat, stat)} + ${lvl}`, value: stat + lvl }
+        : { label: `${gameName(d)} ${lvl}`, value: lvl };
     });

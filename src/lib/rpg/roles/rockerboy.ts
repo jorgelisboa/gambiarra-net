@@ -1,10 +1,13 @@
+import { t } from "../../../i18n";
 import { beats, check } from "../dice";
 import type { Mod, RoleDef } from "../types";
 
+const R = t.roles.rockerboy;
+
 const GROUPS: Mod[] = [
-  { label: "1 pessoa (DV8)", value: 8 },
-  { label: "grupo de até 6 (DV10)", value: 10 },
-  { label: "multidão (DV12)", value: 12 },
+  { label: R.groups.one, value: 8 },
+  { label: R.groups.six, value: 10 },
+  { label: R.groups.crowd, value: 12 },
 ];
 
 export const rockerboy: RoleDef = {
@@ -24,32 +27,26 @@ export const rockerboy: RoleDef = {
     uses: [
       {
         id: "makeFans",
-        name: "conquistar fãs",
-        formula: "impacto + 1d10",
-        desc: "fora de combate. não vale em quem te detesta de verdade.",
+        name: R.makeFans.name,
+        formula: R.makeFans.formula,
+        desc: R.makeFans.desc,
         mods: GROUPS,
         roll: ({ rank }, dv) => {
           const r = check(rank);
           const ok = beats(r.total, dv);
-          return { ...r, ok, text: ok ? "viraram teus fãs" : `não colou (precisava passar de ${dv})` };
+          return { ...r, ok, text: ok ? R.makeFans.ok : R.makeFans.fail(dv) };
         },
       },
       {
         id: "favor",
-        name: "pedir favor a fãs",
-        formula: "impacto + 1d10",
-        desc: "o favor tem que caber na tabela do teu rank; se não couber, falha direto.",
+        name: R.favor.name,
+        formula: R.favor.formula,
+        desc: R.favor.desc,
         mods: ({ rank }) => (rank >= 3 ? GROUPS : GROUPS.slice(0, 2)),
         roll: ({ rank }, dv) => {
           const r = check(rank);
           const ok = beats(r.total, dv);
-          return {
-            ...r,
-            ok,
-            text: ok
-              ? "os fãs fazem o possível pelo favor"
-              : `falhou (precisava passar de ${dv}): não dá pra pedir o mesmo favor a esses fãs por 1 semana`,
-          };
+          return { ...r, ok, text: ok ? R.favor.ok : R.favor.fail(dv) };
         },
       },
     ],

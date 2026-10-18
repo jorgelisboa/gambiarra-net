@@ -8,6 +8,7 @@ import { ITEMS, PROGRAMS } from "./items";
 import { kitItems, type RoleKit } from "./kits";
 import { EXOTIC_WEAPONS, MELEE_WEAPONS, RANGED_WEAPONS, ammoTypesFor, weaponStats } from "./weapons";
 import type { AmmoDef, ArmorDef, CatalogItem, WeaponDef } from "./types";
+import { gameName, t } from "../../../i18n";
 
 export * from "./ammo";
 export * from "./armor";
@@ -38,13 +39,17 @@ const BY_ID = new Map(CATALOG.map((c) => [c.id, c]));
 
 export const catalogItem = (id: string | null | undefined) => (id ? BY_ID.get(id) : undefined);
 
-export const SLOT_LABELS: Record<ArmorSlot, string> = { head: "cabeça", body: "corpo" };
+export const SLOT_LABELS: Record<ArmorSlot, string> = t.gear.slots;
 
 /** Armas, armaduras, escudos, cyberdecks e programas são unidades com estado próprio; o resto empilha. */
 export const isUnique = (c: CatalogItem | undefined) =>
   c?.kind === "weapon" || c?.kind === "armor" || c?.kind === "shield" || c?.kind === "cyberdeck" || c?.kind === "program";
 
-export const itemName = (it: GearItem) => it.name || catalogItem(it.ref)?.name || "item";
+/** Nome pra mostrar: o apelido do jogador ou o nome em pt-BR do catálogo. */
+export const itemName = (it: GearItem) => {
+  const d = catalogItem(it.ref);
+  return it.name || (d ? gameName(d) : "item");
+};
 
 /** Põe no inventário. Armadura nova só é vestida se o local estiver livre. */
 export function addGear(gear: GearItem[], ref: string, qty = 1, slot?: ArmorSlot): GearItem[] {

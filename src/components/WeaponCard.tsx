@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { gameName, t } from "@/i18n";
 import {
   AIMED_PENALTY,
   AIM_TARGETS,
   AMMO_LABELS,
   AUTOFIRE_RANGES,
   RANGE_BANDS,
+  SHELL_DAMAGE,
+  SHELL_DV,
   attack,
   combatModsOf,
   effectiveStats,
@@ -23,7 +26,8 @@ import {
   type LabeledRoll,
 } from "@/lib/rpg";
 import type { Character, GearItem } from "@/lib/types";
-import { specsOf } from "./gearText";
+import { BookName } from "./BookName";
+import { skillName, specsOf, weaponTypeLines } from "./gearText";
 import { RollLine } from "./RoleAbility";
 
 /**
@@ -66,7 +70,9 @@ export function WeaponCard({
   const lvl = skillLevel(ch.skills, w.skill);
   const loaded = mag?.loaded ?? 0;
   const pick = ammo[Math.min(ammoPick, ammo.length - 1)];
-  const aimed = `−${Math.abs(AIMED_PENALTY)}`;
+  const aimed = t.common.signed(AIMED_PENALTY);
+  const W = t.weapons;
+  const kind = weaponTypeLines(def, it, info.category);
   const has = (m: FireMode) => modes.includes(m);
   const why = (m: FireMode) => modeBlocked(ch, it.id, m) ?? undefined;
 
@@ -84,7 +90,7 @@ export function WeaponCard({
     const roll = weaponDamage(ch, it.id, {
       aim: has("aimed") && aim ? aim : undefined,
     });
-    setLast({ n: (last?.n ?? 0) + 1, rolls: [{ label: "dano", roll }] });
+    setLast({ n: (last?.n ?? 0) + 1, rolls: [{ label: t.common.words.damage, roll }] });
   }
 
   const shell = has("shell");
@@ -98,11 +104,12 @@ export function WeaponCard({
             <span className="font-pixel text-lg leading-tight">{itemName(it)}</span>
             {locked && <span className="text-xs text-net">{locked}</span>}
           </div>
-          {it.name && <div className="text-xs text-dim">{def.name}</div>}
-          <div className="text-xs text-dim">{def.namePt}</div>
+          {kind.name && <div className="text-xs text-dim">{kind.name}</div>}
+          <BookName def={def} />
+          {kind.category && <div className="text-xs text-dim">{kind.category}</div>}
         </div>
         {!locked && (
-          <button className="btn btn-danger btn-bare !px-1.5 !py-0" aria-label={`remover ${itemName(it)}`} onClick={onRemove}>
+          <button className="btn btn-danger btn-bare !px-1.5 !py-0" aria-label={t.common.aria.remove(itemName(it))} onClick={onRemove}>
             x
           </button>
         )}
@@ -111,16 +118,21 @@ export function WeaponCard({
       {w.features.length > 0 && <div className="text-xs text-net">{w.features.join(" · ")}</div>}
       {sd && (
         <div className="text-xs">
-          ataque: <span className="text-dim">{sd.name.toLowerCase()}</span> {lvl} +{" "}
-          <span className="text-dim">{sd.stat.toLowerCase()}</span> {eff[sd.stat]}
+          {t.common.words.attack}: <span className="text-dim">{gameName(sd)}</span> {lvl} +{" "}
+          <span className="text-dim">{t.stats.short[sd.stat]}</span> {eff[sd.stat]}
           {mods.attack > 0 && (
             <>
               {" "}
-              + <span className="text-net">preciso {mods.attack}</span>
+              + <span className="text-net">{W.card.precise(mods.attack)}</span>
             </>
           )}{" "}
           = <span className="text-base font-bold text-red">{info.attackBase}</span>
-          {lvl === 0 && <span className="text-dim"> · sem a perícia</span>}
+          {lvl === 0 && (
+            <span className="text-dim">
+              {t.common.sep}
+              {W.card.noSkill}
+            </span>
+          )}
         </div>
       )}
       {info.blocked && <div className="text-xs text-red">{info.blocked}.</div>}
@@ -128,15 +140,20 @@ export function WeaponCard({
       {mag && (
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <span>
-            pente <span className={`font-bold ${loaded ? "text-fg" : "text-red"}`}>{loaded}</span>
+            {W.magazine.label} <span className={`font-bold ${loaded ? "text-fg" : "text-red"}`}>{loaded}</span>
             <span className="text-dim">/{mag.size}</span>
-            {mag.ammo && loaded > 0 && <span className="text-dim"> · {mag.ammo.name}</span>}
+            {mag.ammo && loaded > 0 && (
+              <span className="text-dim">
+                {t.common.sep}
+                {gameName(mag.ammo)}
+              </span>
+            )}
           </span>
           {ammo.length > 0 ? (
             <>
               <select
                 className="field !w-auto min-w-0 max-w-full !py-0"
-                aria-label="munição pra recarregar"
+                aria-label={W.card.ammoToReload}
                 value={Math.min(ammoPick, ammo.length - 1)}
                 onChange={(e) => setAmmoPick(Number(e.target.value))}
               >
@@ -148,20 +165,18 @@ export function WeaponCard({
               </select>
               <button
                 className="btn !px-2 !py-0"
-                title="1 ação: troca o pente inteiro, com um tipo de munição só"
+                title={W.magazine.note}
                 disabled={!pick || loaded === mag.size}
                 onClick={() => pick && onGear(reload(ch.gear, it.id, pick.id))}
               >
-                recarregar
+                {W.magazine.reload}
               </button>
             </>
           ) : (
             <span className="text-dim">
-              sem munição de{" "}
-              {magazineOf(it)
-                ?.types.map((t) => AMMO_LABELS[t])
-                .join(" ou ")}{" "}
-              no inventário
+              {W.card.noAmmo(
+                (magazineOf(it)?.types ?? []).map((a) => AMMO_LABELS[a]).join(` ${t.common.words.or} `),
+              )}
             </span>
           )}
         </div>
@@ -172,24 +187,24 @@ export function WeaponCard({
           <button
             className="btn !px-2 !py-0 text-xs"
             disabled={!!why(main)}
-            title={why(main) ?? (shell ? "1 cartucho · DV13 · 3d6 em todo alvo à frente a até 6m" : undefined)}
+            title={why(main) ?? (shell ? W.panel.shellInfo(SHELL_DV, SHELL_DAMAGE) : undefined)}
             onClick={() => run(main)}
           >
-            {shell ? "atirar cartucho" : "atacar"}
+            {shell ? W.actions.shell.ranged : W.actions.single.ranged}
           </button>
         )}
         {has("aimed") && (
           <select
             className="field !w-auto !py-0 text-xs"
-            aria-label="tiro mirado"
-            title={`tiro mirado: ${aimed}, ataque único, gasta a ação inteira`}
+            aria-label={W.roll.labels.aimedRanged}
+            title={W.card.aimedHint(aimed)}
             value={aim}
             onChange={(e) => setAim(e.target.value as AimTarget | "")}
           >
-            <option value="">sem mirar</option>
-            {AIM_TARGETS.map((t) => (
-              <option key={t.id} value={t.id}>
-                mirar: {t.label} ({aimed})
+            <option value="">{W.aim.off}</option>
+            {AIM_TARGETS.map((tg) => (
+              <option key={tg.id} value={tg.id}>
+                {W.aim.option(tg.label, aimed)}
               </option>
             ))}
           </select>
@@ -198,31 +213,31 @@ export function WeaponCard({
           <button
             className="btn !px-2 !py-0 text-xs"
             disabled={!!why("double")}
-            title={why("double") ?? `ROF 2: dois ataques rolados separados, ${rounds.double} balas`}
+            title={why("double") ?? W.card.doubleHint(rounds.double)}
             onClick={() => run("double")}
           >
-            2 ataques
+            {W.actions.double.ranged}
           </button>
         )}
         {singleDvs && has("single") && (
           <select
             className="field !w-auto !py-0 text-xs"
-            aria-label="distância do tiro"
-            title="com distância o ataque já diz se acertou; sem, o mestre decide a DV"
+            aria-label={W.card.shotRange}
+            title={W.card.shotRangeHint}
             value={shotRange}
             onChange={(e) => setShotRange(e.target.value)}
           >
-            <option value="">sem distância</option>
+            <option value="">{W.ranges.none}</option>
             {singleDvs.map((dv, i) => (
               <option key={RANGE_BANDS[i]} value={i}>
-                {RANGE_BANDS[i]} · {dv === null ? "fora do alcance" : `DV${dv}`}
+                {W.ranges.option(RANGE_BANDS[i], dv)}
               </option>
             ))}
           </select>
         )}
         {w.damage && has("single") && (
           <button className="btn !px-2 !py-0 text-xs" onClick={damage}>
-            dano {w.damage}
+            {t.common.words.damage} {w.damage}
           </button>
         )}
       </div>
@@ -231,23 +246,23 @@ export function WeaponCard({
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <select
             className="field !w-auto !py-0"
-            aria-label="distância do autofire"
+            aria-label={W.card.autofireRange}
             value={range}
             onChange={(e) => setRange(Number(e.target.value))}
           >
             {AUTOFIRE_RANGES.map((r, i) => (
               <option key={r} value={i}>
-                {r} · DV{autofireDvs[i]}
+                {W.ranges.option(r, autofireDvs[i])}
               </option>
             ))}
           </select>
           <button
             className="btn !px-2 !py-0"
             disabled={!!why("autofire")}
-            title={why("autofire") ?? `1 ação e ${rounds.autofire} balas · perícia Autofire · até ×${w.autofire.max}`}
+            title={why("autofire") ?? W.card.autofireHint(rounds.autofire, skillName("autofire"), w.autofire.max)}
             onClick={() => run("autofire")}
           >
-            autofire ×{w.autofire.max}
+            {W.card.autofireButton(w.autofire.max)}
           </button>
           {has("suppressive") && (
             <button
@@ -255,15 +270,15 @@ export function WeaponCard({
               disabled={!!why("suppressive")}
               title={
                 why("suppressive") ??
-                `1 ação e ${rounds.suppressive} balas · REF + Autofire vira a DV de quem está exposto a até 25m (WILL + Concentration)`
+                W.card.suppressiveHint(rounds.suppressive, skillName("autofire"), skillName("concentration"))
               }
               onClick={() => run("suppressive")}
             >
-              supressão
+              {W.actions.suppressive.ranged}
             </button>
           )}
           <span className="text-dim">
-            Autofire {skillLevel(ch.skills, "autofire")} + ref {eff.REF}
+            {skillName("autofire")} {skillLevel(ch.skills, "autofire")} + {t.stats.part("REF", eff.REF)}
           </span>
         </div>
       )}
@@ -271,8 +286,8 @@ export function WeaponCard({
       {!locked && (
         <input
           className="field mt-1 !py-0.5 text-xs"
-          placeholder="marca / apelido"
-          aria-label={`nome de ${def.name}`}
+          placeholder={W.card.nickname}
+          aria-label={W.card.nameOf(gameName(def))}
           value={it.name}
           onChange={(e) => onName(e.target.value)}
         />

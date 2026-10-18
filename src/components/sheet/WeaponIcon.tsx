@@ -1,6 +1,7 @@
 "use client";
 
-import { WEAPON_CATEGORY_LABELS, type WeaponCategory } from "@/lib/rpg";
+import { t } from "@/i18n";
+import type { WeaponCategory } from "@/lib/rpg";
 
 /**
  * Pixel art da categoria da arma, em grade 16×8 como os ícones de `Pixel.tsx`.
@@ -206,7 +207,7 @@ export function WeaponIcon({
       viewBox="0 0 16 8"
       shapeRendering="crispEdges"
       role="img"
-      aria-label={WEAPON_CATEGORY_LABELS[category]}
+      aria-label={t.weapons.categories[category]}
       className={className}
     >
       <g fill="currentColor">{body}</g>

@@ -1,3 +1,4 @@
+import { t } from "../../../i18n";
 import type { CyberwareItem, GearItem } from "../../types";
 import { netrunCyber } from "../cyber";
 import { itemName } from "../gear";
@@ -20,33 +21,30 @@ export function netrunNeeds(gear: GearItem[], cyberware: CyberwareItem[]): NetNe
   const cyber = netrunCyber({ cyberware });
   const goggles = gear.some((g) => g.ref === "virtualityGoggles" && g.qty > 0);
   const plugsOk = cyber.neuralLink && cyber.plugs;
+  const N = t.net.needs;
   const plugsMissing = !cyber.neuralLink
     ? cyber.plugs
-      ? "falta neural link"
-      : "falta neural link e interface plugs"
-    : "falta interface plugs (no neural link)";
+      ? N.plugs.noLink
+      : N.plugs.noLinkNoPlugs
+    : N.plugs.noPlugs;
   return [
     {
       id: "deck",
-      label: "cyberdeck conectado",
+      label: N.deck.label,
       ok: !!deck,
-      note: deck ? itemName(deck) : "conecte um deck abaixo",
+      note: deck ? itemName(deck) : N.deck.missing,
     },
     {
       id: "plugs",
-      label: "neural link + interface plugs",
+      label: N.plugs.label,
       ok: plugsOk,
-      note: plugsOk ? "neural link e interface plugs instalados" : `${plugsMissing}: instale na aba cyberware`,
+      note: plugsOk ? N.plugs.ok : N.plugs.missing(plugsMissing),
     },
     {
       id: "goggles",
-      label: "óculos de virtualidade",
+      label: N.goggles.label,
       ok: goggles || cyber.virtuality ? true : null,
-      note: goggles
-        ? "você vê o ICE por cima do mundo real e continua andando nele"
-        : cyber.virtuality
-          ? "virtuality nos cybereyes: o ICE aparece por cima do mundo real"
-          : "sem óculos na ficha: precisa deles ou de cybereyes com virtuality, senão entra do jeito antigo e fica cego pro mundo real",
+      note: goggles ? N.goggles.withGoggles : cyber.virtuality ? N.goggles.withCybereyes : N.goggles.without,
     },
   ];
 }

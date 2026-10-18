@@ -1,17 +1,8 @@
+import { t } from "../../../i18n";
 import type { AmmoType, WeaponDef, WeaponStats } from "./types";
 
-
-export const AMMO_LABELS: Record<AmmoType, string> = {
-  mPistol: "pistola média",
-  hPistol: "pistola pesada",
-  vhPistol: "pistola muito pesada",
-  slug: "slug",
-  rifle: "rifle",
-  shell: "cartucho",
-  arrow: "flecha",
-  grenade: "granada",
-  rocket: "foguete",
-};
+/** Nome do tipo de munição que a arma usa. */
+export const AMMO_LABELS: Record<AmmoType, string> = t.weapons.ammoTypes;
 
 const melee = (
   id: string,
@@ -88,7 +79,7 @@ export const MELEE_WEAPONS: WeaponDef[] = [
   melee("veryHeavyMelee", "Very Heavy Melee Weapon", "arma branca muito pesada", "motosserra, marreta, pá de helicóptero, naginata", "4d6", 1, false, 500),
 ];
 
-const auto = (n: number) => [`autofire (${n})`, "fogo de supressão"];
+const auto = (n: number) => [`rajada (${n})`, "fogo de supressão"];
 
 /** Armas de longo alcance: ligadas à REF pela perícia da arma. */
 export const RANGED_WEAPONS: WeaponDef[] = [
@@ -113,13 +104,13 @@ const ignoresArmor = "ignora armadura abaixo de SP11";
  */
 export const EXOTIC_WEAPONS: WeaponDef[] = [
   exotic("airPistol", "Air Pistol", "pistola muito pesada que dispara bolas de tinta (e ácido!).", 100, { base: "vhPistol" }),
-  exotic("battleglove", "Battleglove", "manopla pesada com três slots de opção de cyberarm/cyberlimb. regras na pág. 347.", 1000, {
+  exotic("battleglove", "Battleglove", "manopla pesada com três slots de opção de braço cibernético. regras na pág. 347.", 1000, {
     skill: "meleeWeapon",
     damage: "",
     rof: 2,
     hands: 1,
     concealable: false,
-    features: ["3 slots de opção de cyberarm"],
+    features: ["3 slots de opção de braço cibernético"],
   }),
   exotic("hurricane", "Constitution Arms Hurricane Assault Weapon", "escopeta com ROF 2 e tambor de 16. precisa de BODY 11+.", 5000, {
     base: "shotgun",
@@ -129,7 +120,7 @@ export const EXOTIC_WEAPONS: WeaponDef[] = [
     requiresBody: 11,
   }),
   exotic("dartgun", "Dartgun", "pistola muito pesada que dispara flechas não básicas.", 100, { base: "vhPistol", ammo: "arrow" }),
-  exotic("flamethrower", "Flamethrower", "escopeta que dispara cartuchos incendiários, com a perícia Heavy Weapons.", 500, {
+  exotic("flamethrower", "Flamethrower", "escopeta que dispara cartuchos incendiários, com a perícia armas pesadas.", 500, {
     base: "shotgun",
     skill: "heavyWeapons",
     ammo: "shell",
@@ -156,7 +147,7 @@ export const EXOTIC_WEAPONS: WeaponDef[] = [
     magazine: 4,
     requiresBody: 11,
   }),
-  exotic("railgun", "Rhinemetall EMG-86 Railgun", "fuzil de assalto que ignora armadura abaixo de SP11, com Heavy Weapons. sem autofire nem mirado. precisa de BODY 11+.", 5000, {
+  exotic("railgun", "Rhinemetall EMG-86 Railgun", "fuzil de assalto que ignora armadura abaixo de SP11, com armas pesadas. sem rajada nem mirado. precisa de BODY 11+.", 5000, {
     base: "assaultRifle",
     skill: "heavyWeapons",
     magazine: 4,
@@ -171,12 +162,12 @@ export const EXOTIC_WEAPONS: WeaponDef[] = [
   }),
   exotic("stunBaton", "Stun Baton", 'arma branca média "menos letal".', 100, { base: "mediumMelee", features: ["menos letal"] }),
   exotic("stunGun", "Stun Gun", 'pistola pesada "menos letal".', 100, { base: "heavyPistol", features: ["menos letal"] }),
-  exotic("helix", "Tsunami Arms Helix", "fuzil de assalto que só dispara em autofire: 20 balas por rajada, até ×5. precisa de BODY 11+.", 5000, {
+  exotic("helix", "Tsunami Arms Helix", "fuzil de assalto que só dispara em rajada: 20 balas por rajada, até ×5. precisa de BODY 11+.", 5000, {
     base: "assaultRifle",
     magazine: 40,
     requiresBody: 11,
     autofire: { max: 5, table: "rifle", rounds: 20, only: true },
-    features: ["só autofire, multiplicador maior"],
+    features: ["só rajada, multiplicador maior"],
   }),
 ];
 
@@ -208,8 +199,8 @@ export function ammoTypesFor(w: WeaponStats): AmmoType[] {
 
 /* ---------- autofire ---------- */
 
-/** Faixas de distância da tabela de autofire. */
-export const AUTOFIRE_RANGES = ["0–6 m", "7–12 m", "13–25 m", "26–50 m", "51–100 m"];
+/** Faixas de distância da tabela de autofire (as 5 primeiras de RANGE_BANDS). */
+export const AUTOFIRE_RANGES: string[] = t.weapons.ranges.bands.slice(0, 5);
 
 /** DV do autofire por faixa (tabela "Autofire DVs Based on Range"). */
 export const AUTOFIRE_DV: Record<"smg" | "rifle", number[]> = {
@@ -224,9 +215,9 @@ export const AUTOFIRE_ROUNDS = 10;
 export const AIMED_PENALTY = -8;
 
 export const AIM_TARGETS = [
-  { id: "head", label: "cabeça", effect: "o dano que passa da armadura da cabeça dobra" },
-  { id: "hand", label: "item na mão", effect: "se 1 ponto passar da armadura do corpo, o alvo larga um item da mão (à tua escolha), que cai na frente dele" },
-  { id: "leg", label: "perna", effect: "se 1 ponto passar da armadura do corpo, o alvo também sofre o ferimento crítico perna quebrada (se tiver perna inteira)" },
+  { id: "head", ...t.weapons.aim.targets.head },
+  { id: "hand", ...t.weapons.aim.targets.hand },
+  { id: "leg", ...t.weapons.aim.targets.leg },
 ] as const;
 
 export type AimTarget = (typeof AIM_TARGETS)[number]["id"];

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { gameName, t } from "@/i18n";
 import {
   SKILLS,
   SKILL_CATEGORIES,
@@ -14,6 +15,7 @@ import {
   type SkillDef,
 } from "@/lib/rpg";
 import type { Character, SkillEntry } from "@/lib/types";
+import { BookName } from "../BookName";
 import type { PushRoll } from "./roll";
 import type { SheetTabId } from "./SheetView";
 import { LinkBtn, Section } from "./ui";
@@ -22,7 +24,8 @@ import { LinkBtn, Section } from "./ui";
 interface Row {
   key: string;
   label: string;
-  namePt: string;
+  /** Nomes da perícia (livro e pt-BR), pro nome do livro pequeno. */
+  def: { name: string; namePt?: string };
   basic: boolean;
   level: number;
   /** Stat + nível + bônus sem condição. */
@@ -32,7 +35,7 @@ interface Row {
   roll: () => void;
 }
 
-const hintText = (h: SkillBonus) => `+${h.value} se ${h.when} (${h.source})`;
+const hintText = (h: SkillBonus) => t.skills.bonusHint(h.value, h.when ?? "", h.source);
 
 /**
  * Lista de perícias como a ficha de papel: por categoria, a base (stat + nível + bônus) à direita e
@@ -58,21 +61,21 @@ export function SkillsPanel({
   /** Rola `base` + 1d10 com o ferimento e manda pro dock. */
   function rollBase(label: string, base: number, parts: string[], hints: SkillBonus[]) {
     const res = check(base + penalty);
-    if (penalty) parts.push(`ferimento ${penalty}`);
-    let text = `${label.toLowerCase()}: ${parts.join(" + ")} + 1d10`;
-    if (hints.length > 0) text += ` · ${hints.map(hintText).join(", ")}: some na mão se valer`;
+    if (penalty) parts.push(t.skills.roll.wound(penalty));
+    let text = t.skills.roll.line(label, parts);
+    if (hints.length > 0) text += t.sheet.skills.hintsNote(hints.map(hintText).join(", "));
     push(label, { dice: res.dice, total: res.total, crit: res.crit, text });
   }
 
   function rowFor(def: SkillDef, e: SkillEntry): Row {
     const plus = bonuses.filter((b) => b.skill === def.id && !b.when);
     const hints = bonuses.filter((b) => b.skill === def.id && b.when);
-    const label = e.spec ? `${def.name} (${e.spec})` : def.name;
+    const label = e.spec ? `${gameName(def)} (${e.spec})` : gameName(def);
     const base = skillBase(stats, e) + plus.reduce((a, b) => a + b.value, 0);
     return {
       key: e.id,
       label,
-      namePt: def.namePt,
+      def,
       basic: !!def.basic,
       level: e.level,
       base,
@@ -81,7 +84,11 @@ export function SkillsPanel({
         rollBase(
           label,
           base,
-          [`${def.stat.toLowerCase()} ${stats[def.stat]}`, `perícia ${e.level}`, ...plus.map((b) => `${b.source} ${b.value}`)],
+          [
+            t.stats.part(def.stat, stats[def.stat]),
+            t.skills.roll.level(e.level),
+            ...plus.map((b) => t.skills.roll.bonus(b.source, b.value)),
+          ],
           hints,
         ),
     };
@@ -108,22 +115,27 @@ export function SkillsPanel({
 
   const roleRows: Row[] = roleSkills.map((rs) => ({
     key: `role-${rs.id}`,
-    label: rs.name,
-    namePt: rs.namePt,
+    label: gameName(rs),
+    def: rs,
     basic: false,
     level: rs.level,
     base: stats[rs.stat] + rs.level,
     hints: [],
     roll: () =>
-      rollBase(rs.name, stats[rs.stat] + rs.level, [`${rs.stat.toLowerCase()} ${stats[rs.stat]}`, `perícia ${rs.level}`], []),
+      rollBase(
+        gameName(rs),
+        stats[rs.stat] + rs.level,
+        [t.stats.part(rs.stat, stats[rs.stat]), t.skills.roll.level(rs.level)],
+        [],
+      ),
   }));
 
   return (
     <Section
-      title="perícias"
+      title={t.sheet.skills.title}
       className={`@container ${className ?? ""}`}
       aside={
-        <div role="group" aria-label="mostrar perícias" className="-my-2 flex">
+        <div role="group" aria-label={t.sheet.skills.showAria} className="-my-2 flex">
           {([false, true] as const).map((v) => (
             <button
               key={String(v)}
@@ -134,21 +146,21 @@ export function SkillsPanel({
                 all === v ? "border-red bg-red text-black" : "border-line text-dim hover:text-fg"
               }`}
             >
-              {v ? "todas" : "usadas"}
+              {v ? t.skills.filter.all : t.skills.filter.trained}
             </button>
           ))}
         </div>
       }
     >
       {penalty < 0 && (
-        <p className="mb-2 text-xs text-red">ferimento: {penalty} em todo teste, já na rolagem.</p>
+        <p className="mb-2 text-xs text-red">{t.sheet.skills.woundNote(penalty)}</p>
       )}
 
       {groups.length === 0 && roleRows.length === 0 ? (
-        <p className="text-dim">nenhuma perícia treinada ainda. veja todas ou edite as perícias.</p>
+        <p className="text-dim">{t.sheet.skills.empty}</p>
       ) : (
         <div className="@xl:columns-2 @xl:gap-x-4">
-          {roleRows.length > 0 && <Group title="do role" rows={roleRows} />}
+          {roleRows.length > 0 && <Group title={t.sheet.skills.fromRole} rows={roleRows} />}
           {groups.map(({ cat, rows }) => (
             <Group key={cat.id} title={cat.name} rows={rows} />
           ))}
@@ -157,7 +169,7 @@ export function SkillsPanel({
 
       <div className="mt-1 flex justify-end">
         <LinkBtn className="!my-0" onClick={() => onTab("skills")}>
-          editar perícias
+          {t.sheet.skills.edit}
         </LinkBtn>
       </div>
     </Section>
@@ -174,21 +186,21 @@ function Group({ title, rows }: { title: string; rows: Row[] }) {
             <button
               type="button"
               onClick={r.roll}
-              aria-label={`rolar ${r.label}, base ${r.base}`}
+              aria-label={t.sheet.skills.rollAria(r.label, r.base)}
               className="flex min-h-10 w-full items-center gap-2 px-1 py-1 text-left hover:bg-line active:bg-line"
             >
               <span className="min-w-0 flex-1">
                 <span className="block truncate">
-                  <span className={r.basic ? "font-bold" : ""}>{r.label}</span>{" "}
-                  <span className="hidden text-dim sm:inline">{r.namePt}</span>
+                  <span className={r.basic ? "font-bold" : ""}>{r.label}</span>
                 </span>
+                <BookName def={r.def} className="truncate max-sm:hidden" />
                 {r.hints.map((h) => (
                   <span key={hintText(h)} className="block text-[11px] leading-tight text-dim">
                     {hintText(h)}
                   </span>
                 ))}
               </span>
-              <span className="shrink-0 text-xs text-dim">nv {r.level}</span>
+              <span className="shrink-0 text-xs text-dim">{t.sheet.skills.levelShort(r.level)}</span>
               <span className="w-9 shrink-0 text-right text-xl font-bold text-red">{r.base}</span>
             </button>
           </li>

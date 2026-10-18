@@ -1,3 +1,4 @@
+import { t } from "../../../i18n";
 import type { GearItem } from "../../types";
 import type { WeaponDef } from "./types";
 
@@ -23,24 +24,7 @@ export type WeaponCategory =
   | "grenadeLauncher"
   | "rocketLauncher";
 
-export const WEAPON_CATEGORY_LABELS: Record<WeaponCategory, string> = {
-  lightMelee: "arma branca leve",
-  mediumMelee: "arma branca média",
-  heavyMelee: "arma branca pesada",
-  veryHeavyMelee: "arma branca muito pesada",
-  claws: "garras implantadas",
-  mediumPistol: "pistola média",
-  heavyPistol: "pistola pesada",
-  veryHeavyPistol: "pistola muito pesada",
-  smg: "submetralhadora",
-  heavySmg: "submetralhadora pesada",
-  shotgun: "escopeta",
-  assaultRifle: "fuzil de assalto",
-  sniperRifle: "rifle de precisão",
-  bow: "arco e besta",
-  grenadeLauncher: "lança-granadas",
-  rocketLauncher: "lança-foguetes",
-};
+export const WEAPON_CATEGORY_LABELS: Record<WeaponCategory, string> = t.weapons.categories;
 
 const BY_ID: Record<string, WeaponCategory> = {
   lightMelee: "lightMelee",
@@ -70,7 +54,7 @@ export function weaponCategory(def: WeaponDef, item?: Pick<GearItem, "implant">)
 }
 
 /** Faixas de distância das tabelas de DV (as 5 primeiras são as do autofire). */
-export const RANGE_BANDS = ["0–6 m", "7–12 m", "13–25 m", "26–50 m", "51–100 m", "101–200 m", "201–400 m", "401–800 m"];
+export const RANGE_BANDS: string[] = [...t.weapons.ranges.bands];
 
 /** DV do tiro único por distância (pág. 173). null: fora do alcance. */
 const SINGLE_SHOT_DV: Record<"pistol" | "smg" | "shotgun" | "assaultRifle" | "sniperRifle" | "bow" | "grenadeLauncher" | "rocketLauncher", (number | null)[]> = {

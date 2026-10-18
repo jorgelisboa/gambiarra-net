@@ -1,3 +1,4 @@
+import { t } from "../../../i18n";
 import { pointsIn } from "../ability";
 import { check, vsDvs, type Dv } from "../dice";
 import type { RoleDef, UseDef } from "../types";
@@ -24,13 +25,15 @@ const CRAFT: (Dv & { time: string })[] = [
   { label: "luxo", dv: 29, time: "1 mês" },
 ];
 
-const craft = (id: string, name: string, desc: string, dvs: Dv[]): UseDef => ({
+const T = t.roles.tech;
+
+const craft = (id: "upgrade" | "fabrication" | "invention", dvs: Dv[]): UseDef => ({
   id,
-  name,
-  formula: `tech + perícia do conserto + ${name} + 1d10`,
-  desc,
+  name: T.craft[id].name,
+  formula: T.craft.formula(T.craft[id].name),
+  desc: T.craft[id].desc,
   mods: sheetSkills(REPAIR_SKILLS),
-  locked: ({ state }) => (pointsIn(state, id) > 0 ? null : `sem pontos em ${name}`),
+  locked: ({ state }) => (pointsIn(state, id) > 0 ? null : T.craft.locked(T.craft[id].name)),
   roll: ({ stats, state }, skill) => {
     const r = check(stats.TECH + skill + pointsIn(state, id));
     return { ...r, text: vsDvs(r.total, dvs) };
@@ -47,11 +50,11 @@ export const tech: RoleDef = {
     summary:
       "Conserta, melhora, modifica, fabrica e inventa. A cada rank ganha 1 ponto em duas especialidades diferentes.",
     about: [
-      "A cada rank de maker, o Tech ganha 1 rank em duas especialidades diferentes, à escolha: campo, melhoria, fabricação ou invenção.",
-      "Campo: soma o rank em todo teste de Basic Tech, Cybertech, Electronics/Security Tech, Weaponstech e Land/Sea/Air Vehicle Tech que não seja pra outra especialidade de maker (no app já entra na aba perícias). Com 1 ponto ou mais, dá pra fazer uma gambiarra no lugar do conserto completo: como uma ação, com a mesma DV do conserto normal, o item fica perfeito (SP e HP cheios) por 10 minutos a cada ponto. Depois volta ao estado de antes e só aceita outra gambiarra depois de um conserto completo.",
-      "Melhoria: tech + perícia de conserto do item + rank em melhoria + 1d10. Os materiais custam a mesma categoria de preço do item e são gastos na instalação. Cada item só aceita 1 melhoria desta especialidade (opções na tabela). Falhou: na metade do trabalho você percebe que vai ter que começar do zero; materiais e item ficam inteiros.",
-      "Fabricação: faz um item que existe (ou um que um Tech inventou) a partir de materiais: tech + perícia de conserto + rank em fabricação + 1d10. Os materiais custam uma categoria de preço abaixo do item (super luxo: metade do preço). Falhou: começa de novo, materiais inteiros.",
-      "Invenção: inventa uma melhoria ou um item novo. Você descreve pro mestre a função e como funciona, com a tecnologia do cenário (um esquema ajuda). Se o mestre topar, ele escreve as regras sem desequilibrar o jogo e define a categoria de preço (no mínimo caro). Tech + perícia ligada ao conserto + rank em invenção + 1d10; falhou: volta pra prancheta. Inventado, você (ou outro Tech com a planta) faz de verdade com fabricação ou melhoria. É a habilidade que mais pode desequilibrar o jogo: o mestre pode precisar ajustar a invenção depois.",
+      "A cada rank de criador, o Tech ganha 1 rank em duas especialidades diferentes, à escolha: campo, melhoria, fabricação ou invenção.",
+      "Campo: soma o rank em todo teste de técnica básica, cibertecnologia, eletrônica/segurança, armeiro e mecânica de veículo terrestre, de embarcação e aéreo que não seja pra outra especialidade de criador (no app já entra na aba perícias). Com 1 ponto ou mais, dá pra fazer uma gambiarra no lugar do conserto completo: como uma ação, com a mesma DV do conserto normal, o item fica perfeito (SP e HP cheios) por 10 minutos a cada ponto. Depois volta ao estado de antes e só aceita outra gambiarra depois de um conserto completo.",
+      "Melhoria: TECH + perícia de conserto do item + rank em melhoria + 1d10. Os materiais custam a mesma categoria de preço do item e são gastos na instalação. Cada item só aceita 1 melhoria desta especialidade (opções na tabela). Falhou: na metade do trabalho você percebe que vai ter que começar do zero; materiais e item ficam inteiros.",
+      "Fabricação: faz um item que existe (ou um que um Tech inventou) a partir de materiais: TECH + perícia de conserto + rank em fabricação + 1d10. Os materiais custam uma categoria de preço abaixo do item (super luxo: metade do preço). Falhou: começa de novo, materiais inteiros.",
+      "Invenção: inventa uma melhoria ou um item novo. Você descreve pro mestre a função e como funciona, com a tecnologia do cenário (um esquema ajuda). Se o mestre topar, ele escreve as regras sem desequilibrar o jogo e define a categoria de preço (no mínimo caro). TECH + perícia ligada ao conserto + rank em invenção + 1d10; falhou: volta pra prancheta. Inventado, você (ou outro Tech com a planta) faz de verdade com fabricação ou melhoria. É a habilidade que mais pode desequilibrar o jogo: o mestre pode precisar ajustar a invenção depois.",
       "A DV e o tempo de melhoria, fabricação e invenção vêm da categoria de preço do item (tabela).",
     ],
     alloc: {
@@ -86,25 +89,25 @@ export const tech: RoleDef = {
       ],
     },
     skillBonus: (_rank, state) =>
-      REPAIR_SKILLS.map((skill) => ({ skill, value: pointsIn(state, "field"), source: "campo (maker)" })),
+      REPAIR_SKILLS.map((skill) => ({ skill, value: pointsIn(state, "field"), source: "campo (criador)" })),
     uses: [
       {
         id: "jury",
-        name: "gambiarra",
-        formula: "tech + perícia do conserto + campo + 1d10",
-        desc: "como ação, contra a DV do conserto normal: o item fica perfeito por um tempo.",
-        cost: "1 ação",
+        name: T.jury.name,
+        formula: T.jury.formula,
+        desc: T.jury.desc,
+        cost: T.jury.cost,
         mods: sheetSkills(REPAIR_SKILLS),
-        locked: ({ state }) => (pointsIn(state, "field") > 0 ? null : "sem pontos em campo"),
+        locked: ({ state }) => (pointsIn(state, "field") > 0 ? null : T.jury.locked),
         roll: ({ stats, state }, skill) => {
           const field = pointsIn(state, "field");
           const r = check(stats.TECH + skill + field);
-          return { ...r, text: `compare com a DV do conserto · se passar, dura ${field * 10} minutos` };
+          return { ...r, text: T.jury.result(field * 10) };
         },
       },
-      craft("upgrade", "melhoria", "materiais da mesma categoria de preço do item, gastos na instalação.", CRAFT),
-      craft("fabrication", "fabricação", "materiais de uma categoria de preço abaixo do item.", CRAFT),
-      craft("invention", "invenção", "o mestre define a categoria de preço (no mínimo caro).", CRAFT.slice(3)),
+      craft("upgrade", CRAFT),
+      craft("fabrication", CRAFT),
+      craft("invention", CRAFT.slice(3)),
     ],
     refs: [
       {

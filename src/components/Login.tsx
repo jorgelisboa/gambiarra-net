@@ -1,14 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { t } from "@/i18n";
 import { chooseRole, login, logout, signIn, signUp, useApp } from "@/lib/store";
 import type { UserRole } from "@/lib/types";
 import { Sprite } from "./Pixel";
 
-const ROLE_OPTIONS: { id: UserRole; label: string; hint: string }[] = [
-  { id: "mestre", label: "mestre", hint: "combate, net e fichas da mesa" },
-  { id: "jogador", label: "jogador", hint: "criar e ver seus personagens" },
-];
+const ROLE_IDS: UserRole[] = ["mestre", "jogador"];
 
 type CloudTab = "entrar" | "cadastro";
 
@@ -68,17 +66,13 @@ export function Login() {
           </h1>
         </div>
         <p className="mt-4 text-dim">
-          vtt não oficial pra cyberpunk red.{" "}
-          {mode === "cloud"
-            ? "suas fichas ficam salvas na sua conta."
-            : "tudo fica salvo neste navegador."}
+          {t.auth.tagline.base} {mode === "cloud" ? t.auth.tagline.cloud : t.auth.tagline.local}
         </p>
 
         {sentTo ? (
           <div className="mt-8 space-y-4">
             <p>
-              conta criada. abra o link que enviamos pra{" "}
-              <span className="text-net">{sentTo}</span> e você entra direto.
+              {t.auth.sent.before} <span className="text-net">{sentTo}</span> {t.auth.sent.after}
             </p>
             <button
               type="button"
@@ -88,43 +82,68 @@ export function Login() {
                 setTab("entrar");
               }}
             >
-              voltar
+              {t.common.actions.back}
             </button>
           </div>
         ) : (
           <>
             {mode === "local" && (
-              <Field id="user" label="login" value={name} onChange={setName} placeholder="username" maxLength={24} autoFocus />
+              <Field
+                id="user"
+                label={t.auth.fields.login.label}
+                value={name}
+                onChange={setName}
+                placeholder={t.auth.fields.login.placeholder}
+                maxLength={24}
+                autoFocus
+              />
             )}
 
             {mode === "cloud" && !cloudSignedIn && (
               <>
-                <div role="tablist" aria-label="acesso" className="mt-8 grid grid-cols-2 border-b-2 border-line">
-                  {(["entrar", "cadastro"] as const).map((t) => (
+                <div role="tablist" aria-label={t.auth.tabs.aria} className="mt-8 grid grid-cols-2 border-b-2 border-line">
+                  {(["entrar", "cadastro"] as const).map((id) => (
                     <button
-                      key={t}
+                      key={id}
                       type="button"
                       role="tab"
-                      aria-selected={tab === t}
+                      aria-selected={tab === id}
                       onClick={() => {
-                        setTab(t);
+                        setTab(id);
                         setError(null);
                       }}
                       className={`-mb-[2px] border-b-2 py-1.5 ${
-                        tab === t ? "border-red text-red" : "glitch-hover border-transparent text-dim hover:text-fg"
+                        tab === id ? "border-red text-red" : "glitch-hover border-transparent text-dim hover:text-fg"
                       }`}
                     >
-                      {t === "entrar" ? "entrar" : "criar conta"}
+                      {id === "entrar" ? t.auth.tabs.signIn : t.auth.tabs.signUp}
                     </button>
                   ))}
                 </div>
                 {signingUp && (
-                  <Field id="name" label="nome / handle" value={name} onChange={setName} placeholder="como a mesa te chama" maxLength={24} autoComplete="nickname" />
+                  <Field
+                    id="name"
+                    label={t.auth.fields.name.label}
+                    value={name}
+                    onChange={setName}
+                    placeholder={t.auth.fields.name.placeholder}
+                    maxLength={24}
+                    autoComplete="nickname"
+                  />
                 )}
-                <Field id="email" label="email" type="email" value={email} onChange={setEmail} placeholder="voce@exemplo.com" autoComplete="email" autoFocus={!signingUp} />
+                <Field
+                  id="email"
+                  label={t.auth.fields.email.label}
+                  type="email"
+                  value={email}
+                  onChange={setEmail}
+                  placeholder={t.auth.fields.email.placeholder}
+                  autoComplete="email"
+                  autoFocus={!signingUp}
+                />
                 <Field
                   id="password"
-                  label={signingUp ? "senha (mín. 6)" : "senha"}
+                  label={signingUp ? t.auth.fields.password.labelNew : t.auth.fields.password.label}
                   type="password"
                   value={password}
                   onChange={setPassword}
@@ -135,22 +154,23 @@ export function Login() {
 
             {cloudSignedIn && (
               <p className="mt-8 flex flex-wrap items-center gap-x-2">
-                <span className="label">conectado como</span>
+                <span className="label">{t.auth.signedInAs}</span>
                 <span className="text-fg">{user}</span>
                 <button type="button" className="btn btn-bare !p-0 text-dim underline" onClick={() => void logout()}>
-                  trocar conta
+                  {t.auth.switchAccount}
                 </button>
               </p>
             )}
 
             <fieldset className="mt-6">
-              <legend className="label">entrar como</legend>
+              <legend className="label">{t.auth.roleLegend}</legend>
               <div className="mt-2 grid grid-cols-2 gap-2">
-                {ROLE_OPTIONS.map((o) => {
-                  const on = role === o.id;
+                {ROLE_IDS.map((id) => {
+                  const on = role === id;
+                  const o = t.auth.roles[id];
                   return (
                     <label
-                      key={o.id}
+                      key={id}
                       className={`box role-option flex cursor-pointer flex-col items-center gap-2 p-3 text-center ${
                         on ? "box-active text-red" : "hover:border-dim"
                       }`}
@@ -158,12 +178,12 @@ export function Login() {
                       <input
                         type="radio"
                         name="role"
-                        value={o.id}
+                        value={id}
                         checked={on}
-                        onChange={() => setPicked(o.id)}
+                        onChange={() => setPicked(id)}
                         className="sr-only"
                       />
-                      <Sprite seed={o.id} color="currentColor" size={32} />
+                      <Sprite seed={id} color="currentColor" size={32} />
                       <span className="font-pixel text-lg leading-none">{o.label}</span>
                       <span className="text-xs text-dim">{o.hint}</span>
                     </label>
@@ -179,7 +199,11 @@ export function Login() {
             )}
 
             <button className="btn btn-primary mt-6 w-full" disabled={!canSubmit}>
-              {busy ? "conectando..." : mode === "cloud" && !cloudSignedIn && signingUp ? "criar conta" : "conectar"}
+              {busy
+                ? t.auth.submit.busy
+                : mode === "cloud" && !cloudSignedIn && signingUp
+                  ? t.auth.tabs.signUp
+                  : t.auth.submit.connect}
             </button>
           </>
         )}

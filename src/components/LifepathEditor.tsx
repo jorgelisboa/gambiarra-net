@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { t } from "@/i18n";
 import {
   LIFEPATH,
   LIFEPATH_PICKS,
@@ -32,7 +33,7 @@ export function LifepathEditor({
   const [gen, setGen] = useState(0);
 
   function rollAll() {
-    if (lifepathFilled(value) && !confirm("Rolar tudo de novo? Isso substitui o lore atual.")) {
+    if (lifepathFilled(value) && !confirm(t.creation.lifepath.confirmRollAll)) {
       return;
     }
     onChange(randomLifepath());
@@ -42,9 +43,9 @@ export function LifepathEditor({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-dim">cada tabela: role, escolha da lista ou escreva a sua.</p>
+        <p className="text-xs text-dim">{t.creation.lifepath.hint}</p>
         <button className="btn btn-primary" onClick={rollAll}>
-          rolar tudo
+          {t.creation.lifepath.rollAll}
         </button>
       </div>
       {LIFEPATH.map((sec) => (
@@ -122,7 +123,7 @@ function PickField({
           )}
           <button
             className="btn !px-1 !py-0 text-xs"
-            aria-label={`rolar ${def.label}`}
+            aria-label={t.common.aria.roll(def.label)}
             disabled={options.length === 0}
             onClick={roll}
           >
@@ -141,19 +142,19 @@ function PickField({
           onChange(v === "" ? "" : options[Number(v)].text);
         }}
       >
-        <option value="">—</option>
+        <option value="">{t.creation.lifepath.emptyOption}</option>
         {options.map((e, i) => (
           <option key={e.text} value={i}>
-            {labels ? `${labels[i]} · ${e.text}` : e.text}
+            {labels ? `${labels[i]}${t.common.sep}${e.text}` : e.text}
           </option>
         ))}
-        <option value={CUSTOM}>outro (escrever)</option>
+        <option value={CUSTOM}>{t.creation.lifepath.custom}</option>
       </select>
       {custom && (
         <input
           className="field mt-1"
-          aria-label={`${def.label} (texto livre)`}
-          placeholder="escreva o seu"
+          aria-label={t.creation.lifepath.freeTextAria(def.label)}
+          placeholder={t.creation.lifepath.freeTextPlaceholder}
           autoFocus={editing}
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -189,28 +190,28 @@ function ListField({
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
         <button className="btn text-xs" onClick={rollCount}>
-          rolar quantos ({def.count.label})
+          {t.creation.lifepath.rollCount(def.count.label)}
         </button>
         <button className="btn text-xs" onClick={() => onChange([...items, emptyEntry()])}>
-          adicionar
+          {t.common.actions.add}
         </button>
         {last && (
           <span className="text-xs text-dim">
-            1d10 = {last.die} → <span className="font-bold text-fg">{last.total}</span>
+            {t.creation.lifepath.countResult(last.die)} <span className="font-bold text-fg">{last.total}</span>
           </span>
         )}
       </div>
-      {items.length === 0 && <p className="text-xs text-dim">nenhum {def.itemLabel}.</p>}
+      {items.length === 0 && <p className="text-xs text-dim">{t.creation.lifepath.none(def.itemLabel)}</p>}
       <ul className="space-y-2">
         {items.map((it, i) => (
           <li key={it.id} className="space-y-2 border-2 border-line p-2">
             <div className="flex items-center gap-2">
               <span className="font-pixel shrink-0">
-                {def.itemLabel} {i + 1}
+                {t.creation.lifepath.itemTitle(def.itemLabel, i + 1)}
               </span>
               <input
                 className="field !py-1"
-                aria-label={`${def.itemLabel} ${i + 1}: ${def.notePlaceholder}`}
+                aria-label={t.creation.lifepath.noteAria(def.itemLabel, i + 1, def.notePlaceholder)}
                 placeholder={def.notePlaceholder}
                 value={it.note}
                 onChange={(e) => patch(it.id, { note: e.target.value })}
@@ -219,11 +220,11 @@ function ListField({
                 className="btn shrink-0 text-xs"
                 onClick={() => patch(it.id, { picks: rollEntry(def).picks })}
               >
-                rolar
+                {t.common.actions.roll}
               </button>
               <button
                 className="btn btn-bare btn-danger shrink-0"
-                aria-label={`remover ${def.itemLabel} ${i + 1}`}
+                aria-label={t.common.aria.remove(`${def.itemLabel} ${i + 1}`)}
                 onClick={() => onChange(items.filter((x) => x.id !== it.id))}
               >
                 x

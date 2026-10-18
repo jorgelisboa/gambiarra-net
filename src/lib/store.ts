@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react";
 import type { AppData, Character, Combatant, NetArchitecture, SecurityPlan, UserRole } from "./types";
 import { ablateArmor, hpMaxOf, resolveHit, type Hit } from "./rpg";
+import { t } from "../i18n";
 import { removePhoto, storePhoto } from "./photo";
 import { normalizeCharacter, vitalsOf } from "./rules";
 import { supabase } from "./supabase";
@@ -186,7 +187,7 @@ async function loadCloud(uid: string, meta: Record<string, unknown>) {
   const r = lsGet(ROLE_KEY);
   const base: Snapshot = {
     ...blankSnap(false),
-    user: (meta.full_name as string) ?? (meta.name as string) ?? "netrunner",
+    user: (meta.full_name as string) ?? (meta.name as string) ?? t.auth.defaultName,
     userId: uid,
     avatarUrl: (meta.avatar_url as string) ?? null,
     role: isRole(r) ? r : null,
@@ -313,20 +314,10 @@ if (typeof window !== "undefined") {
 
 /* ---------- login ---------- */
 
-const AUTH_ERRORS: Record<string, string> = {
-  invalid_credentials: "email ou senha errados.",
-  email_not_confirmed: "confirme o email antes de entrar (veja sua caixa de entrada).",
-  user_already_exists: "esse email já tem conta. use entrar.",
-  weak_password: "senha fraca: use pelo menos 6 caracteres.",
-  email_address_invalid: "email inválido.",
-  email_address_not_authorized: "o supabase não conseguiu enviar o email de confirmação pra esse endereço.",
-  over_email_send_rate_limit: "muitos emails enviados. tente de novo em alguns minutos.",
-  over_request_rate_limit: "muitas tentativas. espere um pouco.",
-  signup_disabled: "cadastro desativado.",
-};
+const AUTH_ERRORS: Record<string, string> = t.auth.errors.byCode;
 
 const authError = (e: { code?: string; message: string }) =>
-  AUTH_ERRORS[e.code ?? ""] ?? e.message;
+  AUTH_ERRORS[e.code ?? ""] ?? t.auth.errors.other(e.message);
 
 /** `needsConfirm`: cadastro feito, mas a conta só entra pelo link do email. */
 export type AuthResult = { error: string | null; needsConfirm?: boolean };
@@ -342,7 +333,7 @@ const saveRole = (uid: string, role: UserRole) =>
 // O papel vai pro localStorage antes de entrar: quando a sessão chega, loadCloud já abre o app.
 
 export async function signIn(email: string, password: string, role: UserRole): Promise<AuthResult> {
-  if (!supabase) return { error: "supabase não configurado." };
+  if (!supabase) return { error: t.auth.errors.noSupabase };
   lsSet(ROLE_KEY, role);
   const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
   if (error) {
@@ -359,7 +350,7 @@ export async function signUp(
   password: string,
   role: UserRole,
 ): Promise<AuthResult> {
-  if (!supabase) return { error: "supabase não configurado." };
+  if (!supabase) return { error: t.auth.errors.noSupabase };
   lsSet(ROLE_KEY, role);
   const { data, error } = await supabase.auth.signUp({
     email: email.trim(),

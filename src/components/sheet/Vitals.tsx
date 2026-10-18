@@ -1,5 +1,6 @@
 "use client";
 
+import { t } from "@/i18n";
 import { armorAt, currentEmp, deathSaveOf, hpMaxOf, rollDeathSave, woundOf } from "@/lib/rpg";
 import type { Character } from "@/lib/types";
 import { Bar } from "../Pixel";
@@ -34,26 +35,26 @@ export function Vitals({
     const res = rollDeathSave(body, penalty);
     save({ deathSavePenalty: penalty + 1 });
     push(
-      "death save",
+      t.sheet.deathSave.name,
       {
         dice: [res.die],
         total: res.total,
         ok: res.ok,
-        text: `1d10 ${res.die} + penalidade ${penalty} = ${res.total} contra BODY ${body}${res.die === 10 ? " · 10 natural sempre falha" : ""}`,
+        text: t.sheet.deathSave.text(res.die, penalty, res.total, t.stats.part("BODY", body), res.die === 10),
       },
-      res.ok ? "vive" : "morre: falhou o death save",
+      res.ok ? t.sheet.deathSave.lives : t.sheet.deathSave.dies,
     );
   }
 
   return (
     <div
       role="group"
-      aria-label="sinais vitais"
+      aria-label={t.sheet.vitals.label}
       className="box sticky top-0 z-10 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-x-2 gap-y-0.5 bg-panel px-2.5 py-1 @3xl:grid-cols-[auto_minmax(0,1fr)_auto] @3xl:items-center @3xl:gap-x-4"
     >
       <div className="min-w-0">
         <div className="flex items-baseline gap-1.5">
-          <span className="text-[11px] text-dim">hp</span>
+          <span className="text-[11px] text-dim">{t.sheet.vitals.hp}</span>
           <span className="text-[26px] font-bold leading-none">
             {ch.hp}
             <span className="text-base text-dim">/{hpMax}</span>
@@ -66,11 +67,13 @@ export function Vitals({
 
       <div className="shrink-0 @3xl:col-start-3 @3xl:row-start-1">
         <div className="flex justify-end gap-3">
-          <Sp label="sp cabeça" value={spHead} />
-          <Sp label="sp corpo" value={spBody} />
+          <Sp label={t.sheet.vitals.spHead} value={spHead} />
+          <Sp label={t.sheet.vitals.spBody} value={spBody} />
         </div>
         <div className="text-right text-[11px] leading-tight text-dim">
-          hum {ch.humanity} · emp {emp}
+          {t.sheet.vitals.humanity} {ch.humanity}
+          {t.common.sep}
+          {t.stats.part("EMP", emp)}
         </div>
       </div>
 
@@ -85,7 +88,7 @@ export function Vitals({
               disabled={d < 0 ? ch.hp <= 0 : ch.hp >= hpMax}
               onClick={() => setHp(ch.hp + d)}
             >
-              {d > 0 ? `+${d}` : `−${-d}`}
+              {t.common.signed(d)}
             </button>
           ))}
           {mortal && (
@@ -94,8 +97,8 @@ export function Vitals({
               className="btn btn-bare btn-primary min-h-10 min-w-0 flex-1 !px-1 leading-tight"
               onClick={deathSave}
             >
-              death save
-              <span className="block text-[11px] text-dim">penalidade +{ch.deathSavePenalty}</span>
+              {t.sheet.deathSave.name}
+              <span className="block text-[11px] text-dim">{t.sheet.deathSave.penalty(ch.deathSavePenalty)}</span>
             </button>
           )}
         </div>

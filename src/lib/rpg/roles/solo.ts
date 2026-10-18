@@ -11,7 +11,7 @@ export const solo: RoleDef = {
     summary: "Divide pontos iguais ao rank entre bônus de combate.",
     about: [
       "Quando o combate começa (antes de rolar iniciativa), a qualquer hora fora de combate ou gastando 1 ação durante o combate, o Solo divide os pontos de consciência de combate entre as opções abaixo. Se não mexer, a divisão anterior continua valendo. Algumas opções custam mais pontos que outras.",
-      "No app, tudo já entra sozinho: reação de iniciativa na rolagem de iniciativa; ataque preciso e recuperar falha no botão atacar das armas; ponto fraco no dano; detectar ameaça na perícia Perception; desvio de dano no 1º dano que você leva no round, no combate.",
+      "No app, tudo já entra sozinho: reação de iniciativa na rolagem de iniciativa; ataque preciso e recuperar falha no botão atacar das armas; ponto fraco no dano; detectar ameaça na perícia percepção; desvio de dano no 1º dano que você leva na rodada, no combate.",
     ],
     alloc: {
       title: "pontos de combate",
@@ -20,10 +20,10 @@ export const solo: RoleDef = {
         {
           id: "deflection",
           name: "desvio de dano",
-          rule: "você aprendeu a rolar com o golpe: a cada 2 pts, −1 no 1º dano que você levar no round (até −5 com 10 pts)",
+          rule: "você aprendeu a rolar com o golpe: a cada 2 pts, −1 no 1º dano que você levar na rodada (até −5 com 10 pts)",
           step: 2,
           max: 10,
-          effect: (p) => `−${p / 2} no 1º dano do round`,
+          effect: (p) => `−${p / 2} no 1º dano da rodada`,
         },
         {
           id: "fumble",
@@ -50,14 +50,14 @@ export const solo: RoleDef = {
         {
           id: "weakness",
           name: "ponto fraco",
-          rule: "acha brecha até em alvo blindado: +1 de dano (antes da armadura) no 1º ataque que acertar no round, por ponto",
-          effect: (p) => `+${p} dano no 1º acerto do round`,
+          rule: "acha brecha até em alvo blindado: +1 de dano (antes da armadura) no 1º ataque que acertar na rodada, por ponto",
+          effect: (p) => `+${p} dano no 1º acerto da rodada`,
         },
         {
           id: "threat",
           name: "detectar ameaça",
-          rule: "consciência do ambiente: +1 nos testes de Perception por ponto",
-          effect: (p) => `+${p} em Perception`,
+          rule: "consciência do ambiente: +1 nos testes de percepção por ponto",
+          effect: (p) => `+${p} em percepção`,
         },
       ],
     },

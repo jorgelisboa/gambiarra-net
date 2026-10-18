@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { t } from "@/i18n";
 import {
   deleteCharacter,
   setSessionCharacter,
@@ -23,7 +24,7 @@ import {
   woundOf,
   woundPenaltyOf,
 } from "@/lib/rpg";
-import { STAT_LABELS, colorFor } from "@/lib/rules";
+import { colorFor } from "@/lib/rules";
 import {
   ROLES,
   STAT_KEYS,
@@ -44,21 +45,21 @@ import { SheetView } from "./sheet/SheetView";
 
 /** `role`: a aba só aparece pra esse role. */
 const SHEET_TABS = [
-  { id: "sheet", label: "ficha" },
-  { id: "stats", label: "stats" },
-  { id: "skills", label: "perícias" },
-  { id: "gear", label: "equipamento" },
-  { id: "cyber", label: "cyberware" },
-  { id: "ability", label: "habilidade" },
-  { id: "net", label: "netrun", role: "Netrunner" },
-  { id: "lore", label: "lore" },
-  { id: "notes", label: "notas" },
+  { id: "sheet", label: t.characters.tabs.sheet },
+  { id: "stats", label: t.characters.tabs.stats },
+  { id: "skills", label: t.characters.tabs.skills },
+  { id: "gear", label: t.characters.tabs.gear },
+  { id: "cyber", label: t.characters.tabs.cyber },
+  { id: "ability", label: t.characters.tabs.ability },
+  { id: "net", label: t.characters.tabs.net, role: "Netrunner" },
+  { id: "lore", label: t.characters.tabs.lore },
+  { id: "notes", label: t.characters.tabs.notes },
 ] as const satisfies readonly { id: string; label: string; role?: Role }[];
 
 type SheetTab = (typeof SHEET_TABS)[number]["id"];
 type SheetTabDef = (typeof SHEET_TABS)[number];
 
-const tabsFor = (role: Role): SheetTabDef[] => SHEET_TABS.filter((t) => !("role" in t) || t.role === role);
+const tabsFor = (role: Role): SheetTabDef[] => SHEET_TABS.filter((tab) => !("role" in tab) || tab.role === role);
 
 /** Mesmo corte do `sm:` do Tailwind. No servidor (e na hidratação) vale celular. */
 const WIDE = "(min-width: 640px)";
@@ -71,13 +72,13 @@ const useWide = () =>
   useSyncExternalStore(subscribeWide, () => matchMedia(WIDE).matches, () => false);
 
 const NOTE_FIELDS: { key: keyof CharacterNotes; label: string; area?: boolean }[] = [
-  { key: "alias", label: "apelido / handle" },
-  { key: "age", label: "idade" },
-  { key: "goal", label: "objetivo", area: true },
-  { key: "appearance", label: "aparência", area: true },
-  { key: "personality", label: "personalidade", area: true },
-  { key: "history", label: "história", area: true },
-  { key: "extra", label: "anotações", area: true },
+  { key: "alias", label: t.characters.notes.alias },
+  { key: "age", label: t.characters.notes.age },
+  { key: "goal", label: t.characters.notes.goal, area: true },
+  { key: "appearance", label: t.characters.notes.appearance, area: true },
+  { key: "personality", label: t.characters.notes.personality, area: true },
+  { key: "history", label: t.characters.notes.history, area: true },
+  { key: "extra", label: t.characters.notes.extra, area: true },
 ];
 
 export function Characters() {
@@ -106,7 +107,7 @@ export function Characters() {
           <div className="flex gap-2 md:hidden">
             <select
               className="field min-h-10 min-w-0 flex-1"
-              aria-label="personagem"
+              aria-label={t.characters.list.selectAria}
               value={selected.id}
               onChange={(e) => {
                 setSelectedId(e.target.value);
@@ -115,25 +116,25 @@ export function Characters() {
             >
               {characters.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name} · {c.role.toLowerCase()}
+                  {t.characters.list.option(c.name, c.role.toLowerCase())}
                 </option>
               ))}
             </select>
             <button
               className="btn btn-primary min-h-10 shrink-0"
-              aria-label="novo personagem"
+              aria-label={t.characters.list.new}
               onClick={() => setCreating(true)}
             >
-              novo
+              {t.characters.list.newShort}
             </button>
           </div>
         )}
         <div className={`space-y-2 ${selected ? "max-md:hidden" : ""}`}>
           <button className="btn btn-primary w-full" onClick={() => setCreating(true)}>
-            novo personagem
+            {t.characters.list.new}
           </button>
           {characters.length === 0 && (
-            <p className="pt-4 text-dim">nenhum personagem ainda.</p>
+            <p className="pt-4 text-dim">{t.characters.list.empty}</p>
           )}
           {characters.map((c) => (
             <button
@@ -150,11 +151,11 @@ export function Characters() {
               <span className="min-w-0 flex-1">
                 <span className="font-pixel block truncate text-base">{c.name}</span>
                 <span className="block text-xs text-dim">
-                  {c.role.toLowerCase()} · rank {c.roleRank}
+                  {t.characters.list.roleRank(c.role.toLowerCase(), c.roleRank)}
                 </span>
               </span>
               {c.id === sessionCharacterId && (
-                <span className="text-xs text-red">sessão</span>
+                <span className="text-xs text-red">{t.characters.list.session}</span>
               )}
             </button>
           ))}
@@ -177,7 +178,7 @@ export function Characters() {
         />
       ) : (
         <div className="box p-10 text-center text-dim">
-          selecione ou crie um personagem.
+          {t.characters.list.pickOrCreate}
         </div>
       )}
     </div>
@@ -194,13 +195,13 @@ function Editor({
   ch: Character;
   inSession: boolean;
   tab: SheetTab;
-  onTab: (t: SheetTab) => void;
+  onTab: (tab: SheetTab) => void;
   onDelete: () => void;
 }) {
   const save = (patch: Partial<Character>) => upsertCharacter({ ...ch, ...patch });
   const tabs = tabsFor(ch.role);
   // a aba escolhida pode não existir pra este role (netrun só pro Netrunner)
-  const shown: SheetTab = tabs.some((t) => t.id === tab) ? tab : "sheet";
+  const shown: SheetTab = tabs.some((x) => x.id === tab) ? tab : "sheet";
   const changeRole = (role: Role) =>
     save({ role, ability: fitToRank(roleDef(role).ability, ch.ability, ch.roleRank) });
   const hpMax = hpMaxOf(ch);
@@ -227,7 +228,7 @@ function Editor({
             <div className="flex items-start gap-2">
               <input
                 className="field font-pixel min-h-10 min-w-0 flex-1 text-xl sm:min-h-0 sm:max-w-sm sm:text-2xl"
-                aria-label="nome"
+                aria-label={t.characters.editor.nameAria}
                 value={ch.name}
                 onChange={(e) => save({ name: e.target.value })}
               />
@@ -237,15 +238,15 @@ function Editor({
                 aria-controls="ficha-opcoes"
                 onClick={() => setOptionsOpen((o) => !o)}
               >
-                opções
+                {t.characters.editor.options}
               </button>
             </div>
             <p className="text-dim">
-              {ch.role.toLowerCase()} · rank {ch.roleRank}
+              {t.characters.list.roleRank(ch.role.toLowerCase(), ch.roleRank)}
               {inSession && (
                 <>
                   {" "}
-                  <span className="whitespace-nowrap text-red">· na sessão</span>
+                  <span className="whitespace-nowrap text-red">{t.characters.editor.inSessionTag}</span>
                 </>
               )}
             </p>
@@ -259,7 +260,7 @@ function Editor({
             <select
               className="field min-h-10 !w-auto sm:min-h-0"
               value={ch.role}
-              aria-label="role"
+              aria-label={t.characters.editor.roleAria}
               onChange={(e) => changeRole(e.target.value as Role)}
             >
               {ROLES.map((r) => (
@@ -270,13 +271,13 @@ function Editor({
               className={`btn min-h-10 sm:min-h-0 ${inSession ? "btn-primary" : ""}`}
               onClick={() => setSessionCharacter(inSession ? null : ch.id)}
             >
-              {inSession ? "na sessão" : "usar na sessão"}
+              {inSession ? t.characters.editor.inSession : t.characters.editor.useInSession}
             </button>
             <button
               className="btn btn-danger min-h-10 sm:min-h-0"
-              onClick={() => confirm(`Apagar ${ch.name}?`) && onDelete()}
+              onClick={() => confirm(t.characters.editor.confirmDelete(ch.name)) && onDelete()}
             >
-              apagar
+              {t.characters.editor.delete}
             </button>
           </div>
         )}
@@ -302,8 +303,8 @@ function Editor({
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
               {STAT_KEYS.map((k) => (
                 <label key={k} className="box bg-raise p-2 text-center">
-                  <span className="block text-xs text-dim" title={STAT_LABELS[k]}>
-                    {k.toLowerCase()}
+                  <span className="block text-xs text-dim" title={t.stats.long[k]}>
+                    {t.stats.short[k]}
                   </span>
                   <NumberInput
                     className="w-full bg-transparent text-center text-3xl font-bold text-red outline-none"
@@ -313,18 +314,18 @@ function Editor({
                     onChange={(v) => save({ stats: { ...ch.stats, [k]: v } })}
                   />
                   {k === "EMP" && emp < ch.stats.EMP && (
-                    <span className="block text-xs text-net" title="EMP caiu com a humanidade">
-                      em uso {emp}
+                    <span className="block text-xs text-net" title={t.characters.stats.empDroppedTitle}>
+                      {t.characters.stats.inUse(emp)}
                     </span>
                   )}
                   {k !== "EMP" && eff[k] < ch.stats[k] && (
-                    <span className="block text-xs text-net" title="penalidade da armadura vestida">
-                      com armadura {eff[k]}
+                    <span className="block text-xs text-net" title={t.characters.stats.armorTitle}>
+                      {t.characters.stats.withArmor(eff[k])}
                     </span>
                   )}
                   {k !== "EMP" && eff[k] > ch.stats[k] && (
-                    <span className="block text-xs text-net" title="cyberware">
-                      com cyberware {eff[k]}
+                    <span className="block text-xs text-net" title={t.characters.stats.cyberTitle}>
+                      {t.characters.stats.withCyber(eff[k])}
                     </span>
                   )}
                 </label>
@@ -332,7 +333,7 @@ function Editor({
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <Meter
-                label="hp"
+                label={t.characters.stats.hp}
                 color="var(--red)"
                 value={ch.hp}
                 max={hpMax}
@@ -345,23 +346,23 @@ function Editor({
                   {wound.effect && <span className="text-dim"> · {wound.effect}</span>}
                 </p>
                 <p className="text-dim">
-                  grave abaixo de {seriousThreshold(hpMax)} · death save {deathSaveOf(ch)}
-                  {wound.stabilize && <> · estabilizar {wound.stabilize}</>}
+                  {t.characters.stats.seriousDeath(seriousThreshold(hpMax), deathSaveOf(ch))}
+                  {wound.stabilize && t.characters.stats.stabilize(wound.stabilize)}
                 </p>
                 {ch.deathSavePenalty > 0 && (
                   <p className="text-red">
-                    penalidade de death save +{ch.deathSavePenalty}{" "}
+                    {t.characters.stats.deathPenalty(ch.deathSavePenalty)}{" "}
                     <button
                       className="btn btn-bare !p-0 text-dim underline"
                       onClick={() => save({ deathSavePenalty: 0 })}
                     >
-                      zerar
+                      {t.characters.stats.resetPenalty}
                     </button>
                   </p>
                 )}
               </Meter>
               <Meter
-                label="humanidade"
+                label={t.characters.stats.humanity}
                 color="var(--net)"
                 value={Math.min(ch.humanity, humMax)}
                 min={-humMax}
@@ -369,17 +370,17 @@ function Editor({
                 onChange={(v) => save({ humanity: v })}
               >
                 <p>
-                  emp em uso <span className="font-bold">{emp}</span>
+                  {t.characters.stats.empInUse} <span className="font-bold">{emp}</span>
                   <span className="text-dim">/{ch.stats.EMP}</span>
                 </p>
-                {cap < humMax && <p className="text-dim">teto com o cyberware {cap}</p>}
+                {cap < humMax && <p className="text-dim">{t.characters.stats.cyberCap(cap)}</p>}
                 {psy.level > 0 && (
                   <p>
                     <span className={psychosisTone(psy.level)}>{psy.label}</span>{" "}
                     <span className="text-dim">{psy.text}</span>
                   </p>
                 )}
-                <p className="text-dim">o EMP cai 1 a cada dezena de humanidade perdida.</p>
+                <p className="text-dim">{t.characters.stats.empDrops}</p>
               </Meter>
             </div>
           </>
@@ -446,12 +447,12 @@ function SheetTabs({
 }: {
   tabs: SheetTabDef[];
   tab: SheetTab;
-  onTab: (t: SheetTab) => void;
+  onTab: (tab: SheetTab) => void;
 }) {
   function go(i: number) {
-    const t = tabs[(i + tabs.length) % tabs.length];
-    onTab(t.id);
-    document.getElementById(`ficha-tab-${t.id}`)?.focus();
+    const next = tabs[(i + tabs.length) % tabs.length];
+    onTab(next.id);
+    document.getElementById(`ficha-tab-${next.id}`)?.focus();
   }
   // a faixa rola de lado em vez de quebrar linha: a aba ativa tem que estar à vista
   useEffect(() => {
@@ -462,22 +463,22 @@ function SheetTabs({
   return (
     <div
       role="tablist"
-      aria-label="ficha"
+      aria-label={t.characters.tabs.aria}
       // a linha de baixo é sombra interna: a borda ficaria fora da área que rola e cortaria o sublinhado da aba
       style={{ scrollbarWidth: "none", boxShadow: "inset 0 -2px 0 var(--line)" }}
       className="flex flex-nowrap gap-x-1 overflow-x-auto [&::-webkit-scrollbar]:hidden"
     >
-      {tabs.map((t, i) => {
-        const on = t.id === tab;
+      {tabs.map((def, i) => {
+        const on = def.id === tab;
         return (
           <button
-            key={t.id}
+            key={def.id}
             role="tab"
-            id={`ficha-tab-${t.id}`}
+            id={`ficha-tab-${def.id}`}
             aria-selected={on}
-            aria-controls={`ficha-${t.id}`}
+            aria-controls={`ficha-${def.id}`}
             tabIndex={on ? 0 : -1}
-            onClick={() => onTab(t.id)}
+            onClick={() => onTab(def.id)}
             onKeyDown={(e) => {
               if (e.key === "ArrowRight") go(i + 1);
               else if (e.key === "ArrowLeft") go(i - 1);
@@ -488,7 +489,7 @@ function SheetTabs({
               on ? "border-red text-red" : "border-transparent text-dim hover:text-fg"
             }`}
           >
-            {t.label}
+            {def.label}
           </button>
         );
       })}

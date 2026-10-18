@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { t } from "@/i18n";
 import { netActionsOf, roleDef, rollCtx, type UseDef } from "@/lib/rpg";
 import type { Character } from "@/lib/types";
 import type { PushRoll } from "./roll";
@@ -27,13 +28,16 @@ export function AbilityPanel({
 
   return (
     <Section
-      title="habilidade"
+      title={t.sheet.ability.title}
       className={className}
-      aside={<LinkBtn onClick={() => onTab("ability")}>habilidade completa</LinkBtn>}
+      aside={<LinkBtn onClick={() => onTab("ability")}>{t.sheet.ability.full}</LinkBtn>}
     >
       <p className={netrunner ? "text-net" : "text-red"}>
         <span className="font-pixel text-base">{ab.namePt}</span>
-        <span className="text-fg"> · rank {ch.roleRank}</span>
+        <span className="text-fg">
+          {t.common.sep}
+          {t.common.words.rank} {ch.roleRank}
+        </span>
       </p>
       <p className="line-clamp-2 text-xs text-dim">{ab.summary}</p>
       {passives.length > 0 && <p className="mt-1 text-xs">{passives.join(" · ")}</p>}
@@ -41,10 +45,10 @@ export function AbilityPanel({
       {netrunner && (
         <div className="mt-2 flex items-center justify-between gap-2">
           <p className="min-w-0 text-xs text-net">
-            interface {ch.roleRank} · {netActionsOf(ch)} ações de net por turno
+            {t.sheet.ability.netLine(ch.roleRank, netActionsOf(ch))}
           </p>
           <button type="button" className="btn btn-bare min-h-10 shrink-0 !px-3 text-net" onClick={() => onTab("net")}>
-            netrun
+            {t.sheet.ability.netrun}
           </button>
         </div>
       )}
@@ -76,7 +80,7 @@ function UseButton({ use, ch, push }: { use: UseDef; ch: Character; push: PushRo
         {hasMods && (
           <select
             className="field min-h-10 w-[52%] min-w-0 shrink-0 !py-1 text-xs"
-            aria-label={`modificador de ${use.name}`}
+            aria-label={t.sheet.ability.modAria(use.name)}
             value={idx}
             onChange={(e) => setPick(Number(e.target.value))}
           >
@@ -96,7 +100,7 @@ function UseButton({ use, ch, push }: { use: UseDef; ch: Character; push: PushRo
           {use.name}
         </button>
       </div>
-      {lock && <p className="mt-0.5 text-[11px] text-dim">bloqueado: {lock}</p>}
+      {lock && <p className="mt-0.5 text-[11px] text-dim">{t.sheet.ability.locked(lock)}</p>}
     </div>
   );
 }

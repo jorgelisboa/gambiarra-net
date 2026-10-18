@@ -1,17 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { catalogItem, itemName, reload, type AmmoDef, type WeaponInfo } from "@/lib/rpg";
-import type { GearItem } from "@/lib/types";
+import { gameName, t } from "@/i18n";
+import { itemName, reload, type AmmoDef, type WeaponInfo } from "@/lib/rpg";
 import type { Character } from "@/lib/types";
 
 type Mag = NonNullable<WeaponInfo["mag"]>;
 
 /** Munição básica: id `ammo-{tipo}` e preço de tabela. Qualquer outra (incendiária, especial) vira vermelha. */
 const isBasic = (a?: AmmoDef) => !a || (a.cost !== null && a.id === `ammo-${a.ammo}`);
-
-/** Nome da munição em pt (a pilha do bolso raramente tem apelido). */
-const ammoName = (g: GearItem) => g.name || catalogItem(g.ref)?.namePt || itemName(g);
 
 /**
  * Uma bala em pixel art: ponta de 2 pixels de altura mais escura, um sulco entre projétil e estojo
@@ -67,6 +64,7 @@ export function WeaponMagazine({
 }) {
   const [pickId, setPickId] = useState<string | null>(null);
 
+  const M = t.weapons.magazine;
   const { compatible } = info;
   const picked =
     compatible.find((g) => g.id === pickId) ??
@@ -86,7 +84,7 @@ export function WeaponMagazine({
     <div className="mt-2 border-t-2 border-line pt-2">
       <div
         role="img"
-        aria-label={`pente: ${mag.loaded} de ${mag.size} balas`}
+        aria-label={M.aria(mag.loaded, mag.size)}
         className={`flex flex-wrap ${big ? "gap-px" : "gap-0.5"}`}
       >
         {Array.from({ length: mag.size }, (_, i) => (
@@ -106,40 +104,40 @@ export function WeaponMagazine({
           <span className={mag.loaded < 1 ? "text-red" : undefined}>{mag.loaded}</span>
           <span className="text-dim">/{mag.size}</span>
         </span>
-        {marked > 0 && <span className="text-right text-xs text-red">este modo gasta {spend}</span>}
+        {marked > 0 && <span className="text-right text-xs text-red">{M.spends(spend)}</span>}
       </div>
-      <div className={`mt-0.5 text-xs ${special ? "text-red" : "text-dim"}`}>{mag.ammo?.namePt ?? "vazio"}</div>
+      <div className={`mt-0.5 text-xs ${special ? "text-red" : "text-dim"}`}>{mag.ammo ? gameName(mag.ammo) : t.common.words.empty}</div>
 
       <div className="mt-2 grid gap-1">
         {picked ? (
           <select
             className="field min-h-10 min-w-0 !px-2 text-xs"
-            aria-label={`munição do pente de ${itemName(info.item)}`}
+            aria-label={M.ammoOf(itemName(info.item))}
             value={picked.id}
             onChange={(e) => setPickId(e.target.value)}
           >
             {compatible.map((g) => (
               <option key={g.id} value={g.id}>
-                {ammoName(g)} ×{g.qty}
+                {itemName(g)} ×{g.qty}
               </option>
             ))}
           </select>
         ) : (
           <span className="flex min-h-10 items-center border-2 border-line px-2 text-xs text-dim">
-            sem munição no bolso
+            {M.noAmmo}
           </span>
         )}
         <button
           type="button"
           className="btn btn-bare min-h-10 !px-3"
           disabled={!picked || (same && full)}
-          aria-label={`${swap ? "trocar munição" : "recarregar"} de ${itemName(info.item)}`}
+          aria-label={M.reloadAria(swap ? M.swap : M.reload, itemName(info.item))}
           onClick={() => picked && save({ gear: reload(ch.gear, info.item.id, picked.id) })}
         >
-          {swap ? "trocar munição" : "recarregar"}
+          {swap ? M.swap : M.reload}
         </button>
       </div>
-      <p className="mt-1 text-xs text-dim">1 ação · não mistura munição no pente; o que sobra volta pro bolso</p>
+      <p className="mt-1 text-xs text-dim">{M.note}</p>
     </div>
   );
 }

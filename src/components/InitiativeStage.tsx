@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
+import { t } from "@/i18n";
 import { endCombat, nextTurn, useApp } from "@/lib/store";
-import { woundOf } from "@/lib/rpg";
+import { SLOT_LABELS, woundOf } from "@/lib/rpg";
 import { vitalsOf, type Vitals } from "@/lib/rules";
 import type { Combatant } from "@/lib/types";
 import { Bar, Icon } from "./Pixel";
@@ -71,8 +72,14 @@ export function InitiativeStage({ onClose }: { onClose: () => void }) {
   const placed = useRef(false);
   const activeRef = useRef(-1);
   const [view, setView] = useState<View>({ seen: [], start: true, end: true });
+  // o pai passa onClose inline: guardado num ref pra tela cheia não reabrir (e fechar) a cada mudança da mesa
+  const closeRef = useRef(onClose);
+  useEffect(() => {
+    closeRef.current = onClose;
+  });
 
   useEffect(() => {
+    const onClose = () => closeRef.current();
     const el = root.current;
     el?.requestFullscreen?.().catch(() => {});
     const onFs = () => {
@@ -93,7 +100,7 @@ export function InitiativeStage({ onClose }: { onClose: () => void }) {
       window.removeEventListener("keydown", onKey);
       if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
     };
-  }, [onClose]);
+  }, []);
 
   const cards = combat.combatants.map((c) => ({ c, v: vitalsOf(c, characters) }));
   const n = cards.length;
@@ -174,10 +181,10 @@ export function InitiativeStage({ onClose }: { onClose: () => void }) {
     <div ref={root} className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-bg p-3 sm:p-4">
       <header className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <span className="font-pixel text-2xl sm:text-3xl">
-          round <span className="font-mono font-bold text-red">{String(combat.round).padStart(2, "0")}</span>
+          {t.combat.round} <span className="font-mono font-bold text-red">{String(combat.round).padStart(2, "0")}</span>
         </span>
         <nav
-          aria-label="ordem de iniciativa"
+          aria-label={t.combat.stage.order}
           className="order-last flex w-full gap-1.5 overflow-x-auto pb-1 [justify-content:safe_center] lg:order-none lg:w-auto lg:flex-1"
         >
           {cards.map(({ c, v }, i) => {
@@ -186,9 +193,9 @@ export function InitiativeStage({ onClose }: { onClose: () => void }) {
               <button
                 key={c.id}
                 type="button"
-                aria-label={`ver ${v.name}`}
+                aria-label={t.combat.stage.view(v.name)}
                 aria-current={isActive ? "step" : undefined}
-                title={`${c.initiative} · ${v.name}`}
+                title={t.combat.stage.navTitle(c.initiative, v.name)}
                 onClick={() => go(i)}
                 className={`relative shrink-0 border-2 p-px ${
                   isActive ? "border-red" : view.seen[i] ? "border-line" : "border-transparent opacity-50 hover:opacity-100"
@@ -204,9 +211,9 @@ export function InitiativeStage({ onClose }: { onClose: () => void }) {
           })}
         </nav>
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          <span className="hidden text-xs text-dim xl:inline">espaço / →</span>
-          <button className="btn btn-primary" title="espaço / → passa o turno" onClick={nextTurn}>
-            próximo turno
+          <span className="hidden text-xs text-dim xl:inline">{t.combat.stage.keysHint}</span>
+          <button className="btn btn-primary" title={t.combat.stage.nextTitle} onClick={nextTurn}>
+            {t.combat.nextTurn}
           </button>
           <button
             className="btn btn-danger"
@@ -215,10 +222,10 @@ export function InitiativeStage({ onClose }: { onClose: () => void }) {
               onClose();
             }}
           >
-            encerrar
+            {t.combat.end}
           </button>
           <button className="btn" onClick={onClose}>
-            sair (esc)
+            {t.combat.stage.exit}
           </button>
         </div>
       </header>
@@ -228,15 +235,15 @@ export function InitiativeStage({ onClose }: { onClose: () => void }) {
           ref={track}
           className="carousel"
           style={per}
-          aria-label="combatentes na ordem de iniciativa"
-          aria-roledescription="carrossel"
+          aria-label={t.combat.stage.carousel}
+          aria-roledescription={t.combat.stage.carouselRole}
         >
           {cards.map(({ c, v }, i) => (
             <StageCard
               key={c.id}
               c={c}
               v={v}
-              label={`${i + 1} de ${n}: ${v.name}`}
+              label={t.combat.stage.cardLabel(i + 1, n, v.name)}
               active={i === activeIndex}
               // muda a cada começo de turno: a foto pisca e o traço corre, uma vez
               turn={i === activeIndex ? `${combat.round}-${c.id}` : null}
@@ -271,7 +278,7 @@ function StageCard({
   return (
     <li
       className={`stage-card ${active ? "stage-card-active" : ""}`}
-      aria-roledescription="carta"
+      aria-roledescription={t.combat.stage.cardRole}
       aria-label={label}
       aria-current={active ? "step" : undefined}
     >
@@ -283,11 +290,11 @@ function StageCard({
       <div className="absolute inset-x-2 top-2 flex items-start justify-between gap-2">
         <span
           className={`border-2 ${frame} bg-bg/80 px-2 font-mono text-2xl font-bold leading-tight text-red`}
-          title="iniciativa"
+          title={t.combat.initiative}
         >
           {c.initiative}
         </span>
-        {active && <span className="bg-red px-2 py-0.5 text-xs font-bold uppercase text-black">turno</span>}
+        {active && <span className="bg-red px-2 py-0.5 text-xs font-bold uppercase text-black">{t.combat.stage.turnBadge}</span>}
       </div>
 
       <div className="stage-hud">
@@ -297,11 +304,11 @@ function StageCard({
             style={{ color: active ? v.color : undefined }}
           >
             {v.name}
-            {!v.linked && <span className="ml-2 font-mono text-xs text-dim">pnj</span>}
+            {!v.linked && <span className="ml-2 font-mono text-xs text-dim">{t.combat.npc.tag}</span>}
           </div>
           <div>
             <div className="mb-1 flex items-baseline justify-between">
-              <span className="text-dim">HP</span>
+              <span className="text-dim">{t.combat.hp}</span>
               <span className="font-mono">
                 {v.hp}/{v.maxHp}
               </span>
@@ -310,14 +317,19 @@ function StageCard({
           </div>
           <div className="flex items-baseline justify-between gap-2">
             <span className="text-dim">
-              SP cabeça <span className="font-mono text-fg">{v.sp.head}</span> · corpo{" "}
-              <span className="font-mono text-fg">{v.sp.body}</span>
+              {t.combat.sp} {SLOT_LABELS.head} <span className="font-mono text-fg">{v.sp.head}</span>
+              {t.common.sep}
+              {SLOT_LABELS.body} <span className="font-mono text-fg">{v.sp.body}</span>
             </span>
             <span className="uppercase" style={{ color }} title={wound.effect || undefined}>
-              {wound.short || "ileso"}
+              {wound.short || t.combat.unhurt}
             </span>
           </div>
-          {v.deathSavePenalty > 0 && <div className="text-red">death save +{v.deathSavePenalty}</div>}
+          {v.deathSavePenalty > 0 && (
+            <div className="text-red">
+              {t.combat.deathSave} +{v.deathSavePenalty}
+            </div>
+          )}
           {active && <TurnActions c={c} netMax={v.netMax} size={28} />}
         </div>
       </div>
@@ -330,7 +342,7 @@ function Arrow({ side, onClick }: { side: "left" | "right"; onClick: () => void 
   return (
     <button
       type="button"
-      aria-label={left ? "cartas anteriores" : "próximas cartas"}
+      aria-label={left ? t.combat.stage.previous : t.combat.stage.next}
       onClick={onClick}
       className={`absolute top-1/2 z-10 -translate-y-1/2 border-2 border-line bg-bg/90 p-2 hover:border-red hover:text-red ${
         left ? "left-1" : "right-1"

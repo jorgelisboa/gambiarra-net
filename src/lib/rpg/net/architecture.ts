@@ -1,3 +1,4 @@
+import { t } from "../../../i18n";
 import { uid } from "../../id";
 import type { FloorKind, NetArchitecture, NetDifficulty, NetFloor } from "../../types";
 
@@ -9,10 +10,10 @@ import type { FloorKind, NetArchitecture, NetDifficulty, NetFloor } from "../../
 
 /** Dificuldade da arquitetura: a DV padrão de senhas, arquivos e nós de controle. */
 export const NET_DIFFICULTIES: { id: NetDifficulty; label: string; dv: number }[] = [
-  { id: "basic", label: "básica", dv: 6 },
-  { id: "standard", label: "padrão", dv: 8 },
-  { id: "uncommon", label: "incomum", dv: 10 },
-  { id: "advanced", label: "avançada", dv: 12 },
+  { id: "basic", label: t.net.difficulties.basic, dv: 6 },
+  { id: "standard", label: t.net.difficulties.standard, dv: 8 },
+  { id: "uncommon", label: t.net.difficulties.uncommon, dv: 10 },
+  { id: "advanced", label: t.net.difficulties.advanced, dv: 12 },
 ];
 
 export const difficultyOf = (id: NetDifficulty) =>
@@ -22,6 +23,9 @@ export const LOBBY_FLOORS = 2;
 /** Uma arquitetura tem de 3 a 18 andares (3d6). */
 export const MAX_FLOORS = 18;
 
+/** Ações de interface (os nomes ficam com a habilidade do Netrunner). */
+const ACTIONS = t.roles.netrunner.abilities;
+
 export const FLOOR_KINDS: {
   id: FloorKind;
   label: string;
@@ -30,10 +34,10 @@ export const FLOOR_KINDS: {
   /** Ação de interface que resolve o andar. */
   against: string;
 }[] = [
-  { id: "password", label: "senha", tag: "PASSWORD", against: "Backdoor contra a DV" },
-  { id: "file", label: "arquivo", tag: "FILE", against: "Eye-Dee contra a DV" },
-  { id: "control", label: "nó de controle", tag: "CONTROL", against: "Control contra a DV" },
-  { id: "ice", label: "black ICE", tag: "BLACK ICE", against: "ataca quem chega no andar" },
+  { id: "password", ...t.net.floorKinds.password, against: t.net.against.action(ACTIONS.backdoor.name) },
+  { id: "file", ...t.net.floorKinds.file, against: t.net.against.action(ACTIONS.eyedee.name) },
+  { id: "control", ...t.net.floorKinds.control, against: t.net.against.action(ACTIONS.control.name) },
+  { id: "ice", ...t.net.floorKinds.ice, against: t.net.against.ice },
 ];
 
 export const floorKind = (id: FloorKind) => FLOOR_KINDS.find((k) => k.id === id) ?? FLOOR_KINDS[0];
@@ -59,7 +63,7 @@ export const hasDv = (f: NetFloor) => f.kind !== "ice";
 export function newArchitecture(name: string, difficulty: NetDifficulty): NetArchitecture {
   const arch: NetArchitecture = {
     id: uid(),
-    name: name.trim() || "arquitetura",
+    name: name.trim() || t.net.defaultName,
     difficulty,
     floors: [],
     runnerAt: null,

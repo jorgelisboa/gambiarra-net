@@ -2,6 +2,7 @@
 
 import { Login } from "@/components/Login";
 import { Shell } from "@/components/Shell";
+import { t } from "@/i18n";
 import { useApp } from "@/lib/store";
 
 export default function Home() {
@@ -9,7 +10,7 @@ export default function Home() {
   if (!ready) {
     return (
       <main className="flex flex-1 items-center justify-center text-dim">
-        <span className="cursor">conectando</span>
+        <span className="cursor">{t.shell.connecting}</span>
       </main>
     );
   }

@@ -1,5 +1,6 @@
+import { gameName, t } from "../../../i18n";
 import { check } from "../dice";
-import { skillLevel } from "../skills";
+import { skillDef, skillLevel } from "../skills";
 import type { RoleDef, Tier } from "../types";
 
 const OPERATOR: Tier[] = [
@@ -65,6 +66,8 @@ const OPERATOR: Tier[] = [
   },
 ];
 
+const H = t.roles.fixer.haggle;
+
 const dealAt = (rank: number) =>
   OPERATOR.find((t) => rank >= t.from && rank <= t.to)
     ?.lines.find((l) => l.startsWith("pechincha:"))
@@ -82,20 +85,20 @@ export const fixer: RoleDef = {
     about: [
       "O Fixer sabe arrumar coisa no mercado negro e transitar pelos costumes da rua, onde centenas de culturas e níveis de renda se cruzam. Mantém uma rede enorme de contatos e clientes.",
       "Contatos: a quem você recorre pra conseguir mercadoria, favor ou informação (pagando, claro). Alcance: a categoria de preço mais alta que você sempre consegue arrumar, e se dá pra juntar outros fixers num Night Market, que libera todas as categorias por pouco tempo. Trânsito: se misturar nas culturas de dentro e de fora da rua, com idioma, códigos sociais e símbolos de status.",
-      "Pechinchar: frieza + Trading + rank de operador + 1d10, contra frieza + Trading + 1d10 de quem negocia contigo (mais o rank de operador dele, se for fixer). Ganhou: você faz 1 negócio do teu rank ou abaixo (tabela). Só 1 negócio de fixer por transação.",
+      "Pechinchar: COOL + comércio + rank de operador + 1d10, contra COOL + comércio + 1d10 de quem negocia contigo (mais o rank de operador dele, se for fixer). Ganhou: você faz 1 negócio do teu rank ou abaixo (tabela). Só 1 negócio de fixer por transação.",
     ],
     uses: [
       {
         id: "haggle",
-        name: "pechinchar",
-        formula: "frieza + Trading + operador + 1d10",
-        desc: "contra frieza + Trading + 1d10 do outro lado (+ operador, se for fixer).",
+        name: H.name,
+        formula: H.formula,
+        desc: H.desc,
         roll: ({ rank, stats, skills }) => {
           const trading = skillLevel(skills, "trading");
           const r = check(stats.COOL + trading + rank);
           return {
             ...r,
-            text: `frieza ${stats.COOL} + Trading ${trading} + operador ${rank} + 1d10. ganhou: ${dealAt(rank)}`,
+            text: H.result(t.stats.part("COOL", stats.COOL), gameName(skillDef("trading")!), trading, rank, dealAt(rank) ?? ""),
           };
         },
       },

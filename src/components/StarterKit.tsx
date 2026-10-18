@@ -1,15 +1,20 @@
 "use client";
 
+import { t } from "@/i18n";
 import {
+  FASHION_PIECES,
+  FASHION_STYLES,
   STARTING_MONEY,
   STREETRAT_KITS,
   catalogItem,
   fmtEb,
   pickKitOption,
+  type KitItem,
   type KitLine,
 } from "@/lib/rpg";
 import { uid } from "@/lib/id";
 import type { ArmorSlot, Role } from "@/lib/types";
+import { BookName } from "./BookName";
 import { kitText, specsOf } from "./gearText";
 import { Shop } from "./Shop";
 
@@ -24,6 +29,25 @@ export interface Purchase {
 
 export const spentOn = (bought: Purchase[]) => bought.reduce((a, p) => a + p.cost, 0);
 
+/** Uma opção do kit pro <BookName />: o nome do livro (en) de tudo que ela traz, contra o texto pt de `kitText`. */
+function kitBook(items: KitItem[]) {
+  const defs = items.map((k) => catalogItem(k.ref));
+  const qty = (k: KitItem) => (k.qty > 1 ? ` x${k.qty}` : "");
+  const style = defs[0]?.kind === "fashion" ? defs[0].style : null;
+  let name: string;
+  if (style && defs.every((d) => d?.kind === "fashion" && d.style === style)) {
+    const pieces = items.map((k, i) => {
+      const d = defs[i];
+      const piece = d?.kind === "fashion" ? FASHION_PIECES.find((p) => p.id === d.piece)?.name : k.ref;
+      return `${piece?.toLowerCase()}${qty(k)}`;
+    });
+    name = `${FASHION_STYLES.find((s) => s.id === style)?.name ?? style}: ${pieces.join(", ")}`;
+  } else {
+    name = items.map((k, i) => `${defs[i]?.name ?? k.ref}${qty(k)}`).join(" + ");
+  }
+  return { name, namePt: kitText(items) };
+}
+
 /** Kit Streetrat do role, com as escolhas "isto ou aquilo". */
 export function KitPicker({
   role,
@@ -36,15 +60,15 @@ export function KitPicker({
 }) {
   const kit = STREETRAT_KITS[role];
   const sections: [title: string, prefix: string, lines: KitLine[]][] = [
-    ["armas e armadura", "w", kit.weapons],
-    ["roupa e equipamento", "o", kit.outfit],
+    [t.creation.kit.weaponsArmor, "w", kit.weapons],
+    [t.creation.kit.outfit, "o", kit.outfit],
   ];
   return (
     <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-2">
       {sections.map(([title, prefix, lines]) => (
         <section key={prefix} className="box bg-raise min-w-0 p-3">
           <h3 className="label mb-2">
-            {title} · {role.toLowerCase()}
+            {t.creation.kit.sectionTitle(title, role.toLowerCase())}
           </h3>
           <ul className="space-y-1.5">
             {lines.map((line, i) => {
@@ -55,13 +79,14 @@ export function KitPicker({
                   <li key={key} title={first ? [specsOf(first), first.desc].filter(Boolean).join(" · ") : undefined}>
                     <span className="text-dim">· </span>
                     {kitText(line.options[0])}
+                    <BookName def={kitBook(line.options[0])} />
                   </li>
                 );
               }
               const at = picks[key] ?? 0;
               return (
                 <li key={key}>
-                  <div role="group" aria-label="escolha uma opção" className="flex flex-wrap gap-1">
+                  <div role="group" aria-label={t.creation.kit.pickGroupAria} className="flex flex-wrap gap-1">
                     {line.options.map((opt, j) => (
                       <button
                         key={j}
@@ -72,6 +97,7 @@ export function KitPicker({
                         }`}
                       >
                         {kitText(opt)}
+                        <BookName def={kitBook(opt)} />
                       </button>
                     ))}
                   </div>
@@ -102,24 +128,27 @@ export function StarterKit({
   const left = STARTING_MONEY - spentOn(bought);
   return (
     <div className="space-y-4">
-      <p className="text-xs text-dim">onde aparecem opções, escolha uma só. armas e munição ligadas andam juntas.</p>
+      <p className="text-xs text-dim">{t.creation.kit.hint}</p>
       <KitPicker role={role} picks={picks} onPicks={onPicks} />
 
       <section className="space-y-3">
         <h3 className="font-pixel text-xl">
-          eurobucks <span className="font-mono text-red">{fmtEb(left)}</span>
-          <span className="font-mono text-sm text-dim"> de {fmtEb(STARTING_MONEY)}</span>
+          {t.creation.kit.money} <span className="font-mono text-red">{fmtEb(left)}</span>
+          <span className="font-mono text-sm text-dim"> {t.creation.kit.moneyOf} {fmtEb(STARTING_MONEY)}</span>
         </h3>
-        <p className="text-dim">gaste agora no night market ou guarde pra depois. não dá pra juntar dinheiro com outro jogador.</p>
+        <p className="text-dim">{t.creation.kit.moneyHint}</p>
         {bought.length > 0 && (
           <ul className="space-y-1">
             {bought.map((p) => (
               <li key={p.id} className="flex items-center gap-2">
-                <span className="min-w-0 flex-1 truncate">
-                  {kitText([p])} <span className="text-xs text-dim">{fmtEb(p.cost)}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate">
+                    {kitText([p])} <span className="text-xs text-dim">{fmtEb(p.cost)}</span>
+                  </span>
+                  <BookName def={kitBook([p])} />
                 </span>
                 <button className="btn !px-2 !py-0 text-xs" onClick={() => onBought(bought.filter((x) => x.id !== p.id))}>
-                  devolver
+                  {t.creation.kit.giveBack}
                 </button>
               </li>
             ))}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { t } from "@/i18n";
 import { useApp } from "@/lib/store";
 import { visibleTo } from "@/lib/rpg";
 import type { NetArchitecture } from "@/lib/types";
@@ -20,13 +21,13 @@ export function Telao() {
     <main className="scanlines net-grid relative flex min-h-screen flex-1 flex-col p-6">
       <FullscreenButton />
       {!ready ? (
-        <Idle title="conectando" />
+        <Idle title={t.shell.connecting} />
       ) : !user ? (
-        <Idle title="sem sinal" text="entre como mestre no console, neste mesmo navegador, e abra o telão por lá." />
+        <Idle title={t.telao.noSignal} text={t.telao.signedOut} />
       ) : shown ? (
         <NetScreen arch={visibleTo(shown, true)} />
       ) : (
-        <Idle title="sem sinal" text="nada no ar. no console, aba netrunner: mandar pro telão." />
+        <Idle title={t.telao.noSignal} text={t.telao.nothingOnAir} />
       )}
     </main>
   );
@@ -59,7 +60,7 @@ function FullscreenButton() {
       className="btn absolute right-3 top-3 z-10 opacity-40 hover:opacity-100"
       onClick={() => document.documentElement.requestFullscreen?.().catch(() => {})}
     >
-      tela cheia
+      {t.telao.fullscreen}
     </button>
   );
 }
@@ -102,7 +103,7 @@ function NetScreen({ arch }: { arch: NetArchitecture }) {
         </span>
         <span className="font-mono text-lg text-dim">
           {"// "}
-          {found ? `${found} ${found === 1 ? "andar descoberto" : "andares descobertos"}` : "nada descoberto ainda"}
+          {found ? t.telao.floorsFound(found) : t.telao.nothingFound}
         </span>
       </header>
       <div ref={box} className="relative mt-6 min-h-0 flex-1 overflow-hidden">
@@ -117,7 +118,7 @@ function NetScreen({ arch }: { arch: NetArchitecture }) {
           </div>
         ) : (
           <div className="flex h-full items-center justify-center">
-            <span className="font-pixel cursor text-4xl text-dim">conectando à arquitetura</span>
+            <span className="font-pixel cursor text-4xl text-dim">{t.telao.connectingArch}</span>
           </div>
         )}
       </div>

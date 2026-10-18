@@ -1,7 +1,9 @@
 "use client";
 
+import { gameName } from "@/i18n";
 import { ROLE_DEFS } from "@/lib/rpg";
 import { ROLES, type Role } from "@/lib/types";
+import { BookName } from "./BookName";
 
 /** Grade com os 10 roles: resumo e habilidade de cada um. */
 export function RolePicker({
@@ -30,11 +32,11 @@ export function RolePicker({
               {r.toLowerCase()}
             </span>
             <span className="text-xs text-dim">{def.summary}</span>
-            <span
-              className="label mt-auto pt-2"
-              style={{ color: net ? "var(--net)" : "var(--red)" }}
-            >
-              {def.ability.name.toLowerCase()}
+            <span className="mt-auto pt-2">
+              <span className="label block" style={{ color: net ? "var(--net)" : "var(--red)" }}>
+                {gameName(def.ability)}
+              </span>
+              <BookName def={def.ability} />
             </span>
           </button>
         );

@@ -1,3 +1,4 @@
+import { gameName, t } from "../../../i18n";
 import { uid } from "../../id";
 import type { Character, CyberwareItem, GearItem, Role, Stats } from "../../types";
 import { currentEmp, maxHp } from "../derived";
@@ -49,17 +50,23 @@ const isBodyHost = (h: string) => (BODY_HOSTS as readonly string[]).includes(h);
 /** Slots que a peça ocupa onde está (padrão 1; capas e mão padrão 0). */
 const slotsOf = (item: CyberwareItem) => cyberDef(item.ref)?.slots ?? 1;
 
-/** Nome do catálogo em minúsculas, pras mensagens. */
-const catName = (ref: string) => cyberDef(ref)?.name.toLowerCase() ?? ref;
+/** Nome em pt-BR do catálogo, pras mensagens. */
+const catName = (ref: string) => {
+  const def = cyberDef(ref);
+  return def ? gameName(def) : ref;
+};
 
-/** Nome pras mensagens e rótulos: o apelido, ou o do catálogo em minúsculas. */
-const shownName = (item: CyberwareItem) => item.name.trim() || cyberDef(item.ref)?.name.toLowerCase() || "cyberware";
+/** Nome pras mensagens e rótulos: o apelido, ou o do catálogo. */
+const shownName = (item: CyberwareItem) => cyberName(item);
 
 /** Quantas peças instaladas têm este id no catálogo. */
 const countRef = (inst: CyberwareItem[], ref: string) => inst.filter((i) => i.ref === ref).length;
 
-/** "neural link ou cyberaudio suite", ou "2 grafted muscle and bone lace". */
-const needText = (refs: string[], count = 1) => `${count > 1 ? `${count} ` : ""}${refs.map(catName).join(" ou ")}`;
+/** "link neural ou suíte de áudio cibernético", ou "2× músculo enxertado". */
+const needText = (refs: string[], count = 1) => {
+  const names = refs.map(catName).join(` ${t.common.words.or} `);
+  return count > 1 ? t.cyber.reasons.needsCount(count, names) : names;
+};
 
 /** Peças em efeito: tudo com host, menos o que perdeu o host (peça de base removida). Chip guardado (host null) não conta. */
 export function installedCyber(ch: Pick<Character, "cyberware">): CyberwareItem[] {
@@ -91,7 +98,7 @@ export function hostsOf(ch: Pick<Character, "cyberware">): HostSpot[] {
   const sum = (items: CyberwareItem[]) => items.reduce((n, i) => n + slotsOf(i), 0);
 
   // corpo: peça de base e borgware, sem slot
-  const spots: HostSpot[] = [{ id: "body", kind: "body", label: "corpo", slots: Infinity, used: 0, items: at("body") }];
+  const spots: HostSpot[] = [{ id: "body", kind: "body", label: t.cyber.hosts.body, slots: Infinity, used: 0, items: at("body") }];
 
   // peças de base: um lugar por peça que abre slots
   const owners = inst.filter((i) => cyberDef(i.ref)?.provides);
@@ -123,8 +130,8 @@ export function hostsOf(ch: Pick<Character, "cyberware">): HostSpot[] {
 
   // braço e perna de carne: um por membro que não virou cyberlimb, uma peça (com slot) em cada
   const meat: [HostKind, string, HostKind][] = [
-    ["meatArm", "braço de carne", "arm"],
-    ["meatLeg", "perna de carne", "leg"],
+    ["meatArm", t.cyber.hosts.meatArm, "arm"],
+    ["meatLeg", t.cyber.hosts.meatLeg, "leg"],
   ];
   for (const [kind, label, limb] of meat) {
     const cyberLimbs = owners.filter((o) => cyberDef(o.ref)?.provides?.kind === limb).length;
@@ -137,9 +144,9 @@ export function hostsOf(ch: Pick<Character, "cyberware">): HostSpot[] {
 
   // grupos sem peça de base
   const pools: [HostKind, string][] = [
-    ["fashion", "fashionware"],
-    ["internal", "corpo · interno"],
-    ["external", "corpo · externo"],
+    ["fashion", t.cyber.hosts.fashion],
+    ["internal", t.cyber.hosts.internal],
+    ["external", t.cyber.hosts.external],
   ];
   for (const [kind, label] of pools) {
     const items = at(kind);
@@ -148,9 +155,10 @@ export function hostsOf(ch: Pick<Character, "cyberware">): HostSpot[] {
   return spots;
 }
 
-/** Nome na ficha: o apelido, ou o do catálogo. */
+/** Nome na ficha: o apelido, ou o do catálogo em pt-BR. */
 export function cyberName(item: CyberwareItem): string {
-  return item.name.trim() || cyberDef(item.ref)?.name || "cyberware";
+  const def = cyberDef(item.ref);
+  return item.name.trim() || (def ? gameName(def) : t.cyber.fallbackName);
 }
 
 /* ---------- preço e humanidade perdida ---------- */
@@ -158,7 +166,7 @@ export function cyberName(item: CyberwareItem): string {
 /** Custo de só instalar uma peça que você já tem (cyberware achado, pág. 226). */
 export const INSTALL_COST: Record<InstallPlace, number> = { mall: 100, clinic: 500, hospital: 1000 };
 
-export const INSTALL_LABELS: Record<InstallPlace, string> = { mall: "shopping", clinic: "clínica", hospital: "hospital" };
+export const INSTALL_LABELS: Record<InstallPlace, string> = t.cyber.installPlaces;
 
 /** Preço de compra (instalação incluída). Skill chip de perícia x2: 1.000eb. */
 export function cyberPrice(def: CyberwareDef, opts: { skill?: string } = {}): number {
@@ -204,35 +212,35 @@ export interface InstallCheck {
 export function canInstall(ch: Character, ref: string): InstallCheck {
   const fail = (reason: string): InstallCheck => ({ ok: false, reason, hosts: [] });
   const def = cyberDef(ref);
-  if (!def) return fail("peça desconhecida");
+  if (!def) return fail(t.cyber.reasons.unknown);
   const inst = installedCyber(ch);
 
   // pré-requisito: peças instaladas de uma lista
   if (def.requires) {
     const need = def.requiresCount ?? 1;
     const have = inst.filter((i) => def.requires!.includes(i.ref)).length;
-    if (have < need) return fail(`precisa de ${needText(def.requires, need)}`);
+    if (have < need) return fail(t.cyber.reasons.needs(needText(def.requires, need)));
   }
 
-  if (def.minBody !== undefined && cyberStats(ch).BODY < def.minBody) return fail(`precisa de BODY ${def.minBody}`);
+  if (def.minBody !== undefined && cyberStats(ch).BODY < def.minBody) return fail(t.cyber.reasons.needs(t.stats.part("BODY", def.minBody)));
 
   // uma por grupo (speedware, neural link, linear frame, borgware)
   if (def.unique) {
     const other = inst.find((i) => cyberDef(i.ref)?.unique === def.unique);
-    if (other) return fail(def.unique === "speedware" ? "só um speedware por vez" : `já tem ${shownName(other)}`);
+    if (other) return fail(def.unique === "speedware" ? t.cyber.reasons.oneAccelerator : t.cyber.reasons.alreadyHas(shownName(other)));
   }
 
   // limite de cópias; o mount libera mais
   if (def.max) {
     const limit = def.max.base + (def.max.plus && countRef(inst, def.max.plus.ref) > 0 ? def.max.plus.add : 0);
-    if (countRef(inst, ref) >= limit) return fail(`no máximo ${limit}`);
+    if (countRef(inst, ref) >= limit) return fail(t.cyber.reasons.atMost(limit));
   }
 
   const spots = hostsOf(ch);
 
   // também ocupa um slot de outro lugar (subdermal grip no neural link)
   if (def.alsoTakes && !spots.some((s) => s.kind === def.alsoTakes && s.slots - s.used >= 1)) {
-    return fail("sem slot livre no neural link");
+    return fail(t.cyber.reasons.noNeuralSlot);
   }
 
   // onde cabe, na ordem de preferência
@@ -252,7 +260,7 @@ export function canInstall(ch: Character, ref: string): InstallCheck {
   }
 
   if (def.paired) {
-    if (hosts.length < 2) return fail(`vai em par: precisa de 2 ${def.fits[0] === "leg" ? "cyberlegs" : "cybereyes"} com slot livre`);
+    if (hosts.length < 2) return fail(def.fits[0] === "leg" ? t.cyber.reasons.pairedLegs : t.cyber.reasons.pairedEyes);
   } else if (hosts.length === 0) {
     return fail(noHostReason(def, spots));
   }
@@ -265,28 +273,29 @@ const slotsNeeded = (def: CyberwareDef) => def.slots ?? 1;
 function noHostReason(def: CyberwareDef, spots: HostSpot[]): string {
   const kind = def.fits[0];
   const has = (k: HostKind) => spots.some((s) => s.kind === k);
+  const r = t.cyber.reasons;
   switch (kind) {
     case "neural":
-      return has("neural") ? "sem slot livre no neural link" : "precisa de neural link";
+      return has("neural") ? r.noNeuralSlot : r.needNeural;
     case "socket":
-      return "precisa de um chipware socket livre";
+      return r.needSocket;
     case "eye":
-      return has("eye") ? "sem slot livre nos cybereyes" : "precisa de cybereye";
+      return has("eye") ? r.noEyeSlot : r.needEye;
     case "audio":
-      return has("audio") ? "sem slot livre na cyberaudio suite" : "precisa de cyberaudio suite";
+      return has("audio") ? r.noAudioSlot : r.needAudio;
     case "arm":
-      if (def.fits.includes("meatArm")) return "sem braço livre (cyberarm ou braço de carne)";
-      return has("arm") ? "sem slot livre nos cyberarms" : "precisa de cyberarm";
+      if (def.fits.includes("meatArm")) return r.noArm;
+      return has("arm") ? r.noArmSlot : r.needArm;
     case "leg":
-      if (def.fits.includes("meatLeg")) return "sem perna livre (cyberleg ou perna de carne)";
-      return has("leg") ? "sem slot livre nos cyberlegs" : "precisa de cyberleg";
+      if (def.fits.includes("meatLeg")) return r.noLeg;
+      return has("leg") ? r.noLegSlot : r.needLeg;
     case "meatArm":
-      return "sem braço de carne livre";
+      return r.noMeatArm;
     case "meatLeg":
-      return "sem perna de carne livre";
+      return r.noMeatLeg;
     default: {
       const label = spots.find((s) => s.kind === kind)?.label ?? kind;
-      return `os ${POOL_SLOTS} slots de ${label} estão cheios`;
+      return r.poolFull(POOL_SLOTS, label);
     }
   }
 }
@@ -301,7 +310,8 @@ export function cyberIssues(ch: Character): string[] {
   for (const ref of refs) {
     const def = cyberDef(ref);
     if (def?.paired && countRef(inst, ref) % 2 === 1) {
-      out.push(`${catName(ref)} precisa do par (${def.fits[0] === "leg" ? "uma em cada perna" : "um em cada olho"})`);
+      const legs = def.fits[0] === "leg";
+      out.push(legs ? t.cyber.issues.needsPairLegs(catName(ref)) : t.cyber.issues.needsPairEyes(catName(ref)));
     }
   }
 
@@ -312,21 +322,21 @@ export function cyberIssues(ch: Character): string[] {
     if (u) groups.set(u, [...(groups.get(u) ?? []), i]);
   }
   for (const [group, items] of groups) {
-    if (items.length > 1) out.push(group === "speedware" ? "só um speedware por vez" : `${catName(items[0].ref)} duas vezes`);
+    if (items.length > 1) out.push(group === "speedware" ? t.cyber.reasons.oneAccelerator : t.cyber.issues.twice(catName(items[0].ref)));
   }
 
   // lugar com slot a mais
   for (const s of hostsOf(ch)) {
     if (s.used <= s.slots) continue;
-    if (s.kind === "meatArm") out.push("peça demais nos braços de carne: cada um leva uma");
-    else if (s.kind === "meatLeg") out.push("peça demais nas pernas de carne: cada uma leva uma");
-    else out.push(`${s.label} com ${s.used} de ${s.slots} slots`);
+    if (s.kind === "meatArm") out.push(t.cyber.issues.meatArmsFull);
+    else if (s.kind === "meatLeg") out.push(t.cyber.issues.meatLegsFull);
+    else out.push(t.cyber.issues.slotsOver(s.label, s.used, s.slots));
   }
 
   // host que não está instalado
   const live = new Set(inst.map((i) => i.id));
   for (const i of ch.cyberware) {
-    if (i.host !== null && !live.has(i.id)) out.push(`${shownName(i)} perdeu onde estava instalado`);
+    if (i.host !== null && !live.has(i.id)) out.push(t.cyber.issues.lostHost(shownName(i)));
   }
 
   // pré-requisito que sumiu
@@ -335,7 +345,7 @@ export function cyberIssues(ch: Character): string[] {
     if (!def?.requires) continue;
     const need = def.requiresCount ?? 1;
     if (inst.filter((o) => def.requires!.includes(o.ref)).length < need) {
-      out.push(`${shownName(i)} precisa de ${needText(def.requires, need)}`);
+      out.push(t.cyber.issues.requires(shownName(i), needText(def.requires, need)));
     }
   }
   return out;
@@ -406,7 +416,7 @@ function implantGear(gear: GearItem[], def: CyberwareDef, item: CyberwareItem, w
   if (fx.weapon === "popupMelee") {
     const picked = weapon && "ref" in weapon ? weapon.ref : "";
     const ref = MELEE_POPUPS.includes(picked) ? picked : "mediumMelee";
-    out = [...out, { id: uid(), ref, name: def.name, qty: 1, implant }];
+    out = [...out, { id: uid(), ref, name: gameName(def), qty: 1, implant }];
   } else if (fx.weapon === "popupRanged") {
     if (weapon && "gearId" in weapon) {
       // arma que já está no inventário passa a ser do implante (se ainda não é de outro)
@@ -418,7 +428,7 @@ function implantGear(gear: GearItem[], def: CyberwareDef, item: CyberwareItem, w
       out = [...out, { id: uid(), ref: weapon.ref, name: "", qty: 1, implant }];
     }
   } else if (fx.weapon) {
-    out = [...out, { id: uid(), ref: fx.weapon, name: def.name, qty: 1, implant }];
+    out = [...out, { id: uid(), ref: fx.weapon, name: gameName(def), qty: 1, implant }];
   }
 
   // armadura implantada: vestida na cabeça e no corpo
@@ -434,7 +444,7 @@ function implantGear(gear: GearItem[], def: CyberwareDef, item: CyberwareItem, w
   // escudo dobrado no braço: no inventário, guardado
   if (fx.shield) {
     const s = catalogItem("bulletproofShield");
-    out = [...out, { id: uid(), ref: "bulletproofShield", name: def.name, qty: 1, current: s?.kind === "shield" ? s.hp : 10, equipped: false, implant }];
+    out = [...out, { id: uid(), ref: "bulletproofShield", name: gameName(def), qty: 1, current: s?.kind === "shield" ? s.hp : 10, equipped: false, implant }];
   }
   return out;
 }
@@ -542,25 +552,12 @@ export interface Cyberpsychosis {
 /** Pela EMP em uso e pela humanidade (pág. 232). */
 export function cyberpsychosis(ch: Character): Cyberpsychosis {
   const emp = currentEmp(ch.stats, ch.humanity);
-  if (ch.humanity < 0) {
-    return {
-      level: 4,
-      label: "ciberpsicose extrema",
-      text: "o mestre assume o personagem e joga com os piores impulsos dele. volta pro jogador quando a humanidade ficar positiva.",
-    };
-  }
-  if (emp <= 0) {
-    return { level: 3, label: "ciberpsicose", text: "mostra forte pelo menos 5 traços da lista de psicopatia de Hare. interprete de acordo." };
-  }
-  if (emp === 1) {
-    return {
-      level: 2,
-      label: "dissociação",
-      text: "transtorno dissociativo beirando a ciberpsicose: mostra forte pelo menos 3 traços da lista de Hare.",
-    };
-  }
-  if (emp === 2) return { level: 1, label: "limite", text: "beirando o transtorno dissociativo. interprete de acordo." };
-  return { level: 0, label: "estável", text: "sem ciberpsicose nem dissociação." };
+  const p = t.cyber.psychosis;
+  if (ch.humanity < 0) return { level: 4, label: p.extreme.label, text: p.extreme.text };
+  if (emp <= 0) return { level: 3, label: p.full.label, text: p.full.text };
+  if (emp === 1) return { level: 2, label: p.dissociation.label, text: p.dissociation.text };
+  if (emp === 2) return { level: 1, label: p.edge.label, text: p.edge.text };
+  return { level: 0, label: p.stable.label, text: p.stable.text };
 }
 
 export interface TherapyDef {
@@ -577,8 +574,8 @@ export interface TherapyDef {
 
 /** Terapia de perda de humanidade (pág. 230): uma semana inteira. */
 export const THERAPIES: TherapyDef[] = [
-  { id: "standard", name: "terapia padrão", dice: "2d6", cost: 500, materials: 100, dv: 15 },
-  { id: "extreme", name: "terapia extrema", dice: "4d6", cost: 1000, materials: 500, dv: 17 },
+  { id: "standard", name: t.cyber.humanity.therapyStandard, dice: "2d6", cost: 500, materials: 100, dv: 15 },
+  { id: "extreme", name: t.cyber.humanity.therapyExtreme, dice: "4d6", cost: 1000, materials: 500, dv: 17 },
 ];
 
 /** Recupera humanidade até o teto e desconta o que pagou. */
@@ -630,14 +627,14 @@ export function cyberSkillBonuses(ch: Character): SkillBonus[] {
     if (!def?.effects?.skills) continue;
     if (def.paired && countRef(inst, ref) < 2) continue;
     for (const e of def.effects.skills) {
-      out.push({ skill: e.skill, value: e.value, source: def.name.toLowerCase(), ...(e.when ? { when: e.when } : {}) });
+      out.push({ skill: e.skill, value: e.value, source: gameName(def), ...(e.when ? { when: e.when } : {}) });
     }
   }
 
   if (countRef(inst, "chemskin") > 0 && countRef(inst, "techhair") > 0) {
-    out.push({ skill: "personalGrooming", value: 2, source: "chemskin + techhair" });
+    out.push({ skill: "personalGrooming", value: 2, source: `${catName("chemskin")} + ${catName("techhair")}` });
   }
-  if (countRef(inst, "lightTattoo") >= 3) out.push({ skill: "wardrobeStyle", value: 2, source: "light tattoo ×3" });
+  if (countRef(inst, "lightTattoo") >= 3) out.push({ skill: "wardrobeStyle", value: 2, source: `${catName("lightTattoo")} ×3` });
 
   // skill chip: a perícia conta como 3 se a da ficha for menor
   const chipped = new Set<string>();
@@ -645,7 +642,7 @@ export function cyberSkillBonuses(ch: Character): SkillBonus[] {
     if (i.ref !== "skillChip" || !i.skill || chipped.has(i.skill)) continue;
     chipped.add(i.skill);
     const level = skillLevel(ch.skills, i.skill);
-    if (level < 3) out.push({ skill: i.skill, value: 3 - level, source: "skill chip" });
+    if (level < 3) out.push({ skill: i.skill, value: 3 - level, source: catName("skillChip") });
   }
   return out;
 }

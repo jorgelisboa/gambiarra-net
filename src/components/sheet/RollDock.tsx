@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { t } from "@/i18n";
 import type { SheetRoll } from "./roll";
 
 /**
@@ -25,7 +26,7 @@ export function RollDock({
     <div
       ref={innerRef}
       role="region"
-      aria-label="rolagem"
+      aria-label={t.sheet.dock.label}
       className="fixed inset-x-0 bottom-0 z-20 max-h-[60vh] overflow-y-auto border-t-2 border-red bg-panel px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1 lg:inset-x-auto lg:bottom-4 lg:right-4 lg:w-[28rem] lg:max-w-md lg:border-2"
     >
       <div className="flex items-center gap-2">
@@ -37,12 +38,12 @@ export function RollDock({
             onClick={() => setHistory((h) => !h)}
             className={`glitch-hover min-h-10 shrink-0 px-2 text-xs underline underline-offset-4 ${history ? "text-red" : "text-dim"}`}
           >
-            histórico ({prev.length})
+            {t.sheet.dock.history(prev.length)}
           </button>
         )}
         <button
           type="button"
-          aria-label="fechar rolagem"
+          aria-label={t.sheet.dock.closeAria}
           onClick={onClose}
           className="glitch-hover -mr-2 inline-flex size-10 shrink-0 items-center justify-center text-lg text-dim hover:text-fg"
         >
@@ -64,7 +65,7 @@ export function RollDock({
             <span className={`text-3xl font-bold leading-none ${dim ? "text-dim" : "text-red"}`}>= {last.r.total}</span>
             {last.r.crit && (
               <span className={`text-xs ${last.r.crit === "sucesso" ? "text-red" : "text-dim"}`}>
-                {last.r.crit === "sucesso" ? "crítico!" : "falha crítica"}
+                {last.r.crit === "sucesso" ? t.sheet.dock.crit : t.sheet.dock.fumble}
               </span>
             )}
             {last.headline && (
@@ -82,7 +83,10 @@ export function RollDock({
               <span className={`w-9 shrink-0 text-right font-bold ${p.r.ok === false ? "text-dim" : ""}`}>{p.r.total}</span>
               <span className="min-w-0 truncate">
                 {p.label}
-                <span className="text-dim"> · {p.headline ?? p.r.text}</span>
+                <span className="text-dim">
+                  {t.common.sep}
+                  {p.headline ?? p.r.text}
+                </span>
               </span>
             </li>
           ))}

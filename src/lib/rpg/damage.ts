@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 import type { ArmorSlot, GearItem } from "../types";
 import { CRITICAL_INJURY_BONUS } from "./dice";
 import { catalogItem } from "./gear";
@@ -60,11 +61,7 @@ export function resolveHit(
   const mortalHit = target.hp < 1 && hit.attack && through > 0;
   const brokenLeg = hit.aim === "leg" && through > 0;
   const aimEffect =
-    through > 0 && hit.aim === "hand"
-      ? "larga um item da mão (à escolha do atacante), que cai na frente dele"
-      : brokenLeg
-        ? "ferimento crítico: perna quebrada (se tiver perna inteira)"
-        : undefined;
+    through > 0 && hit.aim === "hand" ? t.combat.hit.aim.hand : brokenLeg ? t.combat.hit.aim.leg : undefined;
   const critical = hit.critical || mortalHit || brokenLeg;
   const bonus = critical ? CRITICAL_INJURY_BONUS : 0;
   const taken = through + bonus;
@@ -83,11 +80,11 @@ export const ablateArmor = (gear: GearItem[], slot: ArmorSlot): GearItem[] =>
 
 /** "15 − SP11 = 4 · ×2 cabeça = 8 · +5 crítico → 13 no HP". */
 export function describeHit(hit: Hit, r: HitResult): string {
-  const parts = [hit.bypassArmor ? `${hit.damage} (ignora armadura)` : `${hit.damage} − SP${r.sp}`];
+  const d = t.combat.hit.describe;
   const base = Math.max(0, hit.damage - r.sp);
-  if (!hit.bypassArmor) parts[0] += ` = ${base}`;
-  if (r.doubled && base > 0) parts.push(`×2 cabeça = ${r.through}`);
-  if (r.critical) parts.push(`+${r.bonus} ${r.mortalHit ? "crítico (mortal)" : "crítico"}`);
-  if (r.deflected) parts.push(`−${r.deflected} desvio de dano`);
-  return `${parts.join(" · ")} → ${r.hpLoss} no HP`;
+  const parts = [hit.bypassArmor ? d.ignoresArmor(hit.damage) : d.minusSp(hit.damage, r.sp, base)];
+  if (r.doubled && base > 0) parts.push(d.headDoubled(r.through));
+  if (r.critical) parts.push(d.critical(r.bonus, r.mortalHit));
+  if (r.deflected) parts.push(d.deflected(r.deflected));
+  return d.total(parts.join(t.common.sep), r.hpLoss);
 }

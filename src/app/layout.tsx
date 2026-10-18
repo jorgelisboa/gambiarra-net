@@ -1,21 +1,21 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Pixelify_Sans } from "next/font/google";
+import { t } from "@/i18n";
 import "./globals.css";
 
 const mono = Geist_Mono({
-  variable: "--font-mono",
+  variable: "--font-geist-mono",
   subsets: ["latin"],
 });
 
 const pixel = Pixelify_Sans({
-  variable: "--font-pixel",
+  variable: "--font-pixelify",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "Gambiarra.net",
-  description:
-    "VTT não oficial pra Cyberpunk RED: fichas, iniciativa e netrunning.",
+  title: t.shell.meta.title,
+  description: t.shell.meta.description,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

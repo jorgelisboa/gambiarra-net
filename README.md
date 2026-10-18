@@ -18,6 +18,10 @@ Feito pra mesa presencial: o mestre no PC ligado na TV, os jogadores com a ficha
 
 Terminal minimalista em pixel art. Detalhes em [DESIGN.md](DESIGN.md).
 
+## Textos
+
+Todo texto da interface fica em [`src/i18n/`](src/i18n/), um arquivo por setor em `pt-BR/` (`common`, `stats`, `auth`, `shell`, `telao`, `characters`, `creation`, `roles`, `sheet`, `skills`, `weapons`, `gear`, `combat`, `cyber`, `net`, `infra`). Nos componentes: `import { t } from "@/i18n"` e `t.weapons.modes.autofire`; texto com valor é função (`t.weapons.magazine.count(6, 8)`). Dentro de `src/lib` o import é relativo. As regras (minúsculas, sem travessão, siglas dos stats como no livro, nome do livro pequeno com `<BookName />`) estão no topo de [`src/i18n/index.ts`](src/i18n/index.ts). Um idioma novo é uma pasta com as mesmas chaves (o tipo `Messages` cobra). O conteúdo de regra (descrições do catálogo, tabelas do lifepath, resumos de habilidade) fica nos dados em `src/lib/rpg`, já em pt-BR.
+
 ## Dados
 
 Com Supabase configurado, o login é por email e senha e as fichas ficam salvas no perfil (tabela `characters`, uma linha por personagem, protegida por RLS). As fotos vão pro Storage, no bucket público `portraits` (cada conta só envia e apaga na própria pasta; a ficha guarda a URL). Combate e personagem da sessão ficam no navegador por enquanto. Sem as variáveis de ambiente, o app roda no modo local: login por username e tudo no `localStorage` (a foto vai junto, como data URL).

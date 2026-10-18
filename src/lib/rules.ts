@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 import { uid } from "./id";
 import {
   STARTING_RANK,
@@ -14,18 +15,8 @@ import {
 } from "./rpg";
 import type { ArmorSlot, Character, Combatant, Role, Stats } from "./types";
 
-export const STAT_LABELS: Record<keyof Stats, string> = {
-  INT: "Inteligência",
-  REF: "Reflexos",
-  DEX: "Destreza",
-  TECH: "Técnica",
-  COOL: "Frieza",
-  WILL: "Vontade",
-  LUCK: "Sorte",
-  MOVE: "Movimento",
-  BODY: "Corpo",
-  EMP: "Empatia",
-};
+/** Nome por extenso de cada stat (a sigla fica a do livro: `t.stats.short`). */
+export const STAT_LABELS: Record<keyof Stats, string> = t.stats.long;
 
 export const emptyStats = (): Stats => ({
   INT: 5,
@@ -43,7 +34,7 @@ export const emptyStats = (): Stats => ({
 export function newCharacter(role: Role, stats: Stats = emptyStats()): Character {
   return {
     id: uid(),
-    name: "Novo Edgerunner",
+    name: t.characters.defaultName,
     role,
     stats,
     hp: maxHp(stats),

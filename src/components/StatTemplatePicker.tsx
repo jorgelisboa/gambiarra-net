@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { t } from "@/i18n";
 import {
   STAT_TEMPLATES,
   d10,
@@ -10,7 +11,6 @@ import {
   seriousThreshold,
   templateRow,
 } from "@/lib/rpg";
-import { STAT_LABELS } from "@/lib/rules";
 import { STAT_KEYS, type Role } from "@/lib/types";
 
 /** Tabela de stats do role (Streetrat): rola 1d10 ou escolhe a linha. */
@@ -36,24 +36,24 @@ export function StatTemplatePicker({
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-3">
         <button className="btn btn-primary" onClick={roll}>
-          rolar 1d10
+          {t.creation.statTemplate.roll}
         </button>
         {rolled && rolled.face === face && (
           <span key={rolled.n} className="animate-hop">
-            1d10 → <span className="font-bold text-red">{rolled.face}</span>
+            {t.creation.statTemplate.rolled} <span className="font-bold text-red">{rolled.face}</span>
           </span>
         )}
-        <span className="text-xs text-dim">tabela do {role.toLowerCase()}</span>
+        <span className="text-xs text-dim">{t.creation.statTemplate.tableOf(role.toLowerCase())}</span>
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-center">
           <thead>
             <tr className="text-xs text-dim">
-              <th className="py-1 font-normal">1d10</th>
+              <th className="py-1 font-normal">{t.creation.statTemplate.diceHead}</th>
               {STAT_KEYS.map((k) => (
-                <th key={k} className="py-1 font-normal" title={STAT_LABELS[k]}>
-                  {k.toLowerCase()}
+                <th key={k} className="py-1 font-normal" title={t.stats.long[k]}>
+                  {t.stats.short[k]}
                 </th>
               ))}
             </tr>
@@ -72,7 +72,7 @@ export function StatTemplatePicker({
                     <button
                       className="w-full py-1 font-bold"
                       aria-pressed={on}
-                      aria-label={`escolher linha ${f}`}
+                      aria-label={t.creation.statTemplate.pickRow(f)}
                       onClick={(e) => {
                         e.stopPropagation();
                         onPick(f);
@@ -96,14 +96,14 @@ export function StatTemplatePicker({
       <p className={stats ? "" : "text-dim"}>
         {stats ? (
           <>
-            <span className="text-dim">derivados:</span> hp{" "}
-            <span className="font-bold text-red">{maxHp(stats)}</span> · grave abaixo de{" "}
-            <span className="font-bold">{seriousThreshold(maxHp(stats))}</span> · death save{" "}
-            <span className="font-bold">{deathSave(stats)}</span> · humanidade{" "}
+            <span className="text-dim">{t.creation.statTemplate.derived}</span> {t.creation.statTemplate.hp}{" "}
+            <span className="font-bold text-red">{maxHp(stats)}</span> · {t.creation.statTemplate.seriousBelow}{" "}
+            <span className="font-bold">{seriousThreshold(maxHp(stats))}</span> · {t.creation.statTemplate.deathSave}{" "}
+            <span className="font-bold">{deathSave(stats)}</span> · {t.creation.statTemplate.humanity}{" "}
             <span className="font-bold text-net">{maxHumanity(stats)}</span>
           </>
         ) : (
-          "role ou escolha uma linha pra continuar."
+          t.creation.statTemplate.prompt
         )}
       </p>
     </div>
