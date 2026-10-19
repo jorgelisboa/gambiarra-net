@@ -203,13 +203,13 @@ Fora de `rpg/`, a cola da aplicação:
 - **Fichas na nuvem** por conta (Supabase), mas cada conta só vê as próprias; combate fica no navegador.
 - **Construtor de arquiteturas** no console (aba netrunner) e um **telão** em `/tela`: o mestre abre a janela, arrasta pra TV e escolhe qual arquitetura vai pro ar; o telão mostra só os andares revelados e onde o netrunner está. As duas janelas precisam estar no mesmo navegador (se acompanham pelo localStorage) até a mesa compartilhada chegar.
 - **Infraestrutura** no console (aba infra): o mestre compra a arquitetura e o que vai nela pelas regras de Home Security 2045, vê o custo e os limites, e manda pro construtor. Fica no localStorage, como o resto da net.
-- "Mestre" e "jogador" no login só escolhem quais abas aparecem; ainda não existe mesa.
+- **Mesa online** (aba mesa, [`src/lib/mesa.ts`](src/lib/mesa.ts), migração `mesas`): o mestre cria a mesa e passa o código; o jogador entra com o código e senta uma ficha. O combate e a net no telão continuam morando no console do mestre e vão pro ar em `mesas.state` a cada mudança. As fichas sentadas aparecem no combate do mestre; o dano que ele aplica muda só HP, armadura e death save da ficha do jogador (`mesa_patch_character`), e o celular recebe pelo Realtime. O jogador vê a iniciativa, "é a tua vez", a tela de combate em cartas (só leitura, PNJ só com o estado) e a net revelada. O telão mostra a net no ar, senão o combate, senão o código da mesa. Ainda falta: o telão abrir sozinho numa TV sem login (`/mesa/<código>/tela`), QR do código e login anônimo.
 
 ## Caminho
 
 Cada fase entrega algo jogável.
 
-1. **Mesa compartilhada.** Mesa com código, membros, fichas na mesa, combate na mesa, tudo ao vivo pelo Realtime. *Pronto quando:* o mestre aplica dano no PC e o HP muda no celular do jogador sem recarregar.
+1. **Mesa compartilhada.** Mesa com código, membros, fichas na mesa, combate na mesa, tudo ao vivo pelo Realtime. *Pronto quando:* o mestre aplica dano no PC e o HP muda no celular do jogador sem recarregar. **Feito** (aba mesa); falta login anônimo.
 2. **Telão.** Rota `/mesa/<código>/tela` em tela cheia: QR pra entrar, fila de iniciativa grande, estado de todo mundo, cena (imagem/handout) escolhida no console. *Pronto quando:* dá pra jogar um combate inteiro olhando só pra TV e falando.
 3. **Celular do jogador.** A ficha pensada pra uma mão: aba "combate" com armas, munição, HP e "é a tua vez" em destaque. *Pronto quando:* o jogador não precisa do livro nem de papel durante o combate.
 4. **Net.** Construtor de arquitetura no console, net revelada no telão, ações de net do netrunner no celular.

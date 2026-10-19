@@ -7,6 +7,8 @@ import { t } from "../i18n";
 import { removePhoto, storePhoto } from "./photo";
 import { normalizeCharacter, vitalsOf } from "./rules";
 import { supabase } from "./supabase";
+import { patchSeated, seatedForGm } from "./mesa";
+import { stableJson } from "./stableJson";
 
 /**
  * Persistência.
@@ -16,6 +18,7 @@ import { supabase } from "./supabase";
  * - Sem Supabase (dev sem .env): login por username, tudo no localStorage.
  * O papel (mestre/jogador) é escolhido a cada login e lembrado neste navegador até sair.
  * Janelas do mesmo navegador (o console e o telão em `/tela`) se acompanham pelo evento `storage`.
+ * A mesa online (código, jogadores, combate e net no ar) mora em `./mesa.ts`, que assina este store.
  */
 
 const USER_KEY = "gambiarra:user";
@@ -133,15 +136,17 @@ function getSnapshot(): Snapshot {
   return snap;
 }
 
+export function subscribeApp(cb: () => void) {
+  listeners.add(cb);
+  return () => {
+    listeners.delete(cb);
+  };
+}
+
+export const appSnapshot = () => getSnapshot();
+
 export function useApp(): Snapshot {
-  return useSyncExternalStore(
-    (cb) => {
-      listeners.add(cb);
-      return () => listeners.delete(cb);
-    },
-    getSnapshot,
-    () => SERVER,
-  );
+  return useSyncExternalStore(subscribeApp, getSnapshot, () => SERVER);
 }
 
 /* ---------- modo cloud ---------- */
@@ -252,6 +257,12 @@ const toRow = (uid: string, c: Character) => ({
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 let pending: { uid: string; dirty: Map<string, Character>; deleted: Set<string> } | null = null;
+/**
+ * Últimas versões de cada ficha enviadas daqui: o Realtime devolve o próprio envio, e esse eco se
+ * ignora (mesmo chegando atrasado, depois de um envio mais novo).
+ */
+const sent = new Map<string, string[]>();
+const markSent = (id: string, key: string) => sent.set(id, [key, ...(sent.get(id) ?? [])].slice(0, 5));
 
 async function flush() {
   if (saveTimer) clearTimeout(saveTimer);
@@ -259,6 +270,7 @@ async function flush() {
   const job = pending;
   pending = null;
   if (!job || !supabase) return;
+  for (const c of job.dirty.values()) markSent(c.id, stableJson(c));
   const results = await Promise.all([
     job.dirty.size
       ? supabase
@@ -273,6 +285,9 @@ async function flush() {
   const cur = getSnapshot();
   if (cur.userId === job.uid && cur.syncError !== error) set({ ...cur, syncError: error });
 }
+
+/** Sobe agora o que estava esperando (antes de sentar uma ficha nova na mesa, que precisa existir no banco). */
+export const flushSaves = () => flush();
 
 /** Marca o que mudou entre duas versões da lista de fichas e agenda o envio. */
 function queueSave(uid: string, prev: Character[], next: Character[]) {
@@ -292,6 +307,35 @@ function queueSave(uid: string, prev: Character[], next: Character[]) {
   }
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(() => void flush(), 400);
+}
+
+/**
+ * Uma ficha desta conta mudou no banco (Realtime). Eco do próprio envio: ignora. Mudança de fora
+ * (o mestre deu dano, ou outro aparelho da conta): entra na tela. Se tem edição daqui esperando
+ * pra subir, só as chaves que o mestre muda (HP, equipamento, death save) vêm de fora, e a edição
+ * sobe junto com elas.
+ */
+export function receiveCharacter(raw: Character) {
+  const cur = getSnapshot();
+  if (cur.mode !== "cloud" || !cur.userId) return;
+  const local = cur.data.characters.find((c) => c.id === raw.id);
+  if (!local) return;
+  const key = stableJson(raw);
+  if (sent.get(raw.id)?.includes(key) || key === stableJson(local)) return;
+  const remote = normalizeCharacter(raw);
+  const waiting = pending?.uid === cur.userId ? pending.dirty.get(raw.id) : undefined;
+  let next = remote;
+  if (waiting && pending) {
+    next = { ...waiting, hp: remote.hp, gear: remote.gear, deathSavePenalty: remote.deathSavePenalty };
+    pending.dirty.set(raw.id, next);
+  }
+  markSent(raw.id, key);
+  const data: AppData = {
+    ...cur.data,
+    characters: cur.data.characters.map((c) => (c.id === raw.id ? next : c)),
+  };
+  lsSet(cloudKey(cur.userId), JSON.stringify(data));
+  set({ ...cur, data });
 }
 
 /** Chave do cache da conta aberta (é ela que as outras janelas escutam). */
@@ -409,6 +453,30 @@ export function mutate(fn: (d: AppData) => AppData) {
   set({ ...cur, data });
 }
 
+/**
+ * Como `mutate`, mas, pro mestre numa mesa, a lista de fichas inclui as dos jogadores sentados.
+ * O que mudar numa ficha de jogador vai pro dono (`patchSeated`); o resto segue o caminho normal.
+ */
+function mutateTable(fn: (d: AppData) => AppData) {
+  const cur = getSnapshot();
+  const own = new Set(cur.data.characters.map((c) => c.id));
+  const others = seatedForGm().filter((c) => !own.has(c.id));
+  if (!others.length) return mutate(fn);
+  const before = new Map(others.map((c) => [c.id, c]));
+  const changed: Character[] = [];
+  mutate((d) => {
+    const out = fn({ ...d, characters: [...d.characters, ...others] });
+    const mine = out.characters.filter((c) => !before.has(c.id));
+    for (const c of out.characters) {
+      const was = before.get(c.id);
+      if (was && was !== c) changed.push(c);
+    }
+    const same = mine.length === d.characters.length && mine.every((c, i) => c === d.characters[i]);
+    return { ...out, characters: same ? d.characters : mine };
+  });
+  for (const c of changed) patchSeated(c);
+}
+
 /* ---------- personagens ---------- */
 
 export const upsertCharacter = (ch: Character) =>
@@ -489,7 +557,7 @@ export const removeCombatant = (id: string) =>
 
 /** Aplica dano/cura: na ficha se estiver ligado, senão no PNJ. */
 export const setCombatantHp = (id: string, hp: number) =>
-  mutate((d) => {
+  mutateTable((d) => {
     const c = d.combat.combatants.find((x) => x.id === id);
     if (!c) return d;
     const v = vitalsOf(c, d.characters);
@@ -518,7 +586,7 @@ export const setCombatantHp = (id: string, hp: number) =>
  * Na ficha (personagem ligado) ou no PNJ.
  */
 export const applyHit = (id: string, hit: Hit) =>
-  mutate((d) => {
+  mutateTable((d) => {
     const c = d.combat.combatants.find((x) => x.id === id);
     if (!c) return d;
     const v = vitalsOf(c, d.characters, d.combat.round);
@@ -566,7 +634,7 @@ export const applyHit = (id: string, hit: Hit) =>
 
 /** Zera a penalidade de death save (ficha ou PNJ). */
 export const resetDeathSavePenalty = (id: string) =>
-  mutate((d) => {
+  mutateTable((d) => {
     const c = d.combat.combatants.find((x) => x.id === id);
     if (!c) return d;
     if (c.characterId) {

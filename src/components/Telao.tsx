@@ -3,18 +3,22 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { t } from "@/i18n";
 import { useApp } from "@/lib/store";
+import { useMesa } from "@/lib/mesa";
 import { visibleTo } from "@/lib/rpg";
 import type { NetArchitecture } from "@/lib/types";
+import { InitiativeStage } from "./InitiativeStage";
 import { Icon } from "./Pixel";
 import { NetMap } from "./net/NetMap";
 
 /**
  * O telão (`/tela`), aberto numa segunda janela do mesmo navegador do console e levado pra TV.
  * Não tem segredo nem controle: acompanha o console pelo localStorage e mostra a arquitetura
- * que o mestre mandou pro ar, só com os andares revelados.
+ * que o mestre mandou pro ar, só com os andares revelados. Sem net no ar, mostra o combate rolando
+ * (PNJ só com o estado do ferimento); sem nada, o código da mesa online, se tiver uma aberta.
  */
 export function Telao() {
   const { ready, user, data } = useApp();
+  const { mesa } = useMesa();
   const shown = data.net.architectures.find((a) => a.id === data.net.shownId);
 
   return (
@@ -26,6 +30,10 @@ export function Telao() {
         <Idle title={t.telao.noSignal} text={t.telao.signedOut} />
       ) : shown ? (
         <NetScreen arch={visibleTo(shown, true)} />
+      ) : data.combat.active && data.combat.combatants.length > 0 ? (
+        <InitiativeStage readOnly />
+      ) : mesa ? (
+        <Idle title={mesa.code} text={`${t.telao.joinWith} · ${mesa.name}`} />
       ) : (
         <Idle title={t.telao.noSignal} text={t.telao.nothingOnAir} />
       )}

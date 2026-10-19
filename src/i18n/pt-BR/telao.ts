@@ -9,4 +9,6 @@ export const telao = {
   floorsFound: (n: number) => (n === 1 ? "1 andar descoberto" : `${n} andares descobertos`),
   nothingFound: "nada descoberto ainda",
   connectingArch: "conectando à arquitetura",
+  /** Mesa online aberta e nada no ar: o código grande pra quem vai entrar. */
+  joinWith: "entre na mesa com o código",
 } as const;

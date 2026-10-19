@@ -303,3 +303,34 @@ export interface AppData {
   combat: Combat;
   net: NetState;
 }
+
+/** O que o mestre põe no ar pra mesa online (coluna `mesas.state`). Os jogadores só leem. */
+export interface MesaShared {
+  combat: Combat;
+  /** A arquitetura no telão, já só com os andares revelados e sem as notas do mestre; null = nada. */
+  net: NetArchitecture | null;
+}
+
+/** Jogador sentado na mesa. */
+export interface MesaMember {
+  userId: string;
+  name: string;
+  /** A ficha que ele levou; null = ainda não escolheu. */
+  characterId: string | null;
+}
+
+/** A mesa online em que esta conta está (como mestre ou jogador). Regras de acesso no banco. */
+export interface Mesa {
+  id: string;
+  /** 6 letras: o jogador entra com ele. */
+  code: string;
+  name: string;
+  gmId: string;
+  gmName: string;
+  /** Esta conta é o mestre. */
+  isGm: boolean;
+  members: MesaMember[];
+  /** Fichas sentadas na mesa que não são desta conta (o dono é o membro com esse characterId). */
+  characters: Character[];
+  shared: MesaShared;
+}

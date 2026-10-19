@@ -6,6 +6,7 @@ import { creation } from "./creation";
 import { cyber } from "./cyber";
 import { gear } from "./gear";
 import { infra } from "./infra";
+import { mesa } from "./mesa";
 import { net } from "./net";
 import { roles } from "./roles";
 import { sheet } from "./sheet";
@@ -33,4 +34,5 @@ export const ptBR = {
   cyber,
   net,
   infra,
+  mesa,
 } as const;

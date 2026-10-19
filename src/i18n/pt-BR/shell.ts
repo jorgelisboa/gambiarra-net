@@ -7,7 +7,7 @@ export const shell = {
   connecting: "conectando",
   nav: {
     aria: "seções",
-    tabs: { net: "netrunner", infra: "infra", combat: "combate", chars: "personagens" },
+    tabs: { mesa: "mesa", net: "netrunner", infra: "infra", combat: "combate", chars: "personagens" },
   },
   logout: "sair",
   /** Selo no cabeçalho quando a nuvem não sincroniza; o tooltip diz o motivo. */

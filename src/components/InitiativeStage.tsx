@@ -4,9 +4,10 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProp
 import { createPortal } from "react-dom";
 import { t } from "@/i18n";
 import { endCombat, nextTurn, useApp } from "@/lib/store";
+import { useTableCharacters } from "@/lib/mesa";
 import { SLOT_LABELS, woundOf } from "@/lib/rpg";
 import { vitalsOf, type Vitals } from "@/lib/rules";
-import type { Combatant } from "@/lib/types";
+import type { Character, Combat, Combatant } from "@/lib/types";
 import { Bar, Icon } from "./Pixel";
 import { TurnPulse, WOUND_COLORS } from "./TurnPulse";
 import { Portrait, PortraitArt } from "./Portrait";
@@ -63,9 +64,23 @@ interface View {
 const sameView = (a: View, b: View) =>
   a.start === b.start && a.end === b.end && a.seen.join() === b.seen.join();
 
-export function InitiativeStage({ onClose }: { onClose: () => void }) {
+interface StageProps {
+  /** Sem ele, o palco não tem botão de sair nem pede tela cheia (telão). */
+  onClose?: () => void;
+  /** O combate a mostrar; por padrão o do console. */
+  combat?: Combat;
+  characters?: Character[];
+  /** Jogador e telão: sem passar turno nem marcar ações, e o PNJ só mostra o estado (sem HP nem SP). */
+  readOnly?: boolean;
+  /** Ficha do jogador que está olhando: a carta dele ganha o selo "você". */
+  me?: string | null;
+}
+
+export function InitiativeStage({ onClose, combat: shown, characters: given, readOnly = false, me = null }: StageProps) {
   const { data } = useApp();
-  const { combat, characters } = data;
+  const tableCharacters = useTableCharacters();
+  const combat = shown ?? data.combat;
+  const characters = given ?? tableCharacters;
   const root = useRef<HTMLDivElement>(null);
   const track = useRef<HTMLOListElement>(null);
   const stopGlide = useRef<() => void>(() => {});
@@ -78,15 +93,17 @@ export function InitiativeStage({ onClose }: { onClose: () => void }) {
     closeRef.current = onClose;
   });
 
+  const closable = !!onClose;
   useEffect(() => {
-    const onClose = () => closeRef.current();
+    if (!closable) return;
+    const onClose = () => closeRef.current?.();
     const el = root.current;
     el?.requestFullscreen?.().catch(() => {});
     const onFs = () => {
       if (!document.fullscreenElement) onClose();
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === " " || e.key === "ArrowRight" || e.key === "Enter") {
+      if (!readOnly && (e.key === " " || e.key === "ArrowRight" || e.key === "Enter")) {
         e.preventDefault();
         nextTurn();
       } else if (e.key === "Escape" && !document.fullscreenElement) {
@@ -100,7 +117,7 @@ export function InitiativeStage({ onClose }: { onClose: () => void }) {
       window.removeEventListener("keydown", onKey);
       if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
     };
-  }, []);
+  }, [closable, readOnly]);
 
   const cards = combat.combatants.map((c) => ({ c, v: vitalsOf(c, characters) }));
   const n = cards.length;
@@ -211,22 +228,28 @@ export function InitiativeStage({ onClose }: { onClose: () => void }) {
           })}
         </nav>
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          <span className="hidden text-xs text-dim xl:inline">{t.combat.stage.keysHint}</span>
-          <button className="btn btn-primary" title={t.combat.stage.nextTitle} onClick={nextTurn}>
-            {t.combat.nextTurn}
-          </button>
-          <button
-            className="btn btn-danger"
-            onClick={() => {
-              endCombat();
-              onClose();
-            }}
-          >
-            {t.combat.end}
-          </button>
-          <button className="btn" onClick={onClose}>
-            {t.combat.stage.exit}
-          </button>
+          {!readOnly && (
+            <>
+              <span className="hidden text-xs text-dim xl:inline">{t.combat.stage.keysHint}</span>
+              <button className="btn btn-primary" title={t.combat.stage.nextTitle} onClick={nextTurn}>
+                {t.combat.nextTurn}
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={() => {
+                  endCombat();
+                  onClose?.();
+                }}
+              >
+                {t.combat.end}
+              </button>
+            </>
+          )}
+          {onClose && (
+            <button className="btn" onClick={onClose}>
+              {t.combat.stage.exit}
+            </button>
+          )}
         </div>
       </header>
 
@@ -245,6 +268,8 @@ export function InitiativeStage({ onClose }: { onClose: () => void }) {
               v={v}
               label={t.combat.stage.cardLabel(i + 1, n, v.name)}
               active={i === activeIndex}
+              readOnly={readOnly}
+              mine={!!me && c.characterId === me}
               // muda a cada começo de turno: a foto pisca e o traço corre, uma vez
               turn={i === activeIndex ? `${combat.round}-${c.id}` : null}
             />
@@ -264,15 +289,21 @@ function StageCard({
   v,
   label,
   active,
+  readOnly,
+  mine,
   turn,
 }: {
   c: Combatant;
   v: Vitals;
   label: string;
   active: boolean;
+  readOnly: boolean;
+  mine: boolean;
   turn: string | null;
 }) {
   const wound = woundOf(v.hp, v.maxHp);
+  // pra mesa, o PNJ só mostra o estado do ferimento
+  const secret = readOnly && !v.linked;
   const color = WOUND_COLORS[wound.id];
   const frame = active ? "border-red" : "border-line";
   return (
@@ -294,7 +325,10 @@ function StageCard({
         >
           {c.initiative}
         </span>
-        {active && <span className="bg-red px-2 py-0.5 text-xs font-bold uppercase text-black">{t.combat.stage.turnBadge}</span>}
+        <span className="flex gap-1">
+          {mine && <span className="bg-net px-2 py-0.5 text-xs font-bold uppercase text-black">{t.mesa.player.you}</span>}
+          {active && <span className="bg-red px-2 py-0.5 text-xs font-bold uppercase text-black">{t.combat.stage.turnBadge}</span>}
+        </span>
       </div>
 
       <div className="stage-hud">
@@ -306,21 +340,27 @@ function StageCard({
             {v.name}
             {!v.linked && <span className="ml-2 font-mono text-xs text-dim">{t.combat.npc.tag}</span>}
           </div>
-          <div>
-            <div className="mb-1 flex items-baseline justify-between">
-              <span className="text-dim">{t.combat.hp}</span>
-              <span className="font-mono">
-                {v.hp}/{v.maxHp}
-              </span>
+          {!secret && (
+            <div>
+              <div className="mb-1 flex items-baseline justify-between">
+                <span className="text-dim">{t.combat.hp}</span>
+                <span className="font-mono">
+                  {v.hp}/{v.maxHp}
+                </span>
+              </div>
+              <Bar value={v.hp} max={v.maxHp} color={color} cells={14} height={10} />
             </div>
-            <Bar value={v.hp} max={v.maxHp} color={color} cells={14} height={10} />
-          </div>
+          )}
           <div className="flex items-baseline justify-between gap-2">
-            <span className="text-dim">
-              {t.combat.sp} {SLOT_LABELS.head} <span className="font-mono text-fg">{v.sp.head}</span>
-              {t.common.sep}
-              {SLOT_LABELS.body} <span className="font-mono text-fg">{v.sp.body}</span>
-            </span>
+            {secret ? (
+              <span className="text-dim">{t.mesa.player.npcState}</span>
+            ) : (
+              <span className="text-dim">
+                {t.combat.sp} {SLOT_LABELS.head} <span className="font-mono text-fg">{v.sp.head}</span>
+                {t.common.sep}
+                {SLOT_LABELS.body} <span className="font-mono text-fg">{v.sp.body}</span>
+              </span>
+            )}
             <span className="uppercase" style={{ color }} title={wound.effect || undefined}>
               {wound.short || t.combat.unhurt}
             </span>
@@ -330,7 +370,7 @@ function StageCard({
               {t.combat.deathSave} +{v.deathSavePenalty}
             </div>
           )}
-          {active && <TurnActions c={c} netMax={v.netMax} size={28} />}
+          {active && <TurnActions c={c} netMax={v.netMax} size={28} disabled={readOnly} />}
         </div>
       </div>
     </li>

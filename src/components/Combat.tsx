@@ -14,6 +14,7 @@ import {
   startCombat,
   useApp,
 } from "@/lib/store";
+import { seatedOwnerName, useMesa, useTableCharacters } from "@/lib/mesa";
 import {
   COMBAT_ACTIONS,
   COMBAT_RULES,
@@ -56,7 +57,10 @@ const blank = (p: Partial<Combatant>): Combatant => ({
 
 export function Combat() {
   const { data } = useApp();
-  const { combat, characters, sessionCharacterId } = data;
+  const { combat, sessionCharacterId } = data;
+  // na mesa online, as fichas dos jogadores sentados entram junto com as do mestre
+  const characters = useTableCharacters();
+  const { mesa } = useMesa();
   const [stage, setStage] = useState(false);
   const [npc, setNpc] = useState({ name: "", hp: 20, ref: 5, sp: 0, net: 0 });
 
@@ -164,6 +168,9 @@ export function Combat() {
                 <button key={c.id} className="btn" onClick={() => addChar(c.id)}>
                   {c.id === sessionCharacterId && "* "}
                   {c.name}
+                  {seatedOwnerName(mesa, c.id) && (
+                    <span className="ml-1 text-xs text-net">@{seatedOwnerName(mesa, c.id)}</span>
+                  )}
                 </button>
               ))}
             </div>
@@ -209,7 +216,8 @@ export function Combat() {
 
 function CombatRow({ c }: { c: Combatant }) {
   const { data } = useApp();
-  const v = vitalsOf(c, data.characters, data.combat.round);
+  const characters = useTableCharacters();
+  const v = vitalsOf(c, characters, data.combat.round);
   const wound = woundOf(v.hp, v.maxHp);
   const isActive = data.combat.active && data.combat.activeId === c.id;
   const woundColor = WOUND_COLORS[wound.id];

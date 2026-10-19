@@ -2,14 +2,17 @@
 
 import { useState } from "react";
 import { t } from "@/i18n";
+import { useMesa } from "@/lib/mesa";
 import { logout, useApp } from "@/lib/store";
 import type { UserRole } from "@/lib/types";
 import { Characters } from "./Characters";
 import { Combat } from "./Combat";
 import { InfraTab } from "./infra/InfraTab";
+import { MesaTab } from "./MesaTab";
 import { NetTab } from "./net/NetTab";
 
 const TABS = [
+  { id: "mesa", roles: ["mestre", "jogador"] },
   { id: "net", roles: ["mestre"] },
   { id: "infra", roles: ["mestre"] },
   { id: "combat", roles: ["mestre"] },
@@ -20,6 +23,7 @@ type TabId = (typeof TABS)[number]["id"];
 
 export function Shell({ user, role }: { user: string; role: UserRole }) {
   const { syncError } = useApp();
+  const { mesa } = useMesa();
   const tabs = TABS.filter((x) => (x.roles as readonly UserRole[]).includes(role));
   const [tab, setTab] = useState<TabId>(role === "mestre" ? "combat" : "chars");
   /** Arquitetura que a aba infra pediu pra abrir no construtor da aba netrunner. */
@@ -62,6 +66,11 @@ export function Shell({ user, role }: { user: string; role: UserRole }) {
               @<span className="text-fg">{user}</span>
             </span>
           </span>
+          {mesa && (
+            <button className="text-net" title={mesa.name} onClick={() => setTab("mesa")}>
+              #{mesa.code}
+            </button>
+          )}
           {syncError && (
             <span className="text-red" title={t.shell.syncFailed(syncError)}>
               {t.shell.offline}
@@ -73,6 +82,7 @@ export function Shell({ user, role }: { user: string; role: UserRole }) {
         </div>
       </header>
       <main className="flex-1 p-3 sm:p-5">
+        {tab === "mesa" && <MesaTab />}
         {tab === "net" && <NetTab focusId={focusArch} />}
         {tab === "infra" && (
           <InfraTab
