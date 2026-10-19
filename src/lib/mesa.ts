@@ -11,7 +11,7 @@ import { appSnapshot, flushSaves, receiveCharacter, subscribeApp, useApp } from 
 import { supabase } from "./supabase";
 
 /**
- * Mesa online (tabelas `mesas` e `mesa_members`, migração `20261019120000_mesas.sql`).
+ * Mesa online (tabelas `mesas` e `mesa_members`, migrações `supabase/migrations/*_mesas*.sql`).
  * - O mestre cria a mesa e passa o código. O combate e a arquitetura no telão continuam morando no
  *   console dele (`store.ts`); daqui eles vão pro ar em `mesas.state` sempre que mudam.
  * - O jogador entra com o código e senta uma ficha. Ele lê o que está no ar e as fichas sentadas.
@@ -400,8 +400,10 @@ export async function joinMesa(code: string, characterId: string): Promise<strin
   if (!sb || !app.userId) return t.mesa.errors.offline;
   // a ficha precisa estar no banco pro mestre ler
   await flushSaves();
-  const { error } = await sb.rpc("join_mesa", { mesa_code: code, char_id: characterId, player_name: app.user });
+  const { data, error } = await sb.rpc("join_mesa", { mesa_code: code, char_id: characterId, player_name: app.user });
   if (error) return rpcError(error);
+  // um jogador fica numa mesa só: sai das outras
+  await sb.from("mesa_members").delete().eq("user_id", app.userId).neq("mesa_id", data as string);
   closeChannel();
   setSnap({ notice: null });
   await load();

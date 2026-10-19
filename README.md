@@ -33,7 +33,7 @@ No login a pessoa escolhe **mestre** (combate, net e fichas) ou **jogador** (só
 ### Configurando o Supabase
 
 1. Copie `.env.example` pra `.env.local` e preencha `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
-2. Aplique as migrations de `supabase/migrations/` (a `portraits` cria o bucket das fotos; a `mesas` cria a mesa online e liga o Realtime em `mesas`, `mesa_members` e `characters`).
+2. Aplique as migrations de `supabase/migrations/` (a `portraits` cria o bucket das fotos; as `mesas*` criam a mesa online e ligam o Realtime em `mesas`, `mesa_members` e `characters`).
 3. Em Authentication → Sign In / Providers → Email, desligue **Confirm email**. Sem SMTP próprio, o Supabase só envia email pros membros da org, então quem não é da equipe não conseguiria confirmar a conta.
 4. Em Authentication → URL Configuration, coloque a URL do app (e `http://localhost:3000`) em Site URL / Redirect URLs.
 
