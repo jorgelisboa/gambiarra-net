@@ -42,6 +42,7 @@ import { RoleAbility } from "./RoleAbility";
 import { GearSheet } from "./GearSheet";
 import { SkillSheet } from "./SkillSheet";
 import { SheetView } from "./sheet/SheetView";
+import { linkedCharacterId } from "@/lib/link";
 
 /** `role`: a aba só aparece pra esse role. */
 const SHEET_TABS = [
@@ -84,9 +85,11 @@ const NOTE_FIELDS: { key: keyof CharacterNotes; label: string; area?: boolean }[
 export function Characters() {
   const { data } = useApp();
   const { characters, sessionCharacterId } = data;
-  const [selectedId, setSelectedId] = useState<string | null>(
-    sessionCharacterId ?? characters[0]?.id ?? null,
-  );
+  const [selectedId, setSelectedId] = useState<string | null>(() => {
+    const linked = linkedCharacterId();
+    if (linked && characters.some((c) => c.id === linked)) return linked;
+    return sessionCharacterId ?? characters[0]?.id ?? null;
+  });
   const [creating, setCreating] = useState(false);
   // fica aqui (e não no Editor) pra aba não voltar pro início ao trocar de personagem
   const [tab, setTab] = useState<SheetTab>("sheet");

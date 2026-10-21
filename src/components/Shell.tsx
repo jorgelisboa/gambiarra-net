@@ -10,6 +10,7 @@ import { Combat } from "./Combat";
 import { InfraTab } from "./infra/InfraTab";
 import { MesaTab } from "./MesaTab";
 import { NetTab } from "./net/NetTab";
+import { linkedCharacterId } from "@/lib/link";
 
 const TABS = [
   { id: "mesa", roles: ["mestre", "jogador"] },
@@ -25,7 +26,8 @@ export function Shell({ user, role }: { user: string; role: UserRole }) {
   const { syncError } = useApp();
   const { mesa } = useMesa();
   const tabs = TABS.filter((x) => (x.roles as readonly UserRole[]).includes(role));
-  const [tab, setTab] = useState<TabId>(role === "mestre" ? "combat" : "chars");
+  // link direto pra uma ficha (?ficha=id) abre em personagens
+  const [tab, setTab] = useState<TabId>(() => (linkedCharacterId() || role !== "mestre" ? "chars" : "combat"));
   /** Arquitetura que a aba infra pediu pra abrir no construtor da aba netrunner. */
   const [focusArch, setFocusArch] = useState<string | null>(null);
 
