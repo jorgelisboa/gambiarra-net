@@ -223,20 +223,21 @@ function Editor({
     <section className="box min-w-0 space-y-5 p-3 sm:p-5">
       <div className="space-y-3">
         <div className="flex items-start gap-3 sm:gap-4">
-          {/* o "pôr foto" não quebra em duas linhas sob o avatar de 48px */}
-          <div className="shrink-0 [&_span]:whitespace-nowrap">
-            <PhotoPicker ch={ch} size={wide ? 72 : 48} onFail={setPhotoError} />
+          {/* "trocar" e "tirar" não quebram em duas linhas sob a foto */}
+          <div className="shrink-0 [&_button]:whitespace-nowrap">
+            <PhotoPicker ch={ch} width={wide ? 168 : 112} onFail={setPhotoError} />
           </div>
           <div className="min-w-0 flex-1 space-y-1">
-            <div className="flex items-start gap-2">
+            {/* no celular a foto grande come a largura: "opções" desce pra baixo do nome */}
+            <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap">
               <input
-                className="field font-pixel min-h-10 min-w-0 flex-1 text-xl sm:min-h-0 sm:max-w-sm sm:text-2xl"
+                className="field font-pixel min-h-10 min-w-0 flex-1 basis-full text-lg sm:min-h-0 sm:max-w-sm sm:basis-auto sm:text-2xl"
                 aria-label={t.characters.editor.nameAria}
                 value={ch.name}
                 onChange={(e) => save({ name: e.target.value })}
               />
               <button
-                className={`btn ml-auto min-h-10 shrink-0 sm:min-h-0 ${optionsOpen ? "btn-primary" : ""}`}
+                className={`btn min-h-10 shrink-0 sm:ml-auto sm:min-h-0 ${optionsOpen ? "btn-primary" : ""}`}
                 aria-expanded={optionsOpen}
                 aria-controls="ficha-opcoes"
                 onClick={() => setOptionsOpen((o) => !o)}

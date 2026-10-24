@@ -170,6 +170,18 @@ input[type="number"]::-webkit-outer-spin-button { appearance: none; margin: 0; }
 }
 .portrait-dim { opacity: 0.4; filter: grayscale(1); }
 
+/* foto da ficha aberta grande (<dialog> do PhotoPicker) */
+.photo-viewer {
+  margin: auto;
+  max-width: none;
+  max-height: none;
+  padding: 16px;
+  border: 0;
+  background: transparent;
+  color: var(--fg);
+}
+.photo-viewer::backdrop { background: color-mix(in srgb, var(--bg) 94%, transparent); }
+
 .box { border: 2px solid var(--line); background: var(--color-panel); }
 .box-active { border-color: var(--red); }
 

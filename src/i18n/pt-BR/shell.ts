@@ -20,6 +20,9 @@ export const shell = {
     change: "trocar",
     add: "pôr foto",
     remove: "tirar",
+    /** Clique na foto da ficha: abre ela grande. */
+    view: (name: string) => `ver a foto de ${name || "personagem"} grande`,
+    close: "fechar",
     tooBig: (maxMb: number) => `imagem grande demais (máx. ${maxMb} MB).`,
     unreadable: "não deu pra ler essa imagem. use png, jpg ou webp.",
     uploadFailed: (detail: string) => `a foto não subiu: ${detail}`,

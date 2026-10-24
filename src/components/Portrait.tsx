@@ -50,11 +50,14 @@ export function PortraitArt({
   seed,
   color,
   dim,
+  sizes = "(min-width: 1024px) 25vw, (min-width: 640px) 45vw, 90vw",
 }: {
   photo?: string | null;
   seed: string;
   color: string;
   dim?: boolean;
+  /** Largura em que a foto aparece (o padrão é a carta do palco). */
+  sizes?: string;
 }) {
   const [broken, setBroken] = useState<string | null>(null);
   if (!photo || broken === photo) {
@@ -74,7 +77,7 @@ export function PortraitArt({
       src={photo}
       alt=""
       fill
-      sizes="(min-width: 1024px) 25vw, (min-width: 640px) 45vw, 90vw"
+      sizes={sizes}
       unoptimized
       onError={() => setBroken(photo)}
       className={`object-cover object-top ${dim ? "portrait-dim" : ""}`}
@@ -82,19 +85,27 @@ export function PortraitArt({
   );
 }
 
-/** Foto na ficha: clique ou solte uma imagem pra trocar. Erros vão pro `onFail`. */
+/**
+ * Foto na ficha, grande e em pé (3:4, presa no topo). Com foto, o clique abre ela inteira por cima
+ * da tela; "trocar" e "tirar" ficam embaixo. Sem foto, o clique escolhe uma. Soltar uma imagem em
+ * cima troca. Erros vão pro `onFail`.
+ */
 export function PhotoPicker({
   ch,
-  size,
+  width,
   onFail,
 }: {
   ch: Character;
-  size: number;
+  width: number;
   onFail: (message: string | null) => void;
 }) {
   const input = useRef<HTMLInputElement>(null);
+  const viewer = useRef<HTMLDialogElement>(null);
   const [busy, setBusy] = useState(false);
   const [over, setOver] = useState(false);
+  const color = colorFor(ch.id);
+  const height = Math.round((width * 4) / 3);
+  const pick = () => input.current?.click();
 
   async function change(file: File | null) {
     setBusy(true);
@@ -108,13 +119,18 @@ export function PhotoPicker({
   }
 
   return (
-    <div className="flex shrink-0 flex-col items-center gap-1 text-xs" style={{ width: size }}>
+    <div className="flex shrink-0 flex-col items-center gap-1 text-xs" style={{ width }}>
       <button
         type="button"
-        className={`group flex flex-col items-center gap-1 ${over ? "outline-2 outline-offset-2 outline-red" : ""}`}
+        // foto reduzida suave, sem pixelar (o html todo é pixelated)
+        className={`relative block overflow-hidden [&_img]:[image-rendering:auto] ${
+          over ? "outline-2 outline-offset-2 outline-red" : ""
+        }`}
+        style={{ width, height, border: `2px solid ${color}` }}
         disabled={busy}
-        title={t.shell.photo.dropHint}
-        onClick={() => input.current?.click()}
+        title={ch.photo ? t.shell.photo.view(ch.name) : t.shell.photo.dropHint}
+        aria-label={ch.photo ? t.shell.photo.view(ch.name) : t.shell.photo.add}
+        onClick={() => (ch.photo ? viewer.current?.showModal() : pick())}
         onDragOver={(e) => {
           e.preventDefault();
           setOver(true);
@@ -127,17 +143,52 @@ export function PhotoPicker({
           if (file) void change(file);
         }}
       >
-        <Portrait photo={ch.photo} seed={ch.id} color={colorFor(ch.id)} size={size} dim={busy} />
-        {busy ? (
-          <span className="cursor text-dim">{t.shell.photo.sending}</span>
-        ) : (
-          <span className="text-dim group-hover:text-red">{ch.photo ? t.shell.photo.change : t.shell.photo.add}</span>
-        )}
+        <PortraitArt photo={ch.photo} seed={ch.id} color={color} dim={busy} sizes={`${width}px`} />
       </button>
-      {ch.photo && !busy && (
-        <button type="button" className="text-dim hover:text-red" onClick={() => void change(null)}>
-          {t.shell.photo.remove}
-        </button>
+      {busy ? (
+        <span className="cursor text-dim">{t.shell.photo.sending}</span>
+      ) : (
+        <span className="flex gap-3">
+          <button type="button" className="text-dim hover:text-red" title={t.shell.photo.dropHint} onClick={pick}>
+            {ch.photo ? t.shell.photo.change : t.shell.photo.add}
+          </button>
+          {ch.photo && (
+            <button type="button" className="text-dim hover:text-red" onClick={() => void change(null)}>
+              {t.shell.photo.remove}
+            </button>
+          )}
+        </span>
+      )}
+      {ch.photo && (
+        <dialog
+          ref={viewer}
+          aria-label={t.shell.photo.view(ch.name)}
+          className="photo-viewer"
+          // clique fora da foto (no fundo escuro) fecha
+          onClick={(e) => e.target === e.currentTarget && e.currentTarget.close()}
+        >
+          <figure className="flex flex-col items-center gap-3">
+            <Image
+              src={ch.photo}
+              alt={ch.name}
+              width={576}
+              height={960}
+              unoptimized
+              className="block [image-rendering:auto]"
+              style={{
+                width: "auto",
+                height: "auto",
+                maxWidth: "min(92vw, 576px)",
+                maxHeight: "78dvh",
+                border: `2px solid ${color}`,
+              }}
+            />
+            <figcaption className="font-pixel text-xl">{ch.name}</figcaption>
+            <button type="button" className="btn" onClick={() => viewer.current?.close()}>
+              {t.shell.photo.close}
+            </button>
+          </figure>
+        </dialog>
       )}
       <input
         ref={input}
