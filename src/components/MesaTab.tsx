@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { t } from "@/i18n";
 import {
   createMesa,
@@ -9,6 +9,7 @@ import {
   joinMesa,
   kickMember,
   leaveMesa,
+  patchSeated,
   seatCharacter,
   useMesa,
   useTableCharacters,
@@ -17,6 +18,7 @@ import { useApp } from "@/lib/store";
 import { hpMaxOf, woundOf } from "@/lib/rpg";
 import { colorFor, vitalsOf } from "@/lib/rules";
 import type { Character, Combatant, Mesa } from "@/lib/types";
+import { SeatedSheet, type SheetTab } from "./Characters";
 import { InitiativeStage } from "./InitiativeStage";
 import { Bar, Icon } from "./Pixel";
 import { Portrait } from "./Portrait";
@@ -98,6 +100,18 @@ function CreateForm() {
 function GmMesa({ mesa }: { mesa: Mesa }) {
   const characters = useTableCharacters();
   const { combat, net } = mesa.shared;
+  // ficha aberta embaixo: a do jogador (por conta), que segue a ficha que ele sentar
+  const [viewing, setViewing] = useState<string | null>(null);
+  const [tab, setTab] = useState<SheetTab>("sheet");
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const seat = mesa.members.find((m) => m.userId === viewing);
+  const sheetCh = seat?.characterId ? mesa.characters.find((c) => c.id === seat.characterId) : undefined;
+
+  // abriu outra ficha: rola até ela (no PC ela aparece embaixo da lista)
+  useEffect(() => {
+    if (viewing) sheetRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [viewing]);
+
   return (
     <>
       <div className="box flex flex-wrap items-center gap-x-6 gap-y-3 p-4">
@@ -136,9 +150,22 @@ function GmMesa({ mesa }: { mesa: Mesa }) {
               {mesa.members.map((m) => {
                 const ch = characters.find((c) => c.id === m.characterId);
                 return (
-                  <li key={m.userId} className="flex items-center gap-3">
+                  <li key={m.userId} className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
                     {ch ? <SeatVitals ch={ch} /> : <span className="flex-1 text-dim">{M.gm.noCharacter}</span>}
-                    <span className="shrink-0 text-xs text-net">@{m.name}</span>
+                    <span className="min-w-0 shrink truncate text-xs text-net">@{m.name}</span>
+                    {ch && (
+                      <button
+                        className={`btn shrink-0 ${viewing === m.userId ? "btn-primary" : ""}`}
+                        aria-label={M.gm.sheetAria(ch.name)}
+                        aria-pressed={viewing === m.userId}
+                        onClick={() => {
+                          setViewing(viewing === m.userId ? null : m.userId);
+                          setTab("sheet");
+                        }}
+                      >
+                        {M.gm.sheet}
+                      </button>
+                    )}
                     <button
                       className="btn btn-danger btn-bare"
                       title={M.gm.kick}
@@ -161,6 +188,21 @@ function GmMesa({ mesa }: { mesa: Mesa }) {
           <p className="text-xs text-dim">{M.gm.onAirHint}</p>
         </section>
       </div>
+
+      {sheetCh && seat && (
+        <div ref={sheetRef} className="scroll-mt-4">
+          <SeatedSheet
+            key={sheetCh.id}
+            ch={sheetCh}
+            owner={seat.name}
+            tab={tab}
+            onTab={setTab}
+            // só HP, munição e death save chegam no dono; o resto o banco recusa
+            save={(patch) => patchSeated({ ...sheetCh, ...patch })}
+            onClose={() => setViewing(null)}
+          />
+        </div>
+      )}
     </>
   );
 }
@@ -169,7 +211,7 @@ function SeatVitals({ ch }: { ch: Character }) {
   const max = hpMaxOf(ch);
   const wound = woundOf(ch.hp, max);
   return (
-    <span className="flex min-w-0 flex-1 items-center gap-2">
+    <span className="flex min-w-0 flex-1 basis-56 items-center gap-2">
       <Portrait photo={ch.photo ?? null} seed={ch.id} color={colorFor(ch.id)} size={28} dim={ch.hp <= 0} />
       <span className="min-w-0 flex-1">
         <span className="block truncate">{ch.name}</span>

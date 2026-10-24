@@ -182,6 +182,15 @@ input[type="number"]::-webkit-outer-spin-button { appearance: none; margin: 0; }
 }
 .photo-viewer::backdrop { background: color-mix(in srgb, var(--bg) 94%, transparent); }
 
+/* ficha de outra pessoa, travada (fieldset disabled): o texto continua legível, só não mexe */
+.sheet-locked :disabled { cursor: default; }
+.sheet-locked :is(input, select, textarea):disabled {
+  opacity: 1;
+  color: var(--fg);
+  -webkit-text-fill-color: var(--fg);
+}
+.sheet-locked :is(input, textarea):disabled::placeholder { color: var(--dim); -webkit-text-fill-color: var(--dim); }
+
 .box { border: 2px solid var(--line); background: var(--color-panel); }
 .box-active { border-color: var(--red); }
 

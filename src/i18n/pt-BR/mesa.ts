@@ -25,6 +25,9 @@ export const mesa = {
     playersTitle: "jogadores",
     noPlayers: "ninguém entrou ainda.",
     noCharacter: "ainda sem ficha",
+    /** Botão na linha do jogador: abre a ficha dele embaixo. */
+    sheet: "ficha",
+    sheetAria: (name: string) => `ver a ficha de ${name}`,
     kick: "tirar da mesa",
     kickAria: (name: string) => `tirar ${name} da mesa`,
     onAirTitle: "no ar pra mesa",

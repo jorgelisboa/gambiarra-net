@@ -85,6 +85,79 @@ export function PortraitArt({
   );
 }
 
+const frameHeight = (width: number) => Math.round((width * 4) / 3);
+
+/** Moldura 3:4 da foto da ficha: foto presa no topo, reduzida suave (o html todo é pixelated). */
+const FRAME = "relative block shrink-0 overflow-hidden [&_img]:[image-rendering:auto]";
+
+/** A foto inteira por cima da tela, com o nome. Fecha no botão, no Esc ou no clique no fundo. */
+function PhotoDialog({
+  ch,
+  color,
+  dialogRef,
+}: {
+  ch: Character;
+  color: string;
+  dialogRef: React.RefObject<HTMLDialogElement | null>;
+}) {
+  if (!ch.photo) return null;
+  return (
+    <dialog
+      ref={dialogRef}
+      aria-label={t.shell.photo.view(ch.name)}
+      className="photo-viewer"
+      // clique fora da foto (no fundo escuro) fecha
+      onClick={(e) => e.target === e.currentTarget && e.currentTarget.close()}
+    >
+      <figure className="flex flex-col items-center gap-3">
+        <Image
+          src={ch.photo}
+          alt={ch.name}
+          width={576}
+          height={960}
+          unoptimized
+          className="block [image-rendering:auto]"
+          style={{
+            width: "auto",
+            height: "auto",
+            maxWidth: "min(92vw, 576px)",
+            maxHeight: "78dvh",
+            border: `2px solid ${color}`,
+          }}
+        />
+        <figcaption className="font-pixel text-xl">{ch.name}</figcaption>
+        <button type="button" className="btn" onClick={() => dialogRef.current?.close()}>
+          {t.shell.photo.close}
+        </button>
+      </figure>
+    </dialog>
+  );
+}
+
+/** Foto grande só pra ver (a ficha de outra pessoa): com foto, o clique abre ela inteira. */
+export function PhotoView({ ch, width }: { ch: Character; width: number }) {
+  const viewer = useRef<HTMLDialogElement>(null);
+  const color = colorFor(ch.id);
+  const style = { width, height: frameHeight(width), border: `2px solid ${color}` };
+  const art = <PortraitArt photo={ch.photo} seed={ch.id} color={color} sizes={`${width}px`} />;
+  if (!ch.photo) return <div className={FRAME} style={style}>{art}</div>;
+  return (
+    <>
+      <button
+        type="button"
+        className={FRAME}
+        style={style}
+        title={t.shell.photo.view(ch.name)}
+        aria-label={t.shell.photo.view(ch.name)}
+        onClick={() => viewer.current?.showModal()}
+      >
+        {art}
+      </button>
+      <PhotoDialog ch={ch} color={color} dialogRef={viewer} />
+    </>
+  );
+}
+
 /**
  * Foto na ficha, grande e em pé (3:4, presa no topo). Com foto, o clique abre ela inteira por cima
  * da tela; "trocar" e "tirar" ficam embaixo. Sem foto, o clique escolhe uma. Soltar uma imagem em
@@ -104,7 +177,6 @@ export function PhotoPicker({
   const [busy, setBusy] = useState(false);
   const [over, setOver] = useState(false);
   const color = colorFor(ch.id);
-  const height = Math.round((width * 4) / 3);
   const pick = () => input.current?.click();
 
   async function change(file: File | null) {
@@ -122,11 +194,8 @@ export function PhotoPicker({
     <div className="flex shrink-0 flex-col items-center gap-1 text-xs" style={{ width }}>
       <button
         type="button"
-        // foto reduzida suave, sem pixelar (o html todo é pixelated)
-        className={`relative block overflow-hidden [&_img]:[image-rendering:auto] ${
-          over ? "outline-2 outline-offset-2 outline-red" : ""
-        }`}
-        style={{ width, height, border: `2px solid ${color}` }}
+        className={`${FRAME} ${over ? "outline-2 outline-offset-2 outline-red" : ""}`}
+        style={{ width, height: frameHeight(width), border: `2px solid ${color}` }}
         disabled={busy}
         title={ch.photo ? t.shell.photo.view(ch.name) : t.shell.photo.dropHint}
         aria-label={ch.photo ? t.shell.photo.view(ch.name) : t.shell.photo.add}
@@ -159,37 +228,7 @@ export function PhotoPicker({
           )}
         </span>
       )}
-      {ch.photo && (
-        <dialog
-          ref={viewer}
-          aria-label={t.shell.photo.view(ch.name)}
-          className="photo-viewer"
-          // clique fora da foto (no fundo escuro) fecha
-          onClick={(e) => e.target === e.currentTarget && e.currentTarget.close()}
-        >
-          <figure className="flex flex-col items-center gap-3">
-            <Image
-              src={ch.photo}
-              alt={ch.name}
-              width={576}
-              height={960}
-              unoptimized
-              className="block [image-rendering:auto]"
-              style={{
-                width: "auto",
-                height: "auto",
-                maxWidth: "min(92vw, 576px)",
-                maxHeight: "78dvh",
-                border: `2px solid ${color}`,
-              }}
-            />
-            <figcaption className="font-pixel text-xl">{ch.name}</figcaption>
-            <button type="button" className="btn" onClick={() => viewer.current?.close()}>
-              {t.shell.photo.close}
-            </button>
-          </figure>
-        </dialog>
-      )}
+      <PhotoDialog ch={ch} color={color} dialogRef={viewer} />
       <input
         ref={input}
         type="file"

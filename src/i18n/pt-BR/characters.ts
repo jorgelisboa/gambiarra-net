@@ -52,6 +52,14 @@ export const characters = {
     confirmDelete: (name: string) => `apagar ${name}?`,
   },
 
+  /** Ficha de um jogador da mesa, aberta pelo mestre na aba mesa (só leitura). */
+  seated: {
+    aria: (name: string) => `ficha de ${name}`,
+    close: "fechar ficha",
+    owner: (player: string) => `de @${player}`,
+    readOnly: "só leitura: quem edita é o jogador. HP, munição e death save você mexe aqui ou no combate.",
+  },
+
   /** Aba stats: os 10 stats, HP e humanidade. */
   stats: {
     empDroppedTitle: "EMP caiu com a humanidade",

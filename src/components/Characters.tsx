@@ -37,7 +37,7 @@ import { CyberSheet, psychosisTone } from "./cyber/CyberSheet";
 import { LifepathEditor } from "./LifepathEditor";
 import { NetSheet } from "./net/NetSheet";
 import { Bar } from "./Pixel";
-import { PhotoPicker, Portrait } from "./Portrait";
+import { PhotoPicker, PhotoView, Portrait } from "./Portrait";
 import { RoleAbility } from "./RoleAbility";
 import { GearSheet } from "./GearSheet";
 import { SkillSheet } from "./SkillSheet";
@@ -57,7 +57,7 @@ const SHEET_TABS = [
   { id: "notes", label: t.characters.tabs.notes },
 ] as const satisfies readonly { id: string; label: string; role?: Role }[];
 
-type SheetTab = (typeof SHEET_TABS)[number]["id"];
+export type SheetTab = (typeof SHEET_TABS)[number]["id"];
 type SheetTabDef = (typeof SHEET_TABS)[number];
 
 const tabsFor = (role: Role): SheetTabDef[] => SHEET_TABS.filter((tab) => !("role" in tab) || tab.role === role);
@@ -207,13 +207,6 @@ function Editor({
   const shown: SheetTab = tabs.some((x) => x.id === tab) ? tab : "sheet";
   const changeRole = (role: Role) =>
     save({ role, ability: fitToRank(roleDef(role).ability, ch.ability, ch.roleRank) });
-  const hpMax = hpMaxOf(ch);
-  const humMax = maxHumanity(ch.stats);
-  const wound = woundOf(ch.hp, hpMax);
-  const emp = currentEmp(ch.stats, ch.humanity);
-  const cap = humanityCap(ch);
-  const psy = cyberpsychosis(ch);
-  const eff = effectiveStats(ch);
   const [photoError, setPhotoError] = useState<string | null>(null);
   // role, sessão e apagar ficam atrás de "opções": nada de mexer neles sem querer
   const [optionsOpen, setOptionsOpen] = useState(false);
@@ -293,13 +286,87 @@ function Editor({
       </div>
 
       <SheetTabs tabs={tabs} tab={shown} onTab={onTab} />
+      <SheetPanels ch={ch} shown={shown} save={save} onTab={onTab} />
+    </section>
+  );
+}
 
-      <div
-        role="tabpanel"
-        id={`ficha-${shown}`}
-        aria-labelledby={`ficha-tab-${shown}`}
-        className="space-y-5"
-      >
+/**
+ * A ficha de um jogador sentado na mesa, aberta pelo mestre: todas as abas, só leitura.
+ * Na aba ficha, HP, munição e death save ainda mexem (`save` manda só essas chaves pro dono);
+ * nas outras abas os campos ficam travados.
+ */
+export function SeatedSheet({
+  ch,
+  owner,
+  tab,
+  onTab,
+  save,
+  onClose,
+}: {
+  ch: Character;
+  /** Nome do jogador dono da ficha. */
+  owner: string;
+  tab: SheetTab;
+  onTab: (tab: SheetTab) => void;
+  save: (patch: Partial<Character>) => void;
+  onClose: () => void;
+}) {
+  const tabs = tabsFor(ch.role);
+  const shown: SheetTab = tabs.some((x) => x.id === tab) ? tab : "sheet";
+  const wide = useWide();
+  return (
+    <section className="box min-w-0 space-y-5 p-3 sm:p-5" aria-label={t.characters.seated.aria(ch.name)}>
+      <div className="flex items-start gap-3 sm:gap-4">
+        <PhotoView ch={ch} width={wide ? 168 : 112} />
+        <div className="min-w-0 flex-1 space-y-1">
+          <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap">
+            <h2 className="font-pixel min-w-0 flex-1 basis-full break-words text-xl sm:basis-auto sm:text-2xl">
+              {ch.name}
+            </h2>
+            <button className="btn min-h-10 shrink-0 sm:ml-auto sm:min-h-0" onClick={onClose}>
+              {t.characters.seated.close}
+            </button>
+          </div>
+          <p className="text-dim">{t.characters.list.roleRank(ch.role.toLowerCase(), ch.roleRank)}</p>
+          <p className="text-xs text-net">{t.characters.seated.owner(owner)}</p>
+          <p className="text-xs text-dim">{t.characters.seated.readOnly}</p>
+        </div>
+      </div>
+      <SheetTabs tabs={tabs} tab={shown} onTab={onTab} prefix="mesa-ficha" />
+      <SheetPanels ch={ch} shown={shown} save={save} onTab={onTab} prefix="mesa-ficha" readOnly />
+    </section>
+  );
+}
+
+/** O conteúdo da aba aberta. `readOnly`: fora a aba ficha, tudo travado (fieldset desabilitado). */
+function SheetPanels({
+  ch,
+  shown,
+  save,
+  onTab,
+  prefix = "ficha",
+  readOnly,
+}: {
+  ch: Character;
+  shown: SheetTab;
+  save: (patch: Partial<Character>) => void;
+  onTab: (tab: SheetTab) => void;
+  prefix?: string;
+  readOnly?: boolean;
+}) {
+  const hpMax = hpMaxOf(ch);
+  const humMax = maxHumanity(ch.stats);
+  const wound = woundOf(ch.hp, hpMax);
+  const emp = currentEmp(ch.stats, ch.humanity);
+  const cap = humanityCap(ch);
+  const psy = cyberpsychosis(ch);
+  const eff = effectiveStats(ch);
+  const locked = readOnly && shown !== "sheet";
+
+  return (
+    <div role="tabpanel" id={`${prefix}-${shown}`} aria-labelledby={`${prefix}-tab-${shown}`}>
+      <fieldset disabled={locked} className={`min-w-0 space-y-5 ${locked ? "sheet-locked" : ""}`}>
         {shown === "sheet" && <SheetView ch={ch} save={save} onTab={onTab} />}
 
         {shown === "stats" && (
@@ -438,8 +505,8 @@ function Editor({
             ))}
           </div>
         )}
-      </div>
-    </section>
+      </fieldset>
+    </div>
   );
 }
 
@@ -448,22 +515,25 @@ function SheetTabs({
   tabs,
   tab,
   onTab,
+  prefix = "ficha",
 }: {
   tabs: SheetTabDef[];
   tab: SheetTab;
   onTab: (tab: SheetTab) => void;
+  /** Prefixo dos ids (a ficha de um jogador na mesa usa outro, pra não colidir com a do mestre). */
+  prefix?: string;
 }) {
   function go(i: number) {
     const next = tabs[(i + tabs.length) % tabs.length];
     onTab(next.id);
-    document.getElementById(`ficha-tab-${next.id}`)?.focus();
+    document.getElementById(`${prefix}-tab-${next.id}`)?.focus();
   }
   // a faixa rola de lado em vez de quebrar linha: a aba ativa tem que estar à vista
   useEffect(() => {
     document
-      .getElementById(`ficha-tab-${tab}`)
+      .getElementById(`${prefix}-tab-${tab}`)
       ?.scrollIntoView({ inline: "nearest", block: "nearest" });
-  }, [tab]);
+  }, [tab, prefix]);
   return (
     <div
       role="tablist"
@@ -478,9 +548,9 @@ function SheetTabs({
           <button
             key={def.id}
             role="tab"
-            id={`ficha-tab-${def.id}`}
+            id={`${prefix}-tab-${def.id}`}
             aria-selected={on}
-            aria-controls={`ficha-${def.id}`}
+            aria-controls={`${prefix}-${def.id}`}
             tabIndex={on ? 0 : -1}
             onClick={() => onTab(def.id)}
             onKeyDown={(e) => {
